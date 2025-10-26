@@ -14,10 +14,9 @@ export async function GET() {
         readyState: conn.connection.readyState, // 1 means connected
         });
     }
-    catch (error){
-        console.log(error);
-        
-        return NextResponse.json({ error: 'Connection failed' }, { status: 500 });
-    }
+    catch (e:any) {
+        console.log(e?.message);
+        return NextResponse.json({ ok:false, error:e?.message }, { status:500 });
+  }
         
 }

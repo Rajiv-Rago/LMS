@@ -24,6 +24,9 @@
 # misc
 .DS_Store
 *.pem
+id_ed25519*
+lms
+*.pub
 
 # debug
 npm-debug.log*

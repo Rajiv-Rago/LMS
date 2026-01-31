@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { dbConnect } from "@/lib/db";
+import { dbConnect, DatabaseConnectionError } from "@/lib/db";
 import User from "@/lib/models/User";
 import { signToken, setAuthCookie } from "@/lib/auth";
 
@@ -61,6 +61,14 @@ export async function POST(request: NextRequest) {
     return response;
   } catch (error) {
     console.error("Registration error:", error);
+
+    if (error instanceof DatabaseConnectionError) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: 503 }
+      );
+    }
+
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

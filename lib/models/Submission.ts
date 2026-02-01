@@ -2,6 +2,31 @@ import mongoose, { Document, Model } from "mongoose";
 
 export type SubmissionStatus = "draft" | "submitted" | "graded" | "returned";
 
+export interface IQuizAnswer {
+  questionId: string;
+  selectedAnswer: number;
+  isCorrect: boolean;
+  pointsEarned: number;
+}
+
+export interface IQuizAttempt {
+  attemptNumber: number;
+  answers: IQuizAnswer[];
+  score: number;
+  startedAt: Date;
+  completedAt?: Date;
+}
+
+export interface IUploadedFile {
+  id: string;
+  filename: string;
+  originalName: string;
+  url: string;
+  mimeType: string;
+  size: number;
+  uploadedAt: Date;
+}
+
 export interface ISubmission extends Document {
   _id: mongoose.Types.ObjectId;
   assignment: mongoose.Types.ObjectId;
@@ -15,11 +40,50 @@ export interface ISubmission extends Document {
   feedback?: string;
   gradedAt?: Date;
   gradedBy?: mongoose.Types.ObjectId;
+  // Quiz submission fields
+  quizAttempts?: IQuizAttempt[];
+  bestScore?: number; // Highest score across all attempts (used for grade)
+  // Project submission fields
+  files?: IUploadedFile[];
   createdAt: Date;
   updatedAt: Date;
 }
 
 type SubmissionModel = Model<ISubmission>;
+
+const quizAnswerSchema = new mongoose.Schema(
+  {
+    questionId: { type: String, required: true },
+    selectedAnswer: { type: Number, required: true },
+    isCorrect: { type: Boolean, required: true },
+    pointsEarned: { type: Number, required: true },
+  },
+  { _id: false }
+);
+
+const quizAttemptSchema = new mongoose.Schema(
+  {
+    attemptNumber: { type: Number, required: true },
+    answers: [quizAnswerSchema],
+    score: { type: Number, required: true },
+    startedAt: { type: Date, required: true },
+    completedAt: { type: Date },
+  },
+  { _id: false }
+);
+
+const uploadedFileSchema = new mongoose.Schema(
+  {
+    id: { type: String, required: true },
+    filename: { type: String, required: true },
+    originalName: { type: String, required: true },
+    url: { type: String, required: true },
+    mimeType: { type: String, required: true },
+    size: { type: Number, required: true },
+    uploadedAt: { type: Date, required: true },
+  },
+  { _id: false }
+);
 
 const submissionSchema = new mongoose.Schema<ISubmission, SubmissionModel>(
   {
@@ -69,6 +133,14 @@ const submissionSchema = new mongoose.Schema<ISubmission, SubmissionModel>(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
     },
+    // Quiz submission fields
+    quizAttempts: [quizAttemptSchema],
+    bestScore: {
+      type: Number,
+      min: [0, "Best score cannot be negative"],
+    },
+    // Project submission fields
+    files: [uploadedFileSchema],
   },
   {
     timestamps: true,

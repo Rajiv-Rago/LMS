@@ -9,6 +9,7 @@ interface Assignment {
   title: string;
   points: number;
   dueDate: string;
+  assignmentType: "standard" | "quiz" | "project";
 }
 
 interface GradebookEntry {
@@ -136,7 +137,19 @@ export default function GradebookPage({
                       key={assignment._id}
                       className="px-4 py-3 text-center text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider"
                     >
-                      <div>{assignment.title}</div>
+                      <div className="flex items-center justify-center gap-1">
+                        {assignment.title}
+                        {assignment.assignmentType === "quiz" && (
+                          <span className="px-1.5 py-0.5 text-[10px] bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 rounded normal-case">
+                            Quiz
+                          </span>
+                        )}
+                        {assignment.assignmentType === "project" && (
+                          <span className="px-1.5 py-0.5 text-[10px] bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300 rounded normal-case">
+                            Project
+                          </span>
+                        )}
+                      </div>
                       <div className="font-normal">({assignment.points})</div>
                     </th>
                   ))}

@@ -1,6 +1,28 @@
 import mongoose, { Document, Model } from "mongoose";
 
 export type SubmissionType = "text" | "file" | "url";
+export type AssignmentType = "standard" | "quiz" | "project";
+
+export interface IQuizQuestion {
+  id: string;
+  question: string;
+  options: string[];
+  correctAnswer: number; // index
+  explanation?: string;
+  points: number;
+}
+
+export interface IQuizSettings {
+  timeLimit?: number; // minutes (optional)
+  shuffleQuestions: boolean;
+  showCorrectAnswers: boolean; // show after each attempt
+}
+
+export interface IProjectSettings {
+  maxFiles: number; // default: 5
+  maxFileSize: number; // bytes, default: 10MB
+  allowedFileTypes: string[]; // e.g., [".pdf", ".zip"]
+}
 
 export interface IAssignment extends Document {
   _id: mongoose.Types.ObjectId;
@@ -14,11 +36,47 @@ export interface IAssignment extends Document {
   allowedFileTypes?: string[];
   maxFileSize?: number;
   isPublished: boolean;
+  // New fields for quizzes and projects
+  assignmentType: AssignmentType;
+  questions?: IQuizQuestion[];
+  quizSettings?: IQuizSettings;
+  instructions?: string; // markdown for projects
+  projectSettings?: IProjectSettings;
   createdAt: Date;
   updatedAt: Date;
 }
 
 type AssignmentModel = Model<IAssignment>;
+
+const quizQuestionSchema = new mongoose.Schema(
+  {
+    id: { type: String, required: true },
+    question: { type: String, required: true },
+    options: [{ type: String, required: true }],
+    correctAnswer: { type: Number, required: true },
+    explanation: { type: String },
+    points: { type: Number, required: true, default: 1 },
+  },
+  { _id: false }
+);
+
+const quizSettingsSchema = new mongoose.Schema(
+  {
+    timeLimit: { type: Number }, // minutes
+    shuffleQuestions: { type: Boolean, default: false },
+    showCorrectAnswers: { type: Boolean, default: true },
+  },
+  { _id: false }
+);
+
+const projectSettingsSchema = new mongoose.Schema(
+  {
+    maxFiles: { type: Number, default: 5 },
+    maxFileSize: { type: Number, default: 10 * 1024 * 1024 }, // 10MB
+    allowedFileTypes: [{ type: String }],
+  },
+  { _id: false }
+);
 
 const assignmentSchema = new mongoose.Schema<IAssignment, AssignmentModel>(
   {
@@ -73,6 +131,24 @@ const assignmentSchema = new mongoose.Schema<IAssignment, AssignmentModel>(
       type: Boolean,
       default: false,
     },
+    // Assignment type (standard, quiz, or project)
+    assignmentType: {
+      type: String,
+      enum: {
+        values: ["standard", "quiz", "project"],
+        message: "Assignment type must be standard, quiz, or project",
+      },
+      default: "standard",
+    },
+    // Quiz fields
+    questions: [quizQuestionSchema],
+    quizSettings: quizSettingsSchema,
+    // Project fields
+    instructions: {
+      type: String,
+      maxlength: [50000, "Instructions cannot exceed 50000 characters"],
+    },
+    projectSettings: projectSettingsSchema,
   },
   {
     timestamps: true,

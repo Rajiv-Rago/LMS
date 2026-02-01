@@ -107,6 +107,7 @@ export async function GET(
         title: a.title,
         points: a.points,
         dueDate: a.dueDate,
+        assignmentType: a.assignmentType || "standard",
       })),
       gradebook,
       summary: {

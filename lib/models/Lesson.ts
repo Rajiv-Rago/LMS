@@ -1,6 +1,13 @@
 import mongoose, { Document, Model } from "mongoose";
+import { AIProviderName } from "@/lib/ai/types";
 
 export type LessonContentType = "text" | "video" | "file";
+export type LessonGenerationStatus = "skeleton" | "generating" | "completed" | "failed";
+
+export interface LessonGenerationConfig {
+  provider: AIProviderName;
+  model?: string;
+}
 
 export interface ILesson extends Document {
   _id: mongoose.Types.ObjectId;
@@ -14,6 +21,10 @@ export interface ILesson extends Document {
   order: number;
   isPublished: boolean;
   aiContext?: string;
+  generationStatus?: LessonGenerationStatus;
+  lessonOutline?: string;
+  generationConfig?: LessonGenerationConfig;
+  keyTakeaways?: string[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -67,6 +78,30 @@ const lessonSchema = new mongoose.Schema<ILesson, LessonModel>(
       type: String,
       maxlength: [10000, "AI context cannot exceed 10000 characters"],
     },
+    generationStatus: {
+      type: String,
+      enum: {
+        values: ["skeleton", "generating", "completed", "failed"],
+        message: "Generation status must be skeleton, generating, completed, or failed",
+      },
+    },
+    lessonOutline: {
+      type: String,
+      maxlength: [2000, "Lesson outline cannot exceed 2000 characters"],
+    },
+    generationConfig: {
+      provider: {
+        type: String,
+        enum: ["openai", "anthropic", "groq", "cerebras", "gemini"],
+      },
+      model: {
+        type: String,
+      },
+    },
+    keyTakeaways: [{
+      type: String,
+      maxlength: [500, "Key takeaway cannot exceed 500 characters"],
+    }],
   },
   {
     timestamps: true,

@@ -19,7 +19,7 @@ export interface IAIGeneratedContent extends Document {
   title: string;
   content: string;
   quizQuestions?: QuizQuestion[];
-  provider: "openai" | "anthropic";
+  provider: "openai" | "anthropic" | "groq" | "cerebras" | "gemini";
   aiModel?: string;
   prompt?: string;
   approvalStatus: ApprovalStatus;
@@ -94,7 +94,7 @@ const aiGeneratedContentSchema = new mongoose.Schema<
     quizQuestions: [quizQuestionSchema],
     provider: {
       type: String,
-      enum: ["openai", "anthropic"],
+      enum: ["openai", "anthropic", "groq", "cerebras", "gemini"],
       required: true,
     },
     aiModel: {

@@ -1,0 +1,61 @@
+import { NextRequest, NextResponse } from "next/server";
+import { dbConnect } from "@/lib/db";
+import { Course } from "@/lib/models";
+import { authenticate } from "@/lib/auth";
+
+export async function GET(request: NextRequest) {
+  try {
+    const user = await authenticate(request);
+
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "10");
+    const status = searchParams.get("status");
+
+    await dbConnect();
+
+    const query: Record<string, unknown> = {
+      courseType: "ai-generated",
+      owner: user.userId,
+    };
+
+    if (status) {
+      query.syllabusStatus = status;
+    }
+
+    const total = await Course.countDocuments(query);
+    const courses = await Course.find(query)
+      .populate({
+        path: "modules",
+        populate: {
+          path: "lessons",
+          model: "Lesson",
+          select: "title generationStatus order",
+        },
+        select: "title contentStatus order",
+      })
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit);
+
+    return NextResponse.json({
+      courses,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit),
+      },
+    });
+  } catch (error) {
+    console.error("Get my AI courses error:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
+  }
+}

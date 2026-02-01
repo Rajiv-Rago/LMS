@@ -108,20 +108,36 @@ export default function DashboardPage() {
             {user?.role === "teacher" ? "Your Courses" : "Your Enrolled Courses"}
           </h2>
           {user?.role === "teacher" && (
-            <Link
-              href="/courses/new"
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-500"
-            >
-              Create Course
-            </Link>
+            <div className="flex gap-2">
+              <Link
+                href="/courses/new"
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-500"
+              >
+                Create Course
+              </Link>
+              <Link
+                href="/courses/new/ai"
+                className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-purple-600 to-blue-600 rounded-md hover:from-purple-500 hover:to-blue-500"
+              >
+                Create with AI
+              </Link>
+            </div>
           )}
           {user?.role === "student" && (
-            <Link
-              href="/courses"
-              className="text-sm font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400"
-            >
-              Browse Courses
-            </Link>
+            <div className="flex gap-2">
+              <Link
+                href="/courses/new/ai"
+                className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-purple-600 to-blue-600 rounded-md hover:from-purple-500 hover:to-blue-500"
+              >
+                Create AI Course
+              </Link>
+              <Link
+                href="/courses"
+                className="text-sm font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400"
+              >
+                Browse Courses
+              </Link>
+            </div>
           )}
         </div>
 
@@ -132,21 +148,39 @@ export default function DashboardPage() {
                 ? "You haven't created any courses yet."
                 : "You haven't enrolled in any courses yet."}
             </p>
-            {user?.role === "teacher" ? (
-              <Link
-                href="/courses/new"
-                className="mt-4 inline-block px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-500"
-              >
-                Create your first course
-              </Link>
-            ) : (
-              <Link
-                href="/courses"
-                className="mt-4 inline-block px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-500"
-              >
-                Browse available courses
-              </Link>
-            )}
+            <div className="mt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
+              {user?.role === "teacher" ? (
+                <>
+                  <Link
+                    href="/courses/new"
+                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-500"
+                  >
+                    Create your first course
+                  </Link>
+                  <Link
+                    href="/courses/new/ai"
+                    className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-purple-600 to-blue-600 rounded-md hover:from-purple-500 hover:to-blue-500"
+                  >
+                    Or try AI-powered creation
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <Link
+                    href="/courses/new/ai"
+                    className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-purple-600 to-blue-600 rounded-md hover:from-purple-500 hover:to-blue-500"
+                  >
+                    Create a personalized AI course
+                  </Link>
+                  <Link
+                    href="/courses"
+                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-500"
+                  >
+                    Browse available courses
+                  </Link>
+                </>
+              )}
+            </div>
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">

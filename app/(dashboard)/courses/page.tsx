@@ -79,14 +79,22 @@ export default function CoursesPage() {
           </p>
         </div>
 
-        {user?.role === "teacher" && (
+        <div className="flex gap-2">
+          {user?.role === "teacher" && (
+            <Link
+              href="/courses/new"
+              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-500"
+            >
+              Create Course
+            </Link>
+          )}
           <Link
-            href="/courses/new"
-            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-500"
+            href="/courses/new/ai"
+            className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-purple-600 to-blue-600 rounded-md hover:from-purple-500 hover:to-blue-500"
           >
-            Create Course
+            {user?.role === "teacher" ? "Create with AI" : "Create AI Course"}
           </Link>
-        )}
+        </div>
       </div>
 
       {/* Search */}

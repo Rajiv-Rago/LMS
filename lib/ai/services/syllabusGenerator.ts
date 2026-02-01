@@ -1,7 +1,9 @@
 import { AIProvider, AIProviderName } from "../types";
 import { createAIProvider } from "../index";
+import { parseAIJsonResponse } from "../utils/jsonParser";
+import { TargetLevel } from "../utils/promptUtils";
 
-export type TargetLevel = "beginner" | "intermediate" | "advanced";
+export type { TargetLevel } from "../utils/promptUtils";
 
 export interface SyllabusRequest {
   topic: string;
@@ -116,44 +118,25 @@ Estimated Duration: ${request.estimatedDuration}`;
   }
 
   private parseResponse(content: string): GeneratedSyllabus {
-    let cleanedContent = content.trim();
+    return parseAIJsonResponse(content, (parsed: unknown) => {
+      const data = parsed as Record<string, unknown>;
 
-    if (cleanedContent.startsWith("```json")) {
-      cleanedContent = cleanedContent.slice(7);
-    } else if (cleanedContent.startsWith("```")) {
-      cleanedContent = cleanedContent.slice(3);
-    }
-
-    if (cleanedContent.endsWith("```")) {
-      cleanedContent = cleanedContent.slice(0, -3);
-    }
-
-    cleanedContent = cleanedContent.trim();
-
-    try {
-      const parsed = JSON.parse(cleanedContent);
-
-      if (!parsed.courseTitle || !parsed.courseDescription || !Array.isArray(parsed.modules)) {
+      if (!data.courseTitle || !data.courseDescription || !Array.isArray(data.modules)) {
         throw new Error("Invalid syllabus structure: missing required fields");
       }
 
-      for (const module of parsed.modules) {
-        if (!module.title || !Array.isArray(module.lessons)) {
+      for (const courseModule of data.modules as Record<string, unknown>[]) {
+        if (!courseModule.title || !Array.isArray(courseModule.lessons)) {
           throw new Error("Invalid module structure: missing title or lessons");
         }
-        for (const lesson of module.lessons) {
+        for (const lesson of courseModule.lessons as Record<string, unknown>[]) {
           if (!lesson.title || !lesson.outline) {
             throw new Error("Invalid lesson structure: missing title or outline");
           }
         }
       }
 
-      return parsed as GeneratedSyllabus;
-    } catch (error) {
-      if (error instanceof SyntaxError) {
-        throw new Error(`Failed to parse AI response as JSON: ${error.message}`);
-      }
-      throw error;
-    }
+      return data as unknown as GeneratedSyllabus;
+    });
   }
 }

@@ -4,6 +4,27 @@ import { dbConnect } from "@/lib/db";
 import { Course, Assignment } from "@/lib/models";
 import { authenticate } from "@/lib/auth";
 
+const quizQuestionSchema = z.object({
+  id: z.string(),
+  question: z.string().min(1),
+  options: z.array(z.string()).min(2).max(6),
+  correctAnswer: z.number().min(0),
+  explanation: z.string().optional(),
+  points: z.number().min(0).default(1),
+});
+
+const quizSettingsSchema = z.object({
+  timeLimit: z.number().min(1).max(480).optional(), // max 8 hours
+  shuffleQuestions: z.boolean().default(false),
+  showCorrectAnswers: z.boolean().default(true),
+});
+
+const projectSettingsSchema = z.object({
+  maxFiles: z.number().min(1).max(20).default(5),
+  maxFileSize: z.number().min(1).max(100 * 1024 * 1024).default(10 * 1024 * 1024), // max 100MB
+  allowedFileTypes: z.array(z.string()).optional(),
+});
+
 const createAssignmentSchema = z.object({
   title: z.string().min(1).max(200),
   description: z.string().min(1).max(10000),
@@ -14,6 +35,12 @@ const createAssignmentSchema = z.object({
   allowedFileTypes: z.array(z.string()).optional(),
   maxFileSize: z.number().min(0).optional(),
   isPublished: z.boolean().optional(),
+  // New fields for quizzes and projects
+  assignmentType: z.enum(["standard", "quiz", "project"]).default("standard"),
+  questions: z.array(quizQuestionSchema).optional(),
+  quizSettings: quizSettingsSchema.optional(),
+  instructions: z.string().max(50000).optional(),
+  projectSettings: projectSettingsSchema.optional(),
 });
 
 export async function GET(

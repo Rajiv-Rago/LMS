@@ -4,6 +4,27 @@ import { dbConnect } from "@/lib/db";
 import { Course, Assignment, Submission } from "@/lib/models";
 import { authenticate } from "@/lib/auth";
 
+const quizQuestionSchema = z.object({
+  id: z.string(),
+  question: z.string().min(1),
+  options: z.array(z.string()).min(2).max(6),
+  correctAnswer: z.number().min(0),
+  explanation: z.string().optional(),
+  points: z.number().min(0).default(1),
+});
+
+const quizSettingsSchema = z.object({
+  timeLimit: z.number().min(1).max(480).optional(),
+  shuffleQuestions: z.boolean().optional(),
+  showCorrectAnswers: z.boolean().optional(),
+});
+
+const projectSettingsSchema = z.object({
+  maxFiles: z.number().min(1).max(20).optional(),
+  maxFileSize: z.number().min(1).max(100 * 1024 * 1024).optional(),
+  allowedFileTypes: z.array(z.string()).optional(),
+});
+
 const updateAssignmentSchema = z.object({
   title: z.string().min(1).max(200).optional(),
   description: z.string().min(1).max(10000).optional(),
@@ -14,6 +35,12 @@ const updateAssignmentSchema = z.object({
   allowedFileTypes: z.array(z.string()).optional(),
   maxFileSize: z.number().min(0).optional(),
   isPublished: z.boolean().optional(),
+  // Quiz and project fields
+  assignmentType: z.enum(["standard", "quiz", "project"]).optional(),
+  questions: z.array(quizQuestionSchema).optional(),
+  quizSettings: quizSettingsSchema.optional(),
+  instructions: z.string().max(50000).optional(),
+  projectSettings: projectSettingsSchema.optional(),
 });
 
 export async function GET(
@@ -71,8 +98,28 @@ export async function GET(
       });
     }
 
+    // Prepare assignment data for response
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const assignmentData: any = assignment.toObject();
+
+    // For students viewing a quiz, strip correct answers from questions
+    if (
+      assignment.assignmentType === "quiz" &&
+      !isInstructor &&
+      !isAdmin &&
+      assignment.questions
+    ) {
+      // Strip correctAnswer and explanation from questions for student view
+      assignmentData.questions = assignment.questions.map((q) => ({
+        id: q.id,
+        question: q.question,
+        options: q.options,
+        points: q.points,
+      }));
+    }
+
     return NextResponse.json({
-      assignment,
+      assignment: assignmentData,
       submission,
       permissions: {
         canEdit: isInstructor || isAdmin,

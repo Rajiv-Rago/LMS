@@ -11,10 +11,23 @@ export { default as Lesson } from "./Lesson";
 export type { ILesson, LessonContentType, LessonGenerationStatus, LessonGenerationConfig } from "./Lesson";
 
 export { default as Assignment } from "./Assignment";
-export type { IAssignment, SubmissionType } from "./Assignment";
+export type {
+  IAssignment,
+  SubmissionType,
+  AssignmentType,
+  IQuizQuestion,
+  IQuizSettings,
+  IProjectSettings,
+} from "./Assignment";
 
 export { default as Submission } from "./Submission";
-export type { ISubmission, SubmissionStatus } from "./Submission";
+export type {
+  ISubmission,
+  SubmissionStatus,
+  IQuizAnswer,
+  IQuizAttempt,
+  IUploadedFile,
+} from "./Submission";
 
 export { default as AIChatSession } from "./AIChatSession";
 export type { IAIChatSession, AIMessage } from "./AIChatSession";

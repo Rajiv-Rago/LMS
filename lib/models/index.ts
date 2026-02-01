@@ -2,13 +2,13 @@ export { default as User } from "./User";
 export type { IUser } from "./User";
 
 export { default as Course } from "./Course";
-export type { ICourse } from "./Course";
+export type { ICourse, CourseType, SyllabusStatus, AIPreferences } from "./Course";
 
 export { default as Module } from "./Module";
-export type { IModule } from "./Module";
+export type { IModule, ModuleContentStatus, GenerationConfig } from "./Module";
 
 export { default as Lesson } from "./Lesson";
-export type { ILesson, LessonContentType } from "./Lesson";
+export type { ILesson, LessonContentType, LessonGenerationStatus, LessonGenerationConfig } from "./Lesson";
 
 export { default as Assignment } from "./Assignment";
 export type { IAssignment, SubmissionType } from "./Assignment";
@@ -26,3 +26,11 @@ export type {
   ApprovalStatus,
   QuizQuestion,
 } from "./AIGeneratedContent";
+
+export { default as AIGenerationLog } from "./AIGenerationLog";
+export type {
+  IAIGenerationLog,
+  GenerationType,
+  GenerationStatus,
+  TokenUsage,
+} from "./AIGenerationLog";

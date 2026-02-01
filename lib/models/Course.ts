@@ -1,4 +1,13 @@
 import mongoose, { Document, Model } from "mongoose";
+import { AIProviderName } from "@/lib/ai/types";
+
+export type CourseType = "standard" | "ai-generated";
+export type SyllabusStatus = "draft" | "generating" | "completed" | "failed";
+
+export interface AIPreferences {
+  defaultProvider: AIProviderName;
+  defaultModel?: string;
+}
 
 export interface ICourse extends Document {
   _id: mongoose.Types.ObjectId;
@@ -9,6 +18,11 @@ export interface ICourse extends Document {
   modules: mongoose.Types.ObjectId[];
   coverImage?: string;
   isPublished: boolean;
+  courseType: CourseType;
+  owner?: mongoose.Types.ObjectId;
+  syllabusStatus?: SyllabusStatus;
+  syllabusPrompt?: string;
+  aiPreferences?: AIPreferences;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -52,6 +66,38 @@ const courseSchema = new mongoose.Schema<ICourse, CourseModel>(
       type: Boolean,
       default: false,
     },
+    courseType: {
+      type: String,
+      enum: {
+        values: ["standard", "ai-generated"],
+        message: "Course type must be standard or ai-generated",
+      },
+      default: "standard",
+    },
+    owner: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+    syllabusStatus: {
+      type: String,
+      enum: {
+        values: ["draft", "generating", "completed", "failed"],
+        message: "Syllabus status must be draft, generating, completed, or failed",
+      },
+    },
+    syllabusPrompt: {
+      type: String,
+      maxlength: [5000, "Syllabus prompt cannot exceed 5000 characters"],
+    },
+    aiPreferences: {
+      defaultProvider: {
+        type: String,
+        enum: ["openai", "anthropic", "groq", "cerebras", "gemini"],
+      },
+      defaultModel: {
+        type: String,
+      },
+    },
   },
   {
     timestamps: true,
@@ -62,6 +108,7 @@ courseSchema.index({ instructor: 1 });
 courseSchema.index({ enrolledStudents: 1 });
 courseSchema.index({ isPublished: 1 });
 courseSchema.index({ title: "text", description: "text" });
+courseSchema.index({ courseType: 1, owner: 1 });
 
 const Course =
   (mongoose.models.Course as CourseModel) ||

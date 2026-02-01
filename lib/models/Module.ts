@@ -1,4 +1,12 @@
 import mongoose, { Document, Model } from "mongoose";
+import { AIProviderName } from "@/lib/ai/types";
+
+export type ModuleContentStatus = "skeleton" | "generating" | "completed" | "failed";
+
+export interface GenerationConfig {
+  provider: AIProviderName;
+  model?: string;
+}
 
 export interface IModule extends Document {
   _id: mongoose.Types.ObjectId;
@@ -8,6 +16,8 @@ export interface IModule extends Document {
   lessons: mongoose.Types.ObjectId[];
   order: number;
   isPublished: boolean;
+  contentStatus?: ModuleContentStatus;
+  generationConfig?: GenerationConfig;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -44,6 +54,22 @@ const moduleSchema = new mongoose.Schema<IModule, ModuleModel>(
     isPublished: {
       type: Boolean,
       default: false,
+    },
+    contentStatus: {
+      type: String,
+      enum: {
+        values: ["skeleton", "generating", "completed", "failed"],
+        message: "Content status must be skeleton, generating, completed, or failed",
+      },
+    },
+    generationConfig: {
+      provider: {
+        type: String,
+        enum: ["openai", "anthropic", "groq", "cerebras", "gemini"],
+      },
+      model: {
+        type: String,
+      },
     },
   },
   {

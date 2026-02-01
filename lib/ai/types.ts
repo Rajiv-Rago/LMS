@@ -19,8 +19,10 @@ export interface AICompletionResponse {
   };
 }
 
+export type AIProviderName = "openai" | "anthropic" | "groq" | "cerebras" | "gemini";
+
 export interface AIProvider {
-  name: "openai" | "anthropic";
+  name: AIProviderName;
   chat(
     messages: AIMessage[],
     options?: AICompletionOptions
@@ -32,7 +34,7 @@ export interface AIProvider {
 }
 
 export interface AIProviderConfig {
-  provider: "openai" | "anthropic";
+  provider: AIProviderName;
   apiKey: string;
   model?: string;
 }

@@ -9,6 +9,7 @@ const createCourseSchema = z.object({
   description: z.string().min(1).max(5000),
   coverImage: z.string().url().optional(),
   isPublished: z.boolean().optional(),
+  courseType: z.enum(["standard", "ai-generated"]).optional(),
 });
 
 export async function GET(request: NextRequest) {
@@ -35,7 +36,11 @@ export async function GET(request: NextRequest) {
         }
       } else if (user.role === "student") {
         query = {
-          $or: [{ enrolledStudents: user.userId }, { isPublished: true }],
+          $or: [
+            { enrolledStudents: user.userId },
+            { isPublished: true, courseType: { $ne: "ai-generated" } },
+            { courseType: "ai-generated", owner: user.userId },
+          ],
         };
       } else if (user.role === "admin") {
         // Admin sees all courses
@@ -81,13 +86,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (user.role !== "teacher" && user.role !== "admin") {
-      return NextResponse.json(
-        { error: "Only teachers can create courses" },
-        { status: 403 }
-      );
-    }
-
     const body = await request.json();
     const validation = createCourseSchema.safeParse(body);
 
@@ -98,12 +96,27 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const isAICourse = validation.data.courseType === "ai-generated";
+
+    if (!isAICourse && user.role !== "teacher" && user.role !== "admin") {
+      return NextResponse.json(
+        { error: "Only teachers can create standard courses" },
+        { status: 403 }
+      );
+    }
+
     await dbConnect();
 
-    const course = await Course.create({
+    const courseData: Record<string, unknown> = {
       ...validation.data,
       instructor: user.userId,
-    });
+    };
+
+    if (isAICourse) {
+      courseData.owner = user.userId;
+    }
+
+    const course = await Course.create(courseData);
 
     await course.populate("instructor", "name email");
 

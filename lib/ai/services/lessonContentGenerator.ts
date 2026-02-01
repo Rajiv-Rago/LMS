@@ -1,6 +1,7 @@
 import { AIProvider, AIProviderName } from "../types";
 import { createAIProvider } from "../index";
-import { TargetLevel } from "./syllabusGenerator";
+import { parseAIJsonResponse } from "../utils/jsonParser";
+import { TargetLevel } from "../utils/promptUtils";
 
 export interface LessonContentRequest {
   courseTitle: string;
@@ -100,36 +101,17 @@ Target Level: ${request.targetLevel}`;
   }
 
   private parseResponse(content: string): GeneratedLessonContent {
-    let cleanedContent = content.trim();
+    return parseAIJsonResponse(content, (parsed: unknown) => {
+      const data = parsed as Record<string, unknown>;
 
-    if (cleanedContent.startsWith("```json")) {
-      cleanedContent = cleanedContent.slice(7);
-    } else if (cleanedContent.startsWith("```")) {
-      cleanedContent = cleanedContent.slice(3);
-    }
-
-    if (cleanedContent.endsWith("```")) {
-      cleanedContent = cleanedContent.slice(0, -3);
-    }
-
-    cleanedContent = cleanedContent.trim();
-
-    try {
-      const parsed = JSON.parse(cleanedContent);
-
-      if (!parsed.content || !Array.isArray(parsed.keyTakeaways)) {
+      if (!data.content || !Array.isArray(data.keyTakeaways)) {
         throw new Error("Invalid lesson content structure: missing required fields");
       }
 
       return {
-        content: parsed.content,
-        keyTakeaways: parsed.keyTakeaways,
+        content: data.content as string,
+        keyTakeaways: data.keyTakeaways as string[],
       };
-    } catch (error) {
-      if (error instanceof SyntaxError) {
-        throw new Error(`Failed to parse AI response as JSON: ${error.message}`);
-      }
-      throw error;
-    }
+    });
   }
 }

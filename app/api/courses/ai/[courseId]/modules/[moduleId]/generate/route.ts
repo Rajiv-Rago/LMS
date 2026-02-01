@@ -1,25 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
 import mongoose from "mongoose";
 import { dbConnect } from "@/lib/db";
-import { Course, Module, Lesson, AIGenerationLog } from "@/lib/models";
+import { Course, Module, Lesson } from "@/lib/models";
 import { authenticate } from "@/lib/auth";
 import { AIProviderName } from "@/lib/ai/types";
+import { resolveProvider } from "@/lib/ai/utils/providerResolver";
+import { extractTargetLevel } from "@/lib/ai/utils/promptUtils";
 import { LessonContentGeneratorService } from "@/lib/ai/services/lessonContentGenerator";
-import { TargetLevel } from "@/lib/ai/services/syllabusGenerator";
+import { generateContentSchema } from "@/lib/validation/aiSchemas";
+import { logAIGeneration } from "@/lib/utils/aiGenerationLogger";
+import { recalculateModuleStatus } from "@/lib/utils/moduleStatusUpdater";
 
-const API_KEY_ENV_MAP: Record<AIProviderName, string> = {
-  openai: "OPENAI_API_KEY",
-  anthropic: "ANTHROPIC_API_KEY",
-  groq: "GROQ_API_KEY",
-  cerebras: "CEREBRAS_API_KEY",
-  gemini: "GEMINI_API_KEY",
-};
-
-const generateContentSchema = z.object({
-  provider: z.enum(["openai", "anthropic", "groq", "cerebras", "gemini"]).optional(),
-  model: z.string().optional(),
-});
+const MAX_SUMMARY_LENGTH = 2000;
 
 export async function POST(
   request: NextRequest,
@@ -65,6 +57,13 @@ export async function POST(
       return NextResponse.json({ error: "Course not found" }, { status: 404 });
     }
 
+    if (course.syllabusStatus !== "completed") {
+      return NextResponse.json(
+        { error: "Syllabus generation must be completed first" },
+        { status: 400 }
+      );
+    }
+
     const courseModule = await Module.findOne({
       _id: moduleId,
       course: courseId,
@@ -74,37 +73,34 @@ export async function POST(
       return NextResponse.json({ error: "Module not found" }, { status: 404 });
     }
 
-    const selectedProvider =
-      (validation.data.provider as AIProviderName) ||
-      course.aiPreferences?.defaultProvider ||
-      (process.env.AI_PROVIDER as AIProviderName) ||
-      "openai";
+    const resolved = resolveProvider({
+      requestProvider: validation.data.provider as AIProviderName,
+      requestModel: validation.data.model,
+      coursePreferences: course.aiPreferences,
+    });
 
-    const envVar = API_KEY_ENV_MAP[selectedProvider];
-    const apiKey = process.env[envVar];
-
-    if (!apiKey) {
+    if (!resolved) {
+      const requestedProvider =
+        validation.data.provider ||
+        course.aiPreferences?.defaultProvider ||
+        process.env.AI_PROVIDER ||
+        "openai";
       return NextResponse.json(
-        { error: `API key not configured for provider: ${selectedProvider}` },
+        { error: `API key not configured for provider: ${requestedProvider}` },
         { status: 500 }
       );
     }
 
-    const selectedModel =
-      validation.data.model ||
-      course.aiPreferences?.defaultModel ||
-      process.env.AI_MODEL;
-
     const lessonService = new LessonContentGeneratorService({
-      provider: selectedProvider,
-      apiKey,
-      model: selectedModel,
+      provider: resolved.provider,
+      apiKey: resolved.apiKey,
+      model: resolved.model,
     });
 
     courseModule.contentStatus = "generating";
     courseModule.generationConfig = {
-      provider: selectedProvider,
-      model: selectedModel,
+      provider: resolved.provider,
+      model: resolved.model,
     };
     await courseModule.save();
 
@@ -113,70 +109,81 @@ export async function POST(
 
     let previousLessonsSummary = "";
 
-    for (const lesson of lessons) {
-      try {
-        lesson.generationStatus = "generating";
-        lesson.generationConfig = {
-          provider: selectedProvider,
-          model: selectedModel,
-        };
-        await lesson.save();
+    try {
+      for (const lesson of lessons) {
+        try {
+          lesson.generationStatus = "generating";
+          lesson.generationConfig = {
+            provider: resolved.provider,
+            model: resolved.model,
+          };
+          await lesson.save();
 
-        const lessonStartTime = Date.now();
+          const lessonStartTime = Date.now();
 
-        const { content, usage } = await lessonService.generateLessonContent({
-          courseTitle: course.title,
-          courseDescription: course.description,
-          moduleTitle: courseModule.title,
-          lessonTitle: lesson.title,
-          lessonOutline: lesson.lessonOutline || "",
-          previousLessonsSummary: previousLessonsSummary || undefined,
-          targetLevel,
-        });
+          // Limit previousLessonsSummary size to avoid prompt bloat
+          let summaryForPrompt = previousLessonsSummary;
+          if (summaryForPrompt.length > MAX_SUMMARY_LENGTH) {
+            summaryForPrompt = summaryForPrompt.slice(-MAX_SUMMARY_LENGTH);
+          }
 
-        lesson.content = content.content;
-        lesson.keyTakeaways = content.keyTakeaways;
-        lesson.generationStatus = "completed";
-        await lesson.save();
+          const { content, usage } = await lessonService.generateLessonContent({
+            courseTitle: course.title,
+            courseDescription: course.description,
+            moduleTitle: courseModule.title,
+            lessonTitle: lesson.title,
+            lessonOutline: lesson.lessonOutline || "",
+            previousLessonsSummary: summaryForPrompt || undefined,
+            targetLevel,
+          });
 
-        await AIGenerationLog.create({
-          user: user.userId,
-          course: courseId,
-          module: moduleId,
-          lesson: lesson._id,
-          generationType: "lesson_content",
-          provider: selectedProvider,
-          aiModel: selectedModel || "default",
-          prompt: `Generate content for lesson: ${lesson.title}\nOutline: ${lesson.lessonOutline}`,
-          response: content.content.substring(0, 5000),
-          tokenUsage: usage,
-          status: "completed",
-          durationMs: Date.now() - lessonStartTime,
-        });
+          lesson.content = content.content;
+          lesson.keyTakeaways = content.keyTakeaways;
+          lesson.generationStatus = "completed";
+          await lesson.save();
 
-        if (content.keyTakeaways.length > 0) {
-          previousLessonsSummary += `\n${lesson.title}: ${content.keyTakeaways.join("; ")}`;
+          await logAIGeneration({
+            user: user.userId,
+            course: courseId,
+            module: moduleId,
+            lesson: lesson._id.toString(),
+            generationType: "lesson_content",
+            provider: resolved.provider,
+            model: resolved.model || "default",
+            prompt: `Generate content for lesson: ${lesson.title}\nOutline: ${lesson.lessonOutline}`,
+            response: content.content.substring(0, 5000),
+            tokenUsage: usage,
+            status: "completed",
+            durationMs: Date.now() - lessonStartTime,
+          });
+
+          if (content.keyTakeaways.length > 0) {
+            previousLessonsSummary += `\n${lesson.title}: ${content.keyTakeaways.join("; ")}`;
+          }
+        } catch (lessonError) {
+          console.error(`Error generating lesson ${lesson._id}:`, lessonError);
+
+          lesson.generationStatus = "failed";
+          await lesson.save();
+
+          await logAIGeneration({
+            user: user.userId,
+            course: courseId,
+            module: moduleId,
+            lesson: lesson._id.toString(),
+            generationType: "lesson_content",
+            provider: resolved.provider,
+            model: resolved.model || "default",
+            prompt: `Generate content for lesson: ${lesson.title}`,
+            status: "failed",
+            error: lessonError instanceof Error ? lessonError.message : "Unknown error",
+            durationMs: Date.now() - startTime,
+          });
         }
-      } catch (lessonError) {
-        console.error(`Error generating lesson ${lesson._id}:`, lessonError);
-
-        lesson.generationStatus = "failed";
-        await lesson.save();
-
-        await AIGenerationLog.create({
-          user: user.userId,
-          course: courseId,
-          module: moduleId,
-          lesson: lesson._id,
-          generationType: "lesson_content",
-          provider: selectedProvider,
-          aiModel: selectedModel || "default",
-          prompt: `Generate content for lesson: ${lesson.title}`,
-          status: "failed",
-          error: lessonError instanceof Error ? lessonError.message : "Unknown error",
-          durationMs: Date.now() - startTime,
-        });
       }
+    } finally {
+      // Recalculate module status even if an error occurred
+      await recalculateModuleStatus(moduleId);
     }
 
     const failedLessons = await Lesson.countDocuments({
@@ -188,15 +195,6 @@ export async function POST(
       module: moduleId,
       generationStatus: "skeleton",
     });
-
-    if (failedLessons > 0) {
-      courseModule.contentStatus = "failed";
-    } else if (skeletonLessons > 0) {
-      courseModule.contentStatus = "skeleton";
-    } else {
-      courseModule.contentStatus = "completed";
-    }
-    await courseModule.save();
 
     const updatedModule = await Module.findById(moduleId).populate("lessons");
 
@@ -218,15 +216,4 @@ export async function POST(
       { status: 500 }
     );
   }
-}
-
-function extractTargetLevel(syllabusPrompt?: string): TargetLevel {
-  if (!syllabusPrompt) return "intermediate";
-
-  const lowerPrompt = syllabusPrompt.toLowerCase();
-
-  if (lowerPrompt.includes("level: beginner")) return "beginner";
-  if (lowerPrompt.includes("level: advanced")) return "advanced";
-
-  return "intermediate";
 }

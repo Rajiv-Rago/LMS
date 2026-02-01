@@ -1,21 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { dbConnect } from "@/lib/db";
-import { Course, Module, Lesson, AIGenerationLog } from "@/lib/models";
+import { Course, Module, Lesson } from "@/lib/models";
 import { authenticate } from "@/lib/auth";
 import { AIProviderName } from "@/lib/ai/types";
+import { resolveProvider } from "@/lib/ai/utils/providerResolver";
 import {
   SyllabusGeneratorService,
   TargetLevel,
 } from "@/lib/ai/services/syllabusGenerator";
-
-const API_KEY_ENV_MAP: Record<AIProviderName, string> = {
-  openai: "OPENAI_API_KEY",
-  anthropic: "ANTHROPIC_API_KEY",
-  groq: "GROQ_API_KEY",
-  cerebras: "CEREBRAS_API_KEY",
-  gemini: "GEMINI_API_KEY",
-};
+import { logAIGeneration } from "@/lib/utils/aiGenerationLogger";
 
 const createSyllabusSchema = z.object({
   topic: z.string().min(1).max(500),
@@ -49,14 +43,13 @@ export async function POST(request: NextRequest) {
     const { topic, targetLevel, estimatedDuration, additionalContext, provider, model } =
       validation.data;
 
-    const selectedProvider =
-      (provider as AIProviderName) ||
-      (process.env.AI_PROVIDER as AIProviderName) ||
-      "openai";
-    const envVar = API_KEY_ENV_MAP[selectedProvider];
-    const apiKey = process.env[envVar];
+    const resolved = resolveProvider({
+      requestProvider: provider as AIProviderName,
+      requestModel: model,
+    });
 
-    if (!apiKey) {
+    if (!resolved) {
+      const selectedProvider = provider || process.env.AI_PROVIDER || "openai";
       return NextResponse.json(
         { error: `API key not configured for provider: ${selectedProvider}` },
         { status: 500 }
@@ -66,9 +59,9 @@ export async function POST(request: NextRequest) {
     await dbConnect();
 
     const syllabusService = new SyllabusGeneratorService({
-      provider: selectedProvider,
-      apiKey,
-      model: model || process.env.AI_MODEL,
+      provider: resolved.provider,
+      apiKey: resolved.apiKey,
+      model: resolved.model,
     });
 
     const { syllabus, usage } = await syllabusService.generateSyllabus({
@@ -87,8 +80,8 @@ export async function POST(request: NextRequest) {
       syllabusStatus: "completed",
       syllabusPrompt: `Topic: ${topic}\nLevel: ${targetLevel}\nDuration: ${estimatedDuration}${additionalContext ? `\nContext: ${additionalContext}` : ""}`,
       aiPreferences: {
-        defaultProvider: selectedProvider,
-        defaultModel: model || process.env.AI_MODEL,
+        defaultProvider: resolved.provider,
+        defaultModel: resolved.model,
       },
       isPublished: false,
     });
@@ -128,12 +121,12 @@ export async function POST(request: NextRequest) {
     course.modules = modules.map((m) => m._id);
     await course.save();
 
-    await AIGenerationLog.create({
+    await logAIGeneration({
       user: user.userId,
-      course: course._id,
+      course: course._id.toString(),
       generationType: "syllabus",
-      provider: selectedProvider,
-      aiModel: model || process.env.AI_MODEL || "default",
+      provider: resolved.provider,
+      model: resolved.model || "default",
       prompt: `Topic: ${topic}\nLevel: ${targetLevel}\nDuration: ${estimatedDuration}${additionalContext ? `\nContext: ${additionalContext}` : ""}`,
       response: JSON.stringify(syllabus),
       tokenUsage: usage,

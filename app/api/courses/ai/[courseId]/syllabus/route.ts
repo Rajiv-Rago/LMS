@@ -4,6 +4,7 @@ import mongoose from "mongoose";
 import { dbConnect } from "@/lib/db";
 import { Course, Module, Lesson } from "@/lib/models";
 import { authenticate } from "@/lib/auth";
+import { recalculateModuleStatus } from "@/lib/utils/moduleStatusUpdater";
 
 const updateModuleSchema = z.object({
   _id: z.string().optional(),
@@ -128,12 +129,31 @@ export async function PATCH(
         updates.modules.filter((m) => m._id).map((m) => m._id)
       );
 
+      // Fetch all current modules and their lessons in batch to avoid N+1 queries
       const currentModules = await Module.find({ course: courseId });
-      for (const existingModule of currentModules) {
-        if (!existingModuleIds.has(existingModule._id.toString())) {
-          await Lesson.deleteMany({ module: existingModule._id });
-          await Module.findByIdAndDelete(existingModule._id);
+      const currentModuleIds = currentModules.map((m) => m._id);
+      const allCurrentLessons = await Lesson.find({
+        module: { $in: currentModuleIds },
+      });
+
+      // Group lessons by module for quick lookup
+      const lessonsByModule = new Map<string, typeof allCurrentLessons>();
+      for (const lesson of allCurrentLessons) {
+        const moduleIdStr = lesson.module.toString();
+        if (!lessonsByModule.has(moduleIdStr)) {
+          lessonsByModule.set(moduleIdStr, []);
         }
+        lessonsByModule.get(moduleIdStr)!.push(lesson);
+      }
+
+      // Delete modules and their lessons that are no longer in the update
+      const modulesToDelete = currentModules.filter(
+        (m) => !existingModuleIds.has(m._id.toString())
+      );
+      if (modulesToDelete.length > 0) {
+        const moduleIdsToDelete = modulesToDelete.map((m) => m._id);
+        await Lesson.deleteMany({ module: { $in: moduleIdsToDelete } });
+        await Module.deleteMany({ _id: { $in: moduleIdsToDelete } });
       }
 
       const moduleIds: mongoose.Types.ObjectId[] = [];
@@ -142,10 +162,9 @@ export async function PATCH(
         let courseModule;
 
         if (moduleData._id && mongoose.Types.ObjectId.isValid(moduleData._id)) {
-          courseModule = await Module.findOne({
-            _id: moduleData._id,
-            course: courseId,
-          });
+          courseModule = currentModules.find(
+            (m) => m._id.toString() === moduleData._id
+          );
 
           if (courseModule) {
             courseModule.title = moduleData.title;
@@ -170,11 +189,18 @@ export async function PATCH(
           moduleData.lessons.filter((l) => l._id).map((l) => l._id)
         );
 
-        const currentLessons = await Lesson.find({ module: courseModule._id });
-        for (const lesson of currentLessons) {
-          if (!existingLessonIds.has(lesson._id.toString())) {
-            await Lesson.findByIdAndDelete(lesson._id);
-          }
+        // Use pre-fetched lessons instead of querying again
+        const moduleLessons =
+          lessonsByModule.get(courseModule._id.toString()) || [];
+
+        // Delete lessons that are no longer in the update
+        const lessonsToDelete = moduleLessons.filter(
+          (l) => !existingLessonIds.has(l._id.toString())
+        );
+        if (lessonsToDelete.length > 0) {
+          await Lesson.deleteMany({
+            _id: { $in: lessonsToDelete.map((l) => l._id) },
+          });
         }
 
         const lessonIds: mongoose.Types.ObjectId[] = [];
@@ -183,10 +209,10 @@ export async function PATCH(
           let lesson;
 
           if (lessonData._id && mongoose.Types.ObjectId.isValid(lessonData._id)) {
-            lesson = await Lesson.findOne({
-              _id: lessonData._id,
-              module: courseModule._id,
-            });
+            // Use pre-fetched lesson instead of querying
+            lesson = moduleLessons.find(
+              (l) => l._id.toString() === lessonData._id
+            );
 
             if (lesson) {
               const outlineChanged = lesson.lessonOutline !== lessonData.lessonOutline;
@@ -223,13 +249,8 @@ export async function PATCH(
         courseModule.lessons = lessonIds;
         await courseModule.save();
 
-        const allLessonsCompleted = await Lesson.countDocuments({
-          module: courseModule._id,
-          generationStatus: { $ne: "completed" },
-        }) === 0;
-
-        courseModule.contentStatus = allLessonsCompleted ? "completed" : "skeleton";
-        await courseModule.save();
+        // Use the shared utility to recalculate module status
+        await recalculateModuleStatus(courseModule._id.toString());
 
         moduleIds.push(courseModule._id);
       }

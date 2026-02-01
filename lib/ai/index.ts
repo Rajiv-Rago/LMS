@@ -4,6 +4,7 @@ import { AnthropicProvider } from "./providers/anthropic";
 import { GroqProvider } from "./providers/groq";
 import { CerebrasProvider } from "./providers/cerebras";
 import { GeminiProvider } from "./providers/gemini";
+import { API_KEY_ENV_MAP } from "./utils/providerResolver";
 
 export type { AIProvider, AIMessage, AICompletionOptions, AICompletionResponse, AIProviderConfig, AIProviderName } from "./types";
 export { OpenAIProvider } from "./providers/openai";
@@ -11,6 +12,11 @@ export { AnthropicProvider } from "./providers/anthropic";
 export { GroqProvider } from "./providers/groq";
 export { CerebrasProvider } from "./providers/cerebras";
 export { GeminiProvider } from "./providers/gemini";
+
+// Re-export utilities for convenience
+export { API_KEY_ENV_MAP, resolveProvider, getApiKey } from "./utils/providerResolver";
+export { parseAIJsonResponse, cleanMarkdownCodeBlock } from "./utils/jsonParser";
+export { extractTargetLevel, type TargetLevel } from "./utils/promptUtils";
 
 export function createAIProvider(config: AIProviderConfig): AIProvider {
   switch (config.provider) {
@@ -28,14 +34,6 @@ export function createAIProvider(config: AIProviderConfig): AIProvider {
       throw new Error(`Unknown AI provider: ${config.provider}`);
   }
 }
-
-const API_KEY_ENV_MAP: Record<AIProviderName, string> = {
-  openai: "OPENAI_API_KEY",
-  anthropic: "ANTHROPIC_API_KEY",
-  groq: "GROQ_API_KEY",
-  cerebras: "CEREBRAS_API_KEY",
-  gemini: "GEMINI_API_KEY",
-};
 
 export function getDefaultProvider(): AIProvider {
   const provider = (process.env.AI_PROVIDER || "openai") as AIProviderName;

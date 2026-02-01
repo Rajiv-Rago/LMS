@@ -1,25 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
 import mongoose from "mongoose";
 import { dbConnect } from "@/lib/db";
-import { Course, Module, Lesson, AIGenerationLog } from "@/lib/models";
+import { Course, Module, Lesson } from "@/lib/models";
 import { authenticate } from "@/lib/auth";
 import { AIProviderName } from "@/lib/ai/types";
+import { resolveProvider } from "@/lib/ai/utils/providerResolver";
+import { extractTargetLevel } from "@/lib/ai/utils/promptUtils";
 import { LessonContentGeneratorService } from "@/lib/ai/services/lessonContentGenerator";
-import { TargetLevel } from "@/lib/ai/services/syllabusGenerator";
+import { generateContentSchema } from "@/lib/validation/aiSchemas";
+import { logAIGeneration } from "@/lib/utils/aiGenerationLogger";
+import { markModuleCompletedIfReady } from "@/lib/utils/moduleStatusUpdater";
 
-const API_KEY_ENV_MAP: Record<AIProviderName, string> = {
-  openai: "OPENAI_API_KEY",
-  anthropic: "ANTHROPIC_API_KEY",
-  groq: "GROQ_API_KEY",
-  cerebras: "CEREBRAS_API_KEY",
-  gemini: "GEMINI_API_KEY",
-};
-
-const generateContentSchema = z.object({
-  provider: z.enum(["openai", "anthropic", "groq", "cerebras", "gemini"]).optional(),
-  model: z.string().optional(),
-});
+const MAX_SUMMARY_LENGTH = 2000;
 
 export async function POST(
   request: NextRequest,
@@ -65,6 +57,13 @@ export async function POST(
       return NextResponse.json({ error: "Course not found" }, { status: 404 });
     }
 
+    if (course.syllabusStatus !== "completed") {
+      return NextResponse.json(
+        { error: "Syllabus generation must be completed first" },
+        { status: 400 }
+      );
+    }
+
     const lesson = await Lesson.findById(lessonId);
 
     if (!lesson) {
@@ -83,37 +82,34 @@ export async function POST(
       );
     }
 
-    const selectedProvider =
-      (validation.data.provider as AIProviderName) ||
-      course.aiPreferences?.defaultProvider ||
-      (process.env.AI_PROVIDER as AIProviderName) ||
-      "openai";
+    const resolved = resolveProvider({
+      requestProvider: validation.data.provider as AIProviderName,
+      requestModel: validation.data.model,
+      coursePreferences: course.aiPreferences,
+    });
 
-    const envVar = API_KEY_ENV_MAP[selectedProvider];
-    const apiKey = process.env[envVar];
-
-    if (!apiKey) {
+    if (!resolved) {
+      const requestedProvider =
+        validation.data.provider ||
+        course.aiPreferences?.defaultProvider ||
+        process.env.AI_PROVIDER ||
+        "openai";
       return NextResponse.json(
-        { error: `API key not configured for provider: ${selectedProvider}` },
+        { error: `API key not configured for provider: ${requestedProvider}` },
         { status: 500 }
       );
     }
 
-    const selectedModel =
-      validation.data.model ||
-      course.aiPreferences?.defaultModel ||
-      process.env.AI_MODEL;
-
     const lessonService = new LessonContentGeneratorService({
-      provider: selectedProvider,
-      apiKey,
-      model: selectedModel,
+      provider: resolved.provider,
+      apiKey: resolved.apiKey,
+      model: resolved.model,
     });
 
     lesson.generationStatus = "generating";
     lesson.generationConfig = {
-      provider: selectedProvider,
-      model: selectedModel,
+      provider: resolved.provider,
+      model: resolved.model,
     };
     await lesson.save();
 
@@ -132,6 +128,11 @@ export async function POST(
       }
     }
 
+    // Limit previousLessonsSummary size to avoid prompt bloat
+    if (previousLessonsSummary.length > MAX_SUMMARY_LENGTH) {
+      previousLessonsSummary = previousLessonsSummary.slice(-MAX_SUMMARY_LENGTH);
+    }
+
     try {
       const { content, usage } = await lessonService.generateLessonContent({
         courseTitle: course.title,
@@ -148,14 +149,14 @@ export async function POST(
       lesson.generationStatus = "completed";
       await lesson.save();
 
-      await AIGenerationLog.create({
+      await logAIGeneration({
         user: user.userId,
         course: courseId,
-        module: courseModule._id,
+        module: courseModule._id.toString(),
         lesson: lessonId,
         generationType: "lesson_content",
-        provider: selectedProvider,
-        aiModel: selectedModel || "default",
+        provider: resolved.provider,
+        model: resolved.model || "default",
         prompt: `Generate content for lesson: ${lesson.title}\nOutline: ${lesson.lessonOutline}`,
         response: content.content.substring(0, 5000),
         tokenUsage: usage,
@@ -163,16 +164,8 @@ export async function POST(
         durationMs: Date.now() - startTime,
       });
 
-      const allModuleLessonsCompleted =
-        (await Lesson.countDocuments({
-          module: courseModule._id,
-          generationStatus: { $ne: "completed" },
-        })) === 0;
-
-      if (allModuleLessonsCompleted) {
-        courseModule.contentStatus = "completed";
-        await courseModule.save();
-      }
+      // Update module status if all lessons are now completed
+      await markModuleCompletedIfReady(courseModule._id.toString());
 
       return NextResponse.json({
         lesson,
@@ -185,14 +178,14 @@ export async function POST(
       lesson.generationStatus = "failed";
       await lesson.save();
 
-      await AIGenerationLog.create({
+      await logAIGeneration({
         user: user.userId,
         course: courseId,
-        module: courseModule._id,
+        module: courseModule._id.toString(),
         lesson: lessonId,
         generationType: "lesson_content",
-        provider: selectedProvider,
-        aiModel: selectedModel || "default",
+        provider: resolved.provider,
+        model: resolved.model || "default",
         prompt: `Generate content for lesson: ${lesson.title}`,
         status: "failed",
         error:
@@ -211,15 +204,4 @@ export async function POST(
       { status: 500 }
     );
   }
-}
-
-function extractTargetLevel(syllabusPrompt?: string): TargetLevel {
-  if (!syllabusPrompt) return "intermediate";
-
-  const lowerPrompt = syllabusPrompt.toLowerCase();
-
-  if (lowerPrompt.includes("level: beginner")) return "beginner";
-  if (lowerPrompt.includes("level: advanced")) return "advanced";
-
-  return "intermediate";
 }

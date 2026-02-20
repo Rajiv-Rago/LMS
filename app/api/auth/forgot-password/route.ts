@@ -3,11 +3,19 @@ import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import { dbConnect } from "@/lib/db";
 import User from "@/lib/models/User";
+import { requireCsrf } from "@/lib/auth";
 import { forgotPasswordSchema } from "@/lib/validation/authSchemas";
 import { logAuditEvent } from "@/lib/auth/auditLog";
+import { captureException } from "@/lib/logger";
+
+const RESPONSE_MESSAGE =
+  "If an account with that email exists, a password reset link has been sent.";
 
 export async function POST(request: NextRequest) {
   try {
+    const csrfError = requireCsrf(request);
+    if (csrfError) return csrfError;
+
     const body = await request.json();
     const validation = forgotPasswordSchema.safeParse(body);
 
@@ -26,9 +34,9 @@ export async function POST(request: NextRequest) {
 
     // Always return success to prevent email enumeration
     if (!user) {
-      return NextResponse.json({
-        message: "If an account with that email exists, a password reset link has been sent.",
-      });
+      // Dummy hash to prevent timing-based user enumeration
+      await bcrypt.hash("dummy-token", 10);
+      return NextResponse.json({ message: RESPONSE_MESSAGE });
     }
 
     // Generate reset token
@@ -41,9 +49,8 @@ export async function POST(request: NextRequest) {
     await user.save({ validateBeforeSave: false });
 
     // TODO: Send email via notification interface (Contract 4)
-    // For now, log the reset URL to console
-    const resetUrl = `${request.nextUrl.origin}/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}`;
-    console.log(`[Password Reset] Token for ${email}: ${resetUrl}`);
+    // Token is NOT logged — it would be sent via email in production
+    console.log(`[Password Reset] Reset requested for ${email}`);
 
     await logAuditEvent(request, {
       userId: user._id.toString(),
@@ -52,11 +59,9 @@ export async function POST(request: NextRequest) {
       resourceId: user._id.toString(),
     });
 
-    return NextResponse.json({
-      message: "If an account with that email exists, a password reset link has been sent.",
-    });
+    return NextResponse.json({ message: RESPONSE_MESSAGE });
   } catch (error) {
-    console.error("Forgot password error:", error);
+    captureException(error, { message: "Forgot password error" });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

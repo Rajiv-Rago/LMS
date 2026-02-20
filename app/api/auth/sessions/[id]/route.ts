@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import mongoose from "mongoose";
 import { dbConnect } from "@/lib/db";
 import Session from "@/lib/models/Session";
-import { authenticate } from "@/lib/auth";
+import { authenticate, requireCsrf } from "@/lib/auth";
 import { logAuditEvent } from "@/lib/auth/auditLog";
 
 export async function DELETE(
@@ -10,6 +10,9 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const csrfError = requireCsrf(request);
+    if (csrfError) return csrfError;
+
     const user = await authenticate(request);
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

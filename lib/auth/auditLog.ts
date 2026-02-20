@@ -1,19 +1,12 @@
 import { NextRequest } from "next/server";
-import AuditLog from "@/lib/models/AuditLog";
-
-function getClientIp(request: NextRequest): string {
-  return (
-    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    request.headers.get("x-real-ip") ||
-    "unknown"
-  );
-}
+import AuditLog, { AuditAction } from "@/lib/models/AuditLog";
+import { getClientIp } from "@/lib/utils/request";
 
 export async function logAuditEvent(
   request: NextRequest,
   params: {
     userId: string;
-    action: string;
+    action: AuditAction;
     resource: string;
     resourceId?: string;
     metadata?: Record<string, unknown>;

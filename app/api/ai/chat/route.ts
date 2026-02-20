@@ -5,6 +5,7 @@ import { Course, Lesson, AIChatSession } from "@/lib/models";
 import { authenticate } from "@/lib/auth";
 import { getDefaultProvider, getProviderName } from "@/lib/ai";
 import { AITutorService } from "@/lib/ai/services/tutor";
+import { captureException } from "@/lib/logger";
 
 const createChatSchema = z.object({
   courseId: z.string(),
@@ -118,7 +119,7 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("AI chat error:", error);
+    captureException(error, { message: "AI chat error" });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

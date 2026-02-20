@@ -3,6 +3,7 @@ import { z } from "zod";
 import { dbConnect } from "@/lib/db";
 import { Course, Submission } from "@/lib/models";
 import { authenticate } from "@/lib/auth";
+import { captureException } from "@/lib/logger";
 
 const gradeSubmissionSchema = z.object({
   grade: z.number().min(0),
@@ -60,7 +61,7 @@ export async function GET(
       },
     });
   } catch (error) {
-    console.error("Get submission error:", error);
+    captureException(error, { message: "Get submission error" });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -134,7 +135,7 @@ export async function PATCH(
 
     return NextResponse.json({ submission });
   } catch (error) {
-    console.error("Grade submission error:", error);
+    captureException(error, { message: "Grade submission error" });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

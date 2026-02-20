@@ -3,6 +3,7 @@ import { z } from "zod";
 import { dbConnect } from "@/lib/db";
 import { Course, AIGeneratedContent } from "@/lib/models";
 import { authenticate } from "@/lib/auth";
+import { captureException } from "@/lib/logger";
 
 const approvalSchema = z.object({
   status: z.enum(["approved", "rejected"]),
@@ -57,7 +58,7 @@ export async function GET(
       },
     });
   } catch (error) {
-    console.error("Get generated content error:", error);
+    captureException(error, { message: "Get generated content error" });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -114,7 +115,7 @@ export async function PATCH(
 
     return NextResponse.json({ content });
   } catch (error) {
-    console.error("Update generated content error:", error);
+    captureException(error, { message: "Update generated content error" });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -153,7 +154,7 @@ export async function DELETE(
 
     return NextResponse.json({ message: "Content deleted successfully" });
   } catch (error) {
-    console.error("Delete generated content error:", error);
+    captureException(error, { message: "Delete generated content error" });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

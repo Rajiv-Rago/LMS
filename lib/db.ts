@@ -1,6 +1,7 @@
 // lib/db.ts
 
 import mongoose from "mongoose";
+import { env } from "@/lib/env";
 
 declare global {
   // eslint-disable-next-line no-var
@@ -19,17 +20,27 @@ export class DatabaseConnectionError extends Error {
   }
 }
 
-export async function dbConnect() {
-  const MONGODB_URI = process.env.MONGODB_URI;
-
-  if (!MONGODB_URI) {
-    throw new DatabaseConnectionError("Please set MONGODB_URI in .env");
+/**
+ * Returns the current Mongoose connection readyState.
+ * 0 = disconnected, 1 = connected, 2 = connecting, 3 = disconnecting
+ */
+export function getConnectionStatus(): "connected" | "disconnected" | "connecting" {
+  const state = mongoose.connection.readyState;
+  switch (state) {
+    case 1:
+      return "connected";
+    case 2:
+      return "connecting";
+    default:
+      return "disconnected";
   }
+}
 
+export async function dbConnect() {
   if (cached.conn) return cached.conn;
 
   if (!cached.promise) {
-    cached.promise = mongoose.connect(MONGODB_URI, {
+    cached.promise = mongoose.connect(env.MONGODB_URI, {
       bufferCommands: false,
       serverSelectionTimeoutMS: 5000, // Fail fast after 5 seconds
       connectTimeoutMS: 10000,

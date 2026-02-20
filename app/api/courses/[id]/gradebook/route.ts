@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { dbConnect } from "@/lib/db";
 import { Course, Assignment, Submission } from "@/lib/models";
 import { authenticate } from "@/lib/auth";
+import { captureException } from "@/lib/logger";
 
 interface GradebookEntry {
   student: {
@@ -117,7 +118,7 @@ export async function GET(
       },
     });
   } catch (error) {
-    console.error("Get gradebook error:", error);
+    captureException(error, { message: "Get gradebook error" });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

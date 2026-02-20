@@ -3,6 +3,7 @@ import { z } from "zod";
 import { dbConnect } from "@/lib/db";
 import { Course } from "@/lib/models";
 import { authenticate, JWTPayload } from "@/lib/auth";
+import { captureException } from "@/lib/logger";
 
 const createCourseSchema = z.object({
   title: z.string().min(1).max(200),
@@ -70,7 +71,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("Get courses error:", error);
+    captureException(error, { message: "Get courses error" });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -122,7 +123,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ course }, { status: 201 });
   } catch (error) {
-    console.error("Create course error:", error);
+    captureException(error, { message: "Create course error" });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

@@ -5,6 +5,7 @@ import { Course, Lesson, AIGeneratedContent } from "@/lib/models";
 import { authenticate } from "@/lib/auth";
 import { getDefaultProvider, getProviderName } from "@/lib/ai";
 import { AIContentGenerator } from "@/lib/ai/services/generator";
+import { captureException } from "@/lib/logger";
 
 const generateSchema = z.object({
   courseId: z.string(),
@@ -114,7 +115,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ content: generatedContent }, { status: 201 });
   } catch (error) {
-    console.error("AI generate error:", error);
+    captureException(error, { message: "AI generate error" });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -185,7 +186,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ contents });
   } catch (error) {
-    console.error("Get generated content error:", error);
+    captureException(error, { message: "Get generated content error" });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

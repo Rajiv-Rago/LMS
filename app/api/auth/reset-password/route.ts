@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
       message: "Password has been reset successfully. You can now log in.",
     });
   } catch (error) {
-    captureException(error, { message: "Reset password error" });
+    captureException(error, { operation: "Reset password error" });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

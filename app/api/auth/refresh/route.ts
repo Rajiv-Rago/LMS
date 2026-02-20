@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
     setAuthCookie(response, newToken);
     return response;
   } catch (error) {
-    captureException(error, { message: "Token refresh error" });
+    captureException(error, { operation: "Token refresh error" });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

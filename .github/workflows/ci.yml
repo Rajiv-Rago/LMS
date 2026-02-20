@@ -36,15 +36,22 @@ jobs:
 
   test:
     name: Test
+    needs: [lint, typecheck]
     runs-on: ubuntu-latest
     services:
       mongo:
         image: mongo:7
         ports:
           - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.runCommand({ping:1}).ok' --quiet"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 3
+          --health-start-period 10s
     env:
       MONGODB_URI: mongodb://localhost:27017/lms-test
-      JWT_SECRET: ci-test-secret
+      JWT_SECRET: ci-test-secret-value-for-github-actions-minimum-length
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -56,10 +63,11 @@ jobs:
 
   build:
     name: Build
+    needs: [lint, typecheck]
     runs-on: ubuntu-latest
     env:
       MONGODB_URI: mongodb://localhost:27017/lms
-      JWT_SECRET: ci-build-secret
+      JWT_SECRET: ci-build-secret-value-for-github-actions-minimum-length
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

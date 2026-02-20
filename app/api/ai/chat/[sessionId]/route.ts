@@ -34,7 +34,7 @@ export async function GET(
 
     return NextResponse.json({ session });
   } catch (error) {
-    captureException(error, { message: "Get chat session error" });
+    captureException(error, { operation: "Get chat session error" });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -72,7 +72,7 @@ export async function DELETE(
 
     return NextResponse.json({ message: "Session deleted successfully" });
   } catch (error) {
-    captureException(error, { message: "Delete chat session error" });
+    captureException(error, { operation: "Delete chat session error" });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

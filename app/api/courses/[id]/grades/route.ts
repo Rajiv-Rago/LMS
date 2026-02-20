@@ -87,7 +87,7 @@ export async function GET(
       },
     });
   } catch (error) {
-    captureException(error, { message: "Get grades error" });
+    captureException(error, { operation: "Get grades error" });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

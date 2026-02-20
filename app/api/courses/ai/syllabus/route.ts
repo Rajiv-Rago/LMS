@@ -147,7 +147,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ course: populatedCourse }, { status: 201 });
   } catch (error) {
-    captureException(error, { message: "Create syllabus error" });
+    captureException(error, { operation: "Create syllabus error" });
 
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
 

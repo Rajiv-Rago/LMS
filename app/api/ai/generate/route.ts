@@ -115,7 +115,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ content: generatedContent }, { status: 201 });
   } catch (error) {
-    captureException(error, { message: "AI generate error" });
+    captureException(error, { operation: "AI generate error" });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -186,7 +186,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ contents });
   } catch (error) {
-    captureException(error, { message: "Get generated content error" });
+    captureException(error, { operation: "Get generated content error" });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

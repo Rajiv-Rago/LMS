@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    captureException(error, { message: "Get chat sessions error" });
+    captureException(error, { operation: "Get chat sessions error" });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

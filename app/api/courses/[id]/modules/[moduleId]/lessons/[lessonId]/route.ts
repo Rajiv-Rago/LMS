@@ -56,7 +56,7 @@ export async function GET(
       },
     });
   } catch (error) {
-    captureException(error, { message: "Get lesson error" });
+    captureException(error, { operation: "Get lesson error" });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -109,7 +109,7 @@ export async function PATCH(
 
     return NextResponse.json({ lesson });
   } catch (error) {
-    captureException(error, { message: "Update lesson error" });
+    captureException(error, { operation: "Update lesson error" });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -162,7 +162,7 @@ export async function DELETE(
 
     return NextResponse.json({ message: "Lesson deleted successfully" });
   } catch (error) {
-    captureException(error, { message: "Delete lesson error" });
+    captureException(error, { operation: "Delete lesson error" });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

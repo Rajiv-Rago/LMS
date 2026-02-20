@@ -8,6 +8,7 @@ import {
   clearAuthCookie,
   requireCsrf,
 } from "@/lib/auth";
+import { captureException } from "@/lib/logger";
 import { logAuditEvent } from "@/lib/auth/auditLog";
 
 export async function POST(request: NextRequest) {
@@ -41,7 +42,7 @@ export async function POST(request: NextRequest) {
     return response;
   } catch (error) {
     // Still clear the cookie even if session cleanup fails
-    console.error("Logout error:", error);
+    captureException(error, { operation: "Logout error" });
     const response = NextResponse.json(
       { message: "Logged out successfully" },
       { status: 200 }

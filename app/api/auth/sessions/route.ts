@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { dbConnect } from "@/lib/db";
 import Session from "@/lib/models/Session";
 import { authenticate } from "@/lib/auth";
+import { captureException } from "@/lib/logger";
 
 export async function GET(request: NextRequest) {
   try {
@@ -29,7 +30,7 @@ export async function GET(request: NextRequest) {
       })),
     });
   } catch (error) {
-    console.error("List sessions error:", error);
+    captureException(error, { operation: "List sessions error" });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

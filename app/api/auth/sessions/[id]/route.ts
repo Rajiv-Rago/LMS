@@ -4,6 +4,7 @@ import { dbConnect } from "@/lib/db";
 import Session from "@/lib/models/Session";
 import { authenticate, requireCsrf } from "@/lib/auth";
 import { logAuditEvent } from "@/lib/auth/auditLog";
+import { captureException } from "@/lib/logger";
 
 export async function DELETE(
   request: NextRequest,
@@ -50,7 +51,7 @@ export async function DELETE(
 
     return NextResponse.json({ message: "Session revoked" });
   } catch (error) {
-    console.error("Revoke session error:", error);
+    captureException(error, { operation: "Revoke session error" });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

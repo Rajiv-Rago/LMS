@@ -51,7 +51,7 @@ export async function GET(
       },
     });
   } catch (error) {
-    captureException(error, { message: "Get module error" });
+    captureException(error, { operation: "Get module error" });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -104,7 +104,7 @@ export async function PATCH(
 
     return NextResponse.json({ module });
   } catch (error) {
-    captureException(error, { message: "Update module error" });
+    captureException(error, { operation: "Update module error" });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -151,7 +151,7 @@ export async function DELETE(
 
     return NextResponse.json({ message: "Module deleted successfully" });
   } catch (error) {
-    captureException(error, { message: "Delete module error" });
+    captureException(error, { operation: "Delete module error" });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

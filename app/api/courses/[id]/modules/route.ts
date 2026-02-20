@@ -51,7 +51,7 @@ export async function GET(
 
     return NextResponse.json({ modules });
   } catch (error) {
-    captureException(error, { message: "Get modules error" });
+    captureException(error, { operation: "Get modules error" });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -107,7 +107,7 @@ export async function POST(
 
     return NextResponse.json({ module }, { status: 201 });
   } catch (error) {
-    captureException(error, { message: "Create module error" });
+    captureException(error, { operation: "Create module error" });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

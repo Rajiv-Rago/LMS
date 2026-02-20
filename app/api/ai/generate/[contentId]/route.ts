@@ -58,7 +58,7 @@ export async function GET(
       },
     });
   } catch (error) {
-    captureException(error, { message: "Get generated content error" });
+    captureException(error, { operation: "Get generated content error" });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -115,7 +115,7 @@ export async function PATCH(
 
     return NextResponse.json({ content });
   } catch (error) {
-    captureException(error, { message: "Update generated content error" });
+    captureException(error, { operation: "Update generated content error" });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -154,7 +154,7 @@ export async function DELETE(
 
     return NextResponse.json({ message: "Content deleted successfully" });
   } catch (error) {
-    captureException(error, { message: "Delete generated content error" });
+    captureException(error, { operation: "Delete generated content error" });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

@@ -1,18 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
+import crypto from "crypto";
 import { dbConnect } from "@/lib/db";
 import User from "@/lib/models/User";
-import { signToken, setAuthCookie } from "@/lib/auth";
+import Session from "@/lib/models/Session";
+import { signToken, setAuthCookie, requireCsrf } from "@/lib/auth";
 import { logAuditEvent } from "@/lib/auth/auditLog";
+import { loginSchema } from "@/lib/validation/authSchemas";
+import { getClientIp } from "@/lib/utils/request";
 import { captureException } from "@/lib/logger";
-
-const loginSchema = z.object({
-  email: z.string().email("Invalid email address"),
-  password: z.string().min(1, "Password is required"),
-});
 
 export async function POST(request: NextRequest) {
   try {
+    const csrfError = requireCsrf(request);
+    if (csrfError) return csrfError;
+
     const body = await request.json();
     const validation = loginSchema.safeParse(body);
 
@@ -48,16 +49,24 @@ export async function POST(request: NextRequest) {
 
     const isPasswordValid = await user.comparePassword(password);
     if (!isPasswordValid) {
-      // Increment failed attempts
-      const attempts = (user.failedLoginAttempts || 0) + 1;
-      const update: Record<string, unknown> = { failedLoginAttempts: attempts };
+      // Atomic increment to prevent TOCTOU race condition
+      const updated = await User.findOneAndUpdate(
+        { _id: user._id },
+        {
+          $inc: { failedLoginAttempts: 1 },
+        },
+        { new: true }
+      );
+
+      const attempts = updated?.failedLoginAttempts ?? 1;
 
       // Lock after 5 failed attempts for 15 minutes
       if (attempts >= 5) {
-        update.lockUntil = new Date(Date.now() + 15 * 60 * 1000);
+        await User.updateOne(
+          { _id: user._id },
+          { $set: { lockUntil: new Date(Date.now() + 15 * 60 * 1000) } }
+        );
       }
-
-      await User.updateOne({ _id: user._id }, { $set: update });
 
       await logAuditEvent(request, {
         userId: user._id.toString(),
@@ -82,6 +91,16 @@ export async function POST(request: NextRequest) {
     }
 
     const token = signToken(user);
+
+    // Create session record
+    const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+    await Session.create({
+      userId: user._id,
+      tokenHash,
+      ip: getClientIp(request),
+      userAgent: request.headers.get("user-agent") || "unknown",
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+    });
 
     const response = NextResponse.json(
       {

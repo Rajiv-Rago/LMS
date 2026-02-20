@@ -1,9 +1,22 @@
 import mongoose, { Document, Model } from "mongoose";
 
+export type AuditAction =
+  | "login.success"
+  | "login.failure"
+  | "logout"
+  | "password.change"
+  | "password.reset.request"
+  | "password.reset.complete"
+  | "role.change"
+  | "account.locked"
+  | "account.created"
+  | "session.revoked"
+  | "course.permission.change";
+
 export interface IAuditLog extends Document {
   _id: mongoose.Types.ObjectId;
   userId: mongoose.Types.ObjectId;
-  action: string;
+  action: AuditAction;
   resource: string;
   resourceId?: string;
   ip: string;
@@ -23,19 +36,6 @@ const auditLogSchema = new mongoose.Schema<IAuditLog, AuditLogModel>(
     action: {
       type: String,
       required: true,
-      enum: [
-        "login.success",
-        "login.failure",
-        "logout",
-        "password.change",
-        "password.reset.request",
-        "password.reset.complete",
-        "role.change",
-        "account.locked",
-        "account.created",
-        "session.revoked",
-        "course.permission.change",
-      ],
     },
     resource: {
       type: String,

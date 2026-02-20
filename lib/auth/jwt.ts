@@ -8,7 +8,7 @@ if (!process.env.JWT_SECRET) {
 const JWT_SECRET: string = process.env.JWT_SECRET;
 
 const JWT_EXPIRES_IN = (process.env.JWT_EXPIRES_IN || "7d") as SignOptions["expiresIn"];
-const REFRESH_GRACE_PERIOD = 60 * 60; // 1 hour in seconds
+const REFRESH_GRACE_PERIOD_SECONDS = 60 * 60; // 1 hour in seconds
 
 export interface JWTPayload {
   userId: string;
@@ -40,20 +40,34 @@ export function verifyToken(token: string): JWTPayload | null {
 
 export function verifyTokenForRefresh(token: string): JWTPayload | null {
   try {
+    // First try normal verification
     return jwt.verify(token, JWT_SECRET) as JWTPayload;
   } catch (error) {
     if (error instanceof jwt.TokenExpiredError) {
-      const decoded = jwt.decode(token) as JWTPayload | null;
-      if (!decoded?.exp) return null;
-      const now = Math.floor(Date.now() / 1000);
-      if (now - decoded.exp <= REFRESH_GRACE_PERIOD) {
-        return decoded;
+      // Verify signature while ignoring expiration
+      try {
+        const payload = jwt.verify(token, JWT_SECRET, {
+          ignoreExpiration: true,
+        }) as JWTPayload;
+        if (!payload.exp) return null;
+        const now = Math.floor(Date.now() / 1000);
+        if (now - payload.exp <= REFRESH_GRACE_PERIOD_SECONDS) {
+          return payload;
+        }
+      } catch {
+        return null;
       }
     }
     return null;
   }
 }
 
+/**
+ * WARNING: This function does NOT verify the token signature.
+ * It only base64-decodes the payload. NEVER use this for authorization
+ * decisions — use `verifyToken()` instead. This is only for reading
+ * claims from tokens whose authenticity has already been established.
+ */
 export function decodeToken(token: string): JWTPayload | null {
   try {
     return jwt.decode(token) as JWTPayload;

@@ -1,20 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
+import crypto from "crypto";
 import { dbConnect, DatabaseConnectionError } from "@/lib/db";
 import User from "@/lib/models/User";
-import { signToken, setAuthCookie } from "@/lib/auth";
+import Session from "@/lib/models/Session";
+import { signToken, setAuthCookie, requireCsrf } from "@/lib/auth";
 import { logAuditEvent } from "@/lib/auth/auditLog";
+import { registerSchema } from "@/lib/validation/authSchemas";
+import { getClientIp } from "@/lib/utils/request";
 import { captureException } from "@/lib/logger";
-
-const registerSchema = z.object({
-  email: z.string().email("Invalid email address"),
-  name: z.string().min(2, "Name must be at least 2 characters"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
-  role: z.enum(["student", "teacher"]).default("student"),
-});
 
 export async function POST(request: NextRequest) {
   try {
+    const csrfError = requireCsrf(request);
+    if (csrfError) return csrfError;
+
     const body = await request.json();
     const validation = registerSchema.safeParse(body);
 
@@ -45,6 +44,16 @@ export async function POST(request: NextRequest) {
     });
 
     const token = signToken(user);
+
+    // Create session record
+    const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+    await Session.create({
+      userId: user._id,
+      tokenHash,
+      ip: getClientIp(request),
+      userAgent: request.headers.get("user-agent") || "unknown",
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    });
 
     const response = NextResponse.json(
       {

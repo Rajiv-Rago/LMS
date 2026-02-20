@@ -30,7 +30,7 @@ const sessionSchema = new mongoose.Schema<ISession, SessionModel>(
     },
     userAgent: {
       type: String,
-      default: "",
+      default: "unknown",
     },
     lastActiveAt: {
       type: Date,

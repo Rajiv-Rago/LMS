@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getClientIp } from "@/lib/utils/request";
 
 // --- Rate Limiting (in-memory, per-instance) ---
 
@@ -30,14 +31,6 @@ function cleanupRateLimitMap() {
       rateLimitMap.delete(key);
     }
   }
-}
-
-function getClientIp(request: NextRequest): string {
-  return (
-    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    request.headers.get("x-real-ip") ||
-    "unknown"
-  );
 }
 
 function checkRateLimit(

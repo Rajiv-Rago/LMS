@@ -2,11 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { dbConnect } from "@/lib/db";
 import User from "@/lib/models/User";
+import { requireCsrf } from "@/lib/auth";
 import { resetPasswordSchema } from "@/lib/validation/authSchemas";
 import { logAuditEvent } from "@/lib/auth/auditLog";
+import { captureException } from "@/lib/logger";
 
 export async function POST(request: NextRequest) {
   try {
+    const csrfError = requireCsrf(request);
+    if (csrfError) return csrfError;
+
     const body = await request.json();
     const validation = resetPasswordSchema.safeParse(body);
 
@@ -17,12 +22,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { token, password } = validation.data;
+    const { token, email, password } = validation.data;
 
     await dbConnect();
 
-    // Find user with unexpired reset token
+    // Find user by email with unexpired reset token
     const user = await User.findOne({
+      email,
       resetPasswordExpires: { $gt: new Date() },
     }).select("+resetPasswordToken +resetPasswordExpires");
 
@@ -61,7 +67,7 @@ export async function POST(request: NextRequest) {
       message: "Password has been reset successfully. You can now log in.",
     });
   } catch (error) {
-    console.error("Reset password error:", error);
+    captureException(error, { message: "Reset password error" });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

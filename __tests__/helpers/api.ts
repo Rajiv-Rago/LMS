@@ -26,6 +26,11 @@ export function buildRequest(
     "Content-Type": "application/json",
   });
 
+  // Add CSRF header for mutation methods
+  if (["POST", "PUT", "PATCH", "DELETE"].includes(method.toUpperCase())) {
+    headers.set("X-Requested-With", "XMLHttpRequest");
+  }
+
   if (options.token) {
     headers.set("Authorization", `Bearer ${options.token}`);
   }

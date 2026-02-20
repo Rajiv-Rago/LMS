@@ -3,6 +3,7 @@
 import { useEffect, useState, use } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { SkeletonTable } from "@/components/ui/Skeleton";
 
 interface Assignment {
   _id: string;
@@ -56,8 +57,8 @@ export default function GradebookPage({
         setAssignments(data.assignments);
         setGradebook(data.gradebook);
         setSummary(data.summary);
-      } catch (error) {
-        console.error("Error fetching gradebook:", error);
+      } catch {
+        // Handled by error boundary
       } finally {
         setLoading(false);
       }
@@ -67,8 +68,9 @@ export default function GradebookPage({
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <div className="space-y-6">
+        <div className="h-7 w-32 bg-zinc-200 dark:bg-zinc-700 rounded animate-pulse" />
+        <SkeletonTable rows={5} cols={4} />
       </div>
     );
   }

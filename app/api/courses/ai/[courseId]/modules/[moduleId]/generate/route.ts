@@ -11,6 +11,7 @@ import { generateContentSchema } from "@/lib/validation/aiSchemas";
 import { logAIGeneration } from "@/lib/utils/aiGenerationLogger";
 import { recalculateModuleStatus } from "@/lib/utils/moduleStatusUpdater";
 import { captureException } from "@/lib/logger";
+import { sendNotification } from "@/lib/notifications";
 
 const MAX_SUMMARY_LENGTH = 2000;
 
@@ -198,6 +199,14 @@ export async function POST(
     });
 
     const updatedModule = await Module.findById(moduleId).populate("lessons");
+
+    await sendNotification({
+      userId: user.userId,
+      type: "ai.generation.completed",
+      title: "Content generation complete",
+      message: `Module "${courseModule.title}" content has been generated`,
+      link: `/courses/${courseId}`,
+    });
 
     return NextResponse.json({
       module: updatedModule,

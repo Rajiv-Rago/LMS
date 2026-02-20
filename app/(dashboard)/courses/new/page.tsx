@@ -3,9 +3,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useToast } from "@/lib/hooks/useToast";
 
 export default function NewCoursePage() {
   const router = useRouter();
+  const toast = useToast();
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -31,6 +33,7 @@ export default function NewCoursePage() {
         throw new Error(data.error || "Failed to create course");
       }
 
+      toast.success("Course created successfully");
       router.push(`/courses/${data.course._id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create course");

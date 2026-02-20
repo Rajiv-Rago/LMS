@@ -4,6 +4,7 @@ import { dbConnect } from "@/lib/db";
 import { Course, Submission } from "@/lib/models";
 import { authenticate } from "@/lib/auth";
 import { captureException } from "@/lib/logger";
+import { sendNotification } from "@/lib/notifications";
 
 const gradeSubmissionSchema = z.object({
   grade: z.number().min(0),
@@ -132,6 +133,14 @@ export async function PATCH(
     submission.gradedBy = user.userId as unknown as typeof submission.gradedBy;
 
     await submission.save();
+
+    await sendNotification({
+      userId: submission.student.toString(),
+      type: "assignment.graded",
+      title: "Assignment graded",
+      message: `Your submission received ${validation.data.grade} points`,
+      link: `/courses/${id}/assignments/${assignmentId}`,
+    });
 
     return NextResponse.json({ submission });
   } catch (error) {

@@ -108,9 +108,7 @@ export default function AssignmentDetailPage({
             url: data.submission.url || "",
           });
         }
-      } catch (error) {
-        console.error("Error fetching assignment:", error);
-      } finally {
+      } catch { } finally {
         setLoading(false);
       }
     }
@@ -136,9 +134,7 @@ export default function AssignmentDetailPage({
         const data = await res.json();
         setSubmission(data.submission);
       }
-    } catch (error) {
-      console.error("Error submitting:", error);
-    } finally {
+    } catch { } finally {
       setSubmitting(false);
     }
   };
@@ -155,9 +151,7 @@ export default function AssignmentDetailPage({
         const data = await res.json();
         setAssignment(data.assignment);
       }
-    } catch (error) {
-      console.error("Error updating assignment:", error);
-    }
+    } catch { }
   };
 
   if (loading) {

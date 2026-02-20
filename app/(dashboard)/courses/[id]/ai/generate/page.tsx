@@ -61,9 +61,7 @@ export default function AIGeneratePage({
           const contentsData = await contentsRes.json();
           setContents(contentsData.contents);
         }
-      } catch (error) {
-        console.error("Error fetching data:", error);
-      } finally {
+      } catch { } finally {
         setLoading(false);
       }
     }
@@ -95,9 +93,7 @@ export default function AIGeneratePage({
         setContents([data.content, ...contents]);
         setSelectedContent(data.content);
       }
-    } catch (error) {
-      console.error("Error generating content:", error);
-    } finally {
+    } catch { } finally {
       setGenerating(false);
     }
   };
@@ -121,9 +117,7 @@ export default function AIGeneratePage({
           setSelectedContent({ ...selectedContent, ...data.content });
         }
       }
-    } catch (error) {
-      console.error("Error updating content:", error);
-    }
+    } catch { }
   };
 
   const handleDelete = async (contentId: string) => {
@@ -141,9 +135,7 @@ export default function AIGeneratePage({
           setSelectedContent(null);
         }
       }
-    } catch (error) {
-      console.error("Error deleting content:", error);
-    }
+    } catch { }
   };
 
   if (loading) {

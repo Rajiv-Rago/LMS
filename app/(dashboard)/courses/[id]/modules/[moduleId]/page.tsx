@@ -49,9 +49,7 @@ export default function ModuleDetailPage({
           title: data.module.title,
           description: data.module.description || "",
         });
-      } catch (error) {
-        console.error("Error fetching module:", error);
-      } finally {
+      } catch { } finally {
         setLoading(false);
       }
     }
@@ -71,9 +69,7 @@ export default function ModuleDetailPage({
         setModule((prev) => (prev ? { ...prev, ...data.module } : null));
         setEditing(false);
       }
-    } catch (error) {
-      console.error("Error updating module:", error);
-    }
+    } catch { }
   };
 
   const handlePublish = async () => {
@@ -88,9 +84,7 @@ export default function ModuleDetailPage({
         const data = await res.json();
         setModule((prev) => (prev ? { ...prev, ...data.module } : null));
       }
-    } catch (error) {
-      console.error("Error updating module:", error);
-    }
+    } catch { }
   };
 
   const handleAddLesson = async (e: React.FormEvent) => {
@@ -115,9 +109,7 @@ export default function ModuleDetailPage({
         setNewLessonTitle("");
         setShowNewLesson(false);
       }
-    } catch (error) {
-      console.error("Error creating lesson:", error);
-    }
+    } catch { }
   };
 
   const handleDelete = async () => {
@@ -132,9 +124,7 @@ export default function ModuleDetailPage({
       if (res.ok) {
         router.push(`/courses/${id}`);
       }
-    } catch (error) {
-      console.error("Error deleting module:", error);
-    }
+    } catch { }
   };
 
   if (loading) {

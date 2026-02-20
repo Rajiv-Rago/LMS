@@ -54,9 +54,7 @@ export default function StudentGradesPage({
         const data = await res.json();
         setGrades(data.grades);
         setSummary(data.summary);
-      } catch (error) {
-        console.error("Error fetching grades:", error);
-      } finally {
+      } catch { } finally {
         setLoading(false);
       }
     }

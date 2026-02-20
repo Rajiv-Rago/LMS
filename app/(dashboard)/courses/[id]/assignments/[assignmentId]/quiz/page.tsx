@@ -109,9 +109,7 @@ export default function QuizPage({
         setQuizInfo(data.quiz);
         setAttempts(data.attempts || []);
         setBestScore(data.bestScore);
-      } catch (err) {
-        console.error("Error fetching quiz:", err);
-        setError("Failed to load quiz");
+      } catch (err) {        setError("Failed to load quiz");
       } finally {
         setLoading(false);
       }
@@ -139,9 +137,7 @@ export default function QuizPage({
       setCurrentAttempt(data.attempt);
       setQuestions(data.questions);
       setAnswers({});
-    } catch (err) {
-      console.error("Error starting quiz:", err);
-      setError(err instanceof Error ? err.message : "Failed to start quiz");
+    } catch (err) {      setError(err instanceof Error ? err.message : "Failed to start quiz");
     } finally {
       setLoading(false);
     }
@@ -170,9 +166,7 @@ export default function QuizPage({
       const data = await res.json();
       setResult(data);
       setCurrentAttempt(null);
-    } catch (err) {
-      console.error("Error submitting quiz:", err);
-      setError(err instanceof Error ? err.message : "Failed to submit quiz");
+    } catch (err) {      setError(err instanceof Error ? err.message : "Failed to submit quiz");
     } finally {
       setSubmitting(false);
     }

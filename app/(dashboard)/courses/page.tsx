@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { SkeletonCard } from "@/components/ui/Skeleton";
 
 interface User {
   id: string;
@@ -42,8 +43,8 @@ export default function CoursesPage() {
           const coursesData = await coursesRes.json();
           setCourses(coursesData.courses);
         }
-      } catch (error) {
-        console.error("Error fetching data:", error);
+      } catch {
+        // Handled by error boundary
       } finally {
         setLoading(false);
       }
@@ -59,8 +60,18 @@ export default function CoursesPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="space-y-2">
+            <div className="h-7 w-32 bg-zinc-200 dark:bg-zinc-700 rounded animate-pulse" />
+            <div className="h-4 w-48 bg-zinc-200 dark:bg-zinc-700 rounded animate-pulse" />
+          </div>
+        </div>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <SkeletonCard key={i} />
+          ))}
+        </div>
       </div>
     );
   }

@@ -3,6 +3,8 @@
 import { useEffect, useState, use } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useToast } from "@/lib/hooks/useToast";
+import { SkeletonCard } from "@/components/ui/Skeleton";
 
 type AssignmentType = "standard" | "quiz" | "project";
 
@@ -29,6 +31,7 @@ export default function AssignmentsPage({
 }) {
   const { id } = use(params);
   const router = useRouter();
+  const toast = useToast();
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -63,9 +66,7 @@ export default function AssignmentsPage({
 
         const assignmentsData = await assignmentsRes.json();
         setAssignments(assignmentsData.assignments);
-      } catch (error) {
-        console.error("Error fetching data:", error);
-      } finally {
+      } catch { } finally {
         setLoading(false);
       }
     }
@@ -96,9 +97,13 @@ export default function AssignmentsPage({
           submissionType: "text",
           assignmentType: "standard",
         });
+        toast.success("Assignment created");
+      } else {
+        const data = await res.json();
+        toast.error(data.error || "Failed to create assignment");
       }
-    } catch (error) {
-      console.error("Error creating assignment:", error);
+    } catch {
+      toast.error("Failed to create assignment");
     }
   };
 
@@ -106,8 +111,10 @@ export default function AssignmentsPage({
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <div className="max-w-4xl mx-auto space-y-6">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <SkeletonCard key={i} />
+        ))}
       </div>
     );
   }

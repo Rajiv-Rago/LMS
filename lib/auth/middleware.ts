@@ -7,6 +7,21 @@ export interface AuthenticatedRequest extends NextRequest {
   user?: JWTPayload;
 }
 
+const MUTATION_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+
+export function requireCsrf(request: NextRequest): NextResponse | null {
+  if (!MUTATION_METHODS.has(request.method)) return null;
+
+  const xRequestedWith = request.headers.get("x-requested-with");
+  if (xRequestedWith !== "XMLHttpRequest") {
+    return NextResponse.json(
+      { error: "Missing or invalid CSRF header" },
+      { status: 403 }
+    );
+  }
+  return null;
+}
+
 export function getTokenFromRequest(request: NextRequest): string | null {
   const authHeader = request.headers.get("authorization");
   if (authHeader?.startsWith("Bearer ")) {
@@ -49,6 +64,9 @@ export function requireAuth(
     request: NextRequest,
     context: { params: Promise<Record<string, string>> }
   ): Promise<NextResponse> => {
+    const csrfError = requireCsrf(request);
+    if (csrfError) return csrfError;
+
     const user = await authenticate(request);
 
     if (!user) {
@@ -71,6 +89,9 @@ export function requireRole(...roles: ("student" | "teacher" | "admin")[]) {
       request: NextRequest,
       context: { params: Promise<Record<string, string>> }
     ): Promise<NextResponse> => {
+      const csrfError = requireCsrf(request);
+      if (csrfError) return csrfError;
+
       const user = await authenticate(request);
 
       if (!user) {

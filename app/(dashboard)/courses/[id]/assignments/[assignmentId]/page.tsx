@@ -124,7 +124,7 @@ export default function AssignmentDetailPage({
         `/api/courses/${id}/assignments/${assignmentId}/submissions`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", "X-Requested-With": "XMLHttpRequest" },
           body: JSON.stringify({
             ...formData,
             status: asDraft ? "draft" : "submitted",
@@ -147,7 +147,7 @@ export default function AssignmentDetailPage({
     try {
       const res = await fetch(`/api/courses/${id}/assignments/${assignmentId}`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "X-Requested-With": "XMLHttpRequest" },
         body: JSON.stringify({ isPublished: !assignment?.isPublished }),
       });
 

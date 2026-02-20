@@ -1,4 +1,4 @@
-export { signToken, verifyToken, decodeToken } from "./jwt";
+export { signToken, verifyToken, verifyTokenForRefresh, decodeToken } from "./jwt";
 export type { JWTPayload } from "./jwt";
 export {
   authenticate,
@@ -8,6 +8,7 @@ export {
   setAuthCookie,
   clearAuthCookie,
   getTokenFromRequest,
+  requireCsrf,
 } from "./middleware";
 export type { AuthenticatedRequest } from "./middleware";
 export {

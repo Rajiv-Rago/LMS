@@ -77,7 +77,7 @@ export default function AIGeneratePage({
     try {
       const res = await fetch("/api/ai/generate", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "X-Requested-With": "XMLHttpRequest" },
         body: JSON.stringify({
           courseId: id,
           lessonId: formData.lessonId || undefined,
@@ -106,7 +106,7 @@ export default function AIGeneratePage({
     try {
       const res = await fetch(`/api/ai/generate/${contentId}`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "X-Requested-With": "XMLHttpRequest" },
         body: JSON.stringify({ status }),
       });
 
@@ -132,6 +132,7 @@ export default function AIGeneratePage({
     try {
       const res = await fetch(`/api/ai/generate/${contentId}`, {
         method: "DELETE",
+        headers: { "X-Requested-With": "XMLHttpRequest" },
       });
 
       if (res.ok) {

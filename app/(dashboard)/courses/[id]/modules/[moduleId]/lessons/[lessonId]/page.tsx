@@ -75,7 +75,7 @@ export default function LessonDetailPage({
         `/api/courses/${id}/modules/${moduleId}/lessons/${lessonId}`,
         {
           method: "PATCH",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", "X-Requested-With": "XMLHttpRequest" },
           body: JSON.stringify(formData),
         }
       );
@@ -96,7 +96,7 @@ export default function LessonDetailPage({
         `/api/courses/${id}/modules/${moduleId}/lessons/${lessonId}`,
         {
           method: "PATCH",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", "X-Requested-With": "XMLHttpRequest" },
           body: JSON.stringify({ isPublished: !lesson?.isPublished }),
         }
       );
@@ -118,6 +118,7 @@ export default function LessonDetailPage({
         `/api/courses/${id}/modules/${moduleId}/lessons/${lessonId}`,
         {
           method: "DELETE",
+          headers: { "X-Requested-With": "XMLHttpRequest" },
         }
       );
 

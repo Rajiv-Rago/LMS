@@ -61,7 +61,7 @@ export default function NewAICoursePage() {
 
       const res = await fetch("/api/courses/ai/syllabus", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "X-Requested-With": "XMLHttpRequest" },
         body: JSON.stringify(payload),
       });
 

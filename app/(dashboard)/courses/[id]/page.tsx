@@ -87,6 +87,7 @@ export default function CourseDetailPage({
     try {
       const res = await fetch(`/api/courses/${id}/enroll`, {
         method: "POST",
+        headers: { "X-Requested-With": "XMLHttpRequest" },
       });
 
       if (res.ok) {
@@ -105,7 +106,7 @@ export default function CourseDetailPage({
     try {
       const res = await fetch(`/api/courses/${id}`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "X-Requested-With": "XMLHttpRequest" },
         body: JSON.stringify({ isPublished: !course?.isPublished }),
       });
 
@@ -123,7 +124,7 @@ export default function CourseDetailPage({
     try {
       const res = await fetch(`/api/courses/${id}/modules`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "X-Requested-With": "XMLHttpRequest" },
         body: JSON.stringify({ title: newModuleTitle }),
       });
 

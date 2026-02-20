@@ -127,7 +127,7 @@ export default function QuizPage({
     try {
       const res = await fetch(
         `/api/courses/${id}/assignments/${assignmentId}/quiz?action=start`,
-        { method: "POST" }
+        { method: "POST", headers: { "X-Requested-With": "XMLHttpRequest" } }
       );
 
       if (!res.ok) {
@@ -157,7 +157,7 @@ export default function QuizPage({
         `/api/courses/${id}/assignments/${assignmentId}/quiz?action=submit`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", "X-Requested-With": "XMLHttpRequest" },
           body: JSON.stringify({ answers }),
         }
       );

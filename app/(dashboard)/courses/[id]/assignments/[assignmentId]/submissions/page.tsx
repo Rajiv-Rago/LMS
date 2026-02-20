@@ -70,7 +70,7 @@ export default function SubmissionsPage({
         `/api/courses/${id}/assignments/${assignmentId}/submissions/${selectedSubmission._id}`,
         {
           method: "PATCH",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", "X-Requested-With": "XMLHttpRequest" },
           body: JSON.stringify(gradeData),
         }
       );

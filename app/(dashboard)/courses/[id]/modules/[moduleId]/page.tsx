@@ -62,7 +62,7 @@ export default function ModuleDetailPage({
     try {
       const res = await fetch(`/api/courses/${id}/modules/${moduleId}`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "X-Requested-With": "XMLHttpRequest" },
         body: JSON.stringify(formData),
       });
 
@@ -80,7 +80,7 @@ export default function ModuleDetailPage({
     try {
       const res = await fetch(`/api/courses/${id}/modules/${moduleId}`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "X-Requested-With": "XMLHttpRequest" },
         body: JSON.stringify({ isPublished: !module?.isPublished }),
       });
 
@@ -100,7 +100,7 @@ export default function ModuleDetailPage({
         `/api/courses/${id}/modules/${moduleId}/lessons`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", "X-Requested-With": "XMLHttpRequest" },
           body: JSON.stringify({ title: newLessonTitle }),
         }
       );
@@ -126,6 +126,7 @@ export default function ModuleDetailPage({
     try {
       const res = await fetch(`/api/courses/${id}/modules/${moduleId}`, {
         method: "DELETE",
+        headers: { "X-Requested-With": "XMLHttpRequest" },
       });
 
       if (res.ok) {

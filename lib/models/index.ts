@@ -47,3 +47,9 @@ export type {
   GenerationStatus,
   TokenUsage,
 } from "./AIGenerationLog";
+
+export { default as AuditLog } from "./AuditLog";
+export type { IAuditLog } from "./AuditLog";
+
+export { default as Session } from "./Session";
+export type { ISession } from "./Session";

@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    captureException(error, { message: "Get current user error" });
+    captureException(error, { operation: "Get current user error" });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

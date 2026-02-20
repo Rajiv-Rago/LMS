@@ -61,7 +61,7 @@ export async function GET(
       },
     });
   } catch (error) {
-    captureException(error, { message: "Get submission error" });
+    captureException(error, { operation: "Get submission error" });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -135,7 +135,7 @@ export async function PATCH(
 
     return NextResponse.json({ submission });
   } catch (error) {
-    captureException(error, { message: "Grade submission error" });
+    captureException(error, { operation: "Grade submission error" });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

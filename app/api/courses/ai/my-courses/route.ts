@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    captureException(error, { message: "Get my AI courses error" });
+    captureException(error, { operation: "Get my AI courses error" });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

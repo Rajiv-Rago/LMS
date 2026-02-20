@@ -51,7 +51,7 @@ export async function GET(
 
     return NextResponse.json({ lessons });
   } catch (error) {
-    captureException(error, { message: "Get lessons error" });
+    captureException(error, { operation: "Get lessons error" });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -113,7 +113,7 @@ export async function POST(
 
     return NextResponse.json({ lesson }, { status: 201 });
   } catch (error) {
-    captureException(error, { message: "Create lesson error" });
+    captureException(error, { operation: "Create lesson error" });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

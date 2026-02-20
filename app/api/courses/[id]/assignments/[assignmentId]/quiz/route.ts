@@ -277,7 +277,7 @@ export async function POST(
       );
     }
   } catch (error) {
-    captureException(error, { message: "Quiz error" });
+    captureException(error, { operation: "Quiz error" });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -375,7 +375,7 @@ export async function GET(
       activeAttemptExpired,
     });
   } catch (error) {
-    captureException(error, { message: "Get quiz error" });
+    captureException(error, { operation: "Get quiz error" });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

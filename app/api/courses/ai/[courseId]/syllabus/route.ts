@@ -68,7 +68,7 @@ export async function GET(
 
     return NextResponse.json({ course });
   } catch (error) {
-    captureException(error, { message: "Get syllabus error" });
+    captureException(error, { operation: "Get syllabus error" });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -271,7 +271,7 @@ export async function PATCH(
 
     return NextResponse.json({ course: updatedCourse });
   } catch (error) {
-    captureException(error, { message: "Update syllabus error" });
+    captureException(error, { operation: "Update syllabus error" });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -318,7 +318,7 @@ export async function DELETE(
 
     return NextResponse.json({ message: "Course deleted successfully" });
   } catch (error) {
-    captureException(error, { message: "Delete course error" });
+    captureException(error, { operation: "Delete course error" });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

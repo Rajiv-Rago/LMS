@@ -174,7 +174,7 @@ export async function POST(
         durationMs: Date.now() - startTime,
       });
     } catch (generateError) {
-      captureException(generateError, { message: "Error generating lesson content" });
+      captureException(generateError, { operation: "Error generating lesson content" });
 
       lesson.generationStatus = "failed";
       await lesson.save();
@@ -197,7 +197,7 @@ export async function POST(
       throw generateError;
     }
   } catch (error) {
-    captureException(error, { message: "Generate lesson content error" });
+    captureException(error, { operation: "Generate lesson content error" });
     return NextResponse.json(
       {
         error: `Failed to generate content: ${error instanceof Error ? error.message : "Unknown error"}`,

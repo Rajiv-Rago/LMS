@@ -45,7 +45,7 @@ export async function GET(
 
     return NextResponse.json({ submissions });
   } catch (error) {
-    captureException(error, { message: "Get submissions error" });
+    captureException(error, { operation: "Get submissions error" });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -143,7 +143,7 @@ export async function POST(
 
     return NextResponse.json({ submission }, { status: submission.isNew ? 201 : 200 });
   } catch (error) {
-    captureException(error, { message: "Create submission error" });
+    captureException(error, { operation: "Create submission error" });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

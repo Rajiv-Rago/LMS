@@ -9,15 +9,21 @@ interface LogEntry {
 
 const isProduction = process.env.NODE_ENV === "production";
 
-function formatError(error: unknown): Record<string, unknown> {
+interface ErrorDetails {
+  errorName: string;
+  errorMessage: string;
+  stack?: string;
+}
+
+function formatError(error: unknown): ErrorDetails {
   if (error instanceof Error) {
     return {
-      name: error.name,
-      message: error.message,
+      errorName: error.name,
+      errorMessage: error.message,
       stack: error.stack,
     };
   }
-  return { value: String(error) };
+  return { errorName: "UnknownError", errorMessage: String(error) };
 }
 
 function serialize(entry: LogEntry): string {
@@ -77,9 +83,9 @@ export function captureException(
   error: Error | unknown,
   context?: Record<string, unknown>
 ) {
-  const errorDetails = formatError(error);
-  logger.error(errorDetails.message as string ?? "Unknown error", {
-    ...errorDetails,
+  const details = formatError(error);
+  logger.error(details.errorMessage, {
+    ...details,
     ...context,
   });
 }

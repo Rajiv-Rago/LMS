@@ -129,7 +129,7 @@ export async function GET(
       },
     });
   } catch (error) {
-    captureException(error, { message: "Get assignment error" });
+    captureException(error, { operation: "Get assignment error" });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -197,7 +197,7 @@ export async function PATCH(
 
     return NextResponse.json({ assignment });
   } catch (error) {
-    captureException(error, { message: "Update assignment error" });
+    captureException(error, { operation: "Update assignment error" });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -246,7 +246,7 @@ export async function DELETE(
 
     return NextResponse.json({ message: "Assignment deleted successfully" });
   } catch (error) {
-    captureException(error, { message: "Delete assignment error" });
+    captureException(error, { operation: "Delete assignment error" });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

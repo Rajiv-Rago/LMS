@@ -54,7 +54,7 @@ export async function POST(
 
     return NextResponse.json({ message: "Enrolled successfully" });
   } catch (error) {
-    captureException(error, { message: "Enroll error" });
+    captureException(error, { operation: "Enroll error" });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -100,7 +100,7 @@ export async function DELETE(
 
     return NextResponse.json({ message: "Unenrolled successfully" });
   } catch (error) {
-    captureException(error, { message: "Unenroll error" });
+    captureException(error, { operation: "Unenroll error" });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

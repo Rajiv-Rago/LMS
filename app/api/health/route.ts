@@ -1,18 +1,25 @@
 import { NextResponse } from "next/server";
-import { getConnectionStatus } from "@/lib/db";
-
-const startTime = Date.now();
-
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const { version } = require("../../../package.json");
+import { dbConnect, getConnectionStatus } from "@/lib/db";
+import { version } from "../../../package.json";
 
 export async function GET() {
-  const db = getConnectionStatus();
+  // Eagerly attempt connection so we report real failures, not just lazy-init state
+  try {
+    await dbConnect();
+  } catch {
+    // Connection failed — getConnectionStatus() will reflect this
+  }
 
-  return NextResponse.json({
-    status: db === "connected" ? "ok" : "degraded",
-    version,
-    uptime: Math.floor((Date.now() - startTime) / 1000),
-    db,
-  });
+  const db = getConnectionStatus();
+  const isHealthy = db === "connected";
+
+  return NextResponse.json(
+    {
+      status: isHealthy ? "ok" : "degraded",
+      version,
+      uptime: Math.floor(process.uptime()),
+      db,
+    },
+    { status: isHealthy ? 200 : 503 }
+  );
 }

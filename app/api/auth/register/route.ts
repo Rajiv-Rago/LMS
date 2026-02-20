@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
 
     return response;
   } catch (error) {
-    captureException(error, { message: "Registration error" });
+    captureException(error, { operation: "Registration error" });
 
     if (error instanceof DatabaseConnectionError) {
       return NextResponse.json(

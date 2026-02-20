@@ -162,7 +162,7 @@ export async function POST(
             previousLessonsSummary += `\n${lesson.title}: ${content.keyTakeaways.join("; ")}`;
           }
         } catch (lessonError) {
-          captureException(lessonError, { message: `Error generating lesson ${lesson._id}` });
+          captureException(lessonError, { operation: `Error generating lesson ${lesson._id}` });
 
           lesson.generationStatus = "failed";
           await lesson.save();
@@ -209,7 +209,7 @@ export async function POST(
       },
     });
   } catch (error) {
-    captureException(error, { message: "Generate module content error" });
+    captureException(error, { operation: "Generate module content error" });
     return NextResponse.json(
       {
         error: `Failed to generate content: ${error instanceof Error ? error.message : "Unknown error"}`,

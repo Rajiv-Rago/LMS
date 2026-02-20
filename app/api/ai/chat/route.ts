@@ -119,7 +119,7 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    captureException(error, { message: "AI chat error" });
+    captureException(error, { operation: "AI chat error" });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

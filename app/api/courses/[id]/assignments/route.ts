@@ -83,7 +83,7 @@ export async function GET(
 
     return NextResponse.json({ assignments });
   } catch (error) {
-    captureException(error, { message: "Get assignments error" });
+    captureException(error, { operation: "Get assignments error" });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -136,7 +136,7 @@ export async function POST(
 
     return NextResponse.json({ assignment }, { status: 201 });
   } catch (error) {
-    captureException(error, { message: "Create assignment error" });
+    captureException(error, { operation: "Create assignment error" });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

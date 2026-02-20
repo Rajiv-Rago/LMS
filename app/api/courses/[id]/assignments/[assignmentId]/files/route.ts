@@ -6,6 +6,7 @@ import { writeFile, mkdir, unlink } from "fs/promises";
 import { join } from "path";
 import { existsSync } from "fs";
 import { randomUUID } from "crypto";
+import { captureException } from "@/lib/logger";
 
 const UPLOAD_DIR = join(process.cwd(), "public", "uploads", "submissions");
 
@@ -182,7 +183,7 @@ export async function POST(
       totalFiles: submission.files.length,
     });
   } catch (error) {
-    captureException(error, { message: "File upload error" });
+    captureException(error, { operation: "File upload error" });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -192,7 +193,6 @@ export async function POST(
 
 // DELETE /api/courses/[id]/assignments/[assignmentId]/files?fileId=xxx
 // Remove a file from a project submission
-import { captureException } from "@/lib/logger";
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string; assignmentId: string }> }
@@ -274,7 +274,7 @@ export async function DELETE(
       totalFiles: submission.files!.length,
     });
   } catch (error) {
-    captureException(error, { message: "File delete error" });
+    captureException(error, { operation: "File delete error" });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -330,7 +330,7 @@ export async function GET(
       totalFiles: submission?.files?.length || 0,
     });
   } catch (error) {
-    captureException(error, { message: "Get files error" });
+    captureException(error, { operation: "Get files error" });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

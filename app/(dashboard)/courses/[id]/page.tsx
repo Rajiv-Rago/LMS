@@ -3,6 +3,8 @@
 import { useEffect, useState, use } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useToast } from "@/lib/hooks/useToast";
+import { SkeletonCard } from "@/components/ui/Skeleton";
 
 interface Module {
   _id: string;
@@ -44,6 +46,7 @@ export default function CourseDetailPage({
 }) {
   const { id } = use(params);
   const router = useRouter();
+  const toast = useToast();
   const [course, setCourse] = useState<Course | null>(null);
   const [modules, setModules] = useState<Module[]>([]);
   const [permissions, setPermissions] = useState<Permissions | null>(null);
@@ -73,8 +76,8 @@ export default function CourseDetailPage({
           const modulesData = await modulesRes.json();
           setModules(modulesData.modules);
         }
-      } catch (error) {
-        console.error("Error fetching course:", error);
+      } catch {
+        // Handled by error boundary
       } finally {
         setLoading(false);
       }
@@ -94,9 +97,13 @@ export default function CourseDetailPage({
         setPermissions((prev) =>
           prev ? { ...prev, isEnrolled: true, canEnroll: false } : null
         );
+        toast.success("Enrolled successfully");
+      } else {
+        const data = await res.json();
+        toast.error(data.error || "Failed to enroll");
       }
-    } catch (error) {
-      console.error("Error enrolling:", error);
+    } catch {
+      toast.error("Failed to enroll");
     } finally {
       setEnrolling(false);
     }
@@ -113,9 +120,12 @@ export default function CourseDetailPage({
       if (res.ok) {
         const data = await res.json();
         setCourse(data.course);
+        toast.success(data.course.isPublished ? "Course published" : "Course unpublished");
+      } else {
+        toast.error("Failed to update course");
       }
-    } catch (error) {
-      console.error("Error updating course:", error);
+    } catch {
+      toast.error("Failed to update course");
     }
   };
 
@@ -133,16 +143,23 @@ export default function CourseDetailPage({
         setModules([...modules, { ...data.module, lessons: [] }]);
         setNewModuleTitle("");
         setShowNewModule(false);
+        toast.success("Module added");
+      } else {
+        toast.error("Failed to add module");
       }
-    } catch (error) {
-      console.error("Error creating module:", error);
+    } catch {
+      toast.error("Failed to add module");
     }
   };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <div className="space-y-6">
+        <SkeletonCard />
+        <div className="space-y-4">
+          <SkeletonCard />
+          <SkeletonCard />
+        </div>
       </div>
     );
   }

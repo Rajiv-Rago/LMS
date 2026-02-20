@@ -4,6 +4,7 @@ import { dbConnect } from "@/lib/db";
 import { Course, Assignment, Submission } from "@/lib/models";
 import { authenticate } from "@/lib/auth";
 import { captureException } from "@/lib/logger";
+import { sendNotification } from "@/lib/notifications";
 
 const createSubmissionSchema = z.object({
   content: z.string().max(50000).optional(),
@@ -138,6 +139,16 @@ export async function POST(
         student: user.userId,
         submittedAt:
           validation.data.status === "submitted" ? new Date() : undefined,
+      });
+    }
+
+    if (submission.status === "submitted") {
+      await sendNotification({
+        userId: course.instructor.toString(),
+        type: "assignment.submitted",
+        title: "New submission",
+        message: `A student submitted "${assignment.title}"`,
+        link: `/courses/${id}/assignments/${assignmentId}/submissions`,
       });
     }
 

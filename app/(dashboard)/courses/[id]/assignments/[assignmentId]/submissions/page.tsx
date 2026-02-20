@@ -52,9 +52,7 @@ export default function SubmissionsPage({
 
         setAssignment(assignmentData.assignment);
         setSubmissions(submissionsData.submissions);
-      } catch (error) {
-        console.error("Error fetching data:", error);
-      } finally {
+      } catch { } finally {
         setLoading(false);
       }
     }
@@ -84,9 +82,7 @@ export default function SubmissionsPage({
         );
         setSelectedSubmission(null);
       }
-    } catch (error) {
-      console.error("Error grading:", error);
-    } finally {
+    } catch { } finally {
       setGrading(false);
     }
   };

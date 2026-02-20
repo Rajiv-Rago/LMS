@@ -41,9 +41,7 @@ export default function AITutorPage({
           const data = await res.json();
           setSessions(data.sessions);
         }
-      } catch (error) {
-        console.error("Error fetching sessions:", error);
-      } finally {
+      } catch { } finally {
         setLoadingSessions(false);
       }
     }
@@ -67,9 +65,7 @@ export default function AITutorPage({
           }))
         );
       }
-    } catch (error) {
-      console.error("Error loading session:", error);
-    }
+    } catch { }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -121,9 +117,7 @@ export default function AITutorPage({
           },
         ]);
       }
-    } catch (error) {
-      console.error("Error sending message:", error);
-      setMessages((prev) => [
+    } catch (error) {      setMessages((prev) => [
         ...prev,
         {
           role: "assistant",

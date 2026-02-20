@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useConfirm } from "@/lib/hooks/useConfirm";
 
 interface UploadedFile {
   id: string;
@@ -46,11 +47,18 @@ export default function FileList({
   canDelete = true,
   onFileDeleted,
 }: FileListProps) {
+  const confirm = useConfirm();
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const handleDelete = async (fileId: string) => {
-    if (!confirm("Are you sure you want to delete this file?")) return;
+    const confirmed = await confirm({
+      title: "Delete file",
+      message: "Are you sure you want to delete this file? This cannot be undone.",
+      confirmLabel: "Delete",
+      destructive: true,
+    });
+    if (!confirmed) return;
 
     setDeletingId(fileId);
     setError(null);

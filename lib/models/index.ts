@@ -53,3 +53,6 @@ export type { IAuditLog, AuditAction } from "./AuditLog";
 
 export { default as Session } from "./Session";
 export type { ISession } from "./Session";
+
+export { default as Notification } from "./Notification";
+export type { INotification } from "./Notification";

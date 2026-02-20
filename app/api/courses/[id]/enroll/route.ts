@@ -3,6 +3,7 @@ import { dbConnect } from "@/lib/db";
 import { Course } from "@/lib/models";
 import { authenticate } from "@/lib/auth";
 import { captureException } from "@/lib/logger";
+import { sendNotification } from "@/lib/notifications";
 
 export async function POST(
   request: NextRequest,
@@ -51,6 +52,14 @@ export async function POST(
 
     course.enrolledStudents.push(user.userId as unknown as typeof course.enrolledStudents[0]);
     await course.save();
+
+    await sendNotification({
+      userId: course.instructor.toString(),
+      type: "course.enrolled",
+      title: "New enrollment",
+      message: `A student enrolled in "${course.title}"`,
+      link: `/courses/${id}`,
+    });
 
     return NextResponse.json({ message: "Enrolled successfully" });
   } catch (error) {

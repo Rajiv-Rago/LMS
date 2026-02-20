@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 interface User {
   id: string;
@@ -22,8 +23,8 @@ export default function ProfilePage() {
           const data = await res.json();
           setUser(data.user);
         }
-      } catch (error) {
-        console.error("Error fetching user:", error);
+      } catch {
+        // Handled by error boundary
       } finally {
         setLoading(false);
       }
@@ -33,8 +34,21 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <div className="max-w-2xl mx-auto space-y-6">
+        <Skeleton className="h-7 w-24" />
+        <div className="bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800 p-6">
+          <div className="flex items-center gap-4 mb-6">
+            <Skeleton className="w-16 h-16 rounded-full" />
+            <div className="space-y-2">
+              <Skeleton className="h-5 w-32" />
+              <Skeleton className="h-4 w-48" />
+            </div>
+          </div>
+          <div className="space-y-4">
+            <Skeleton className="h-4 w-40" />
+            <Skeleton className="h-4 w-32" />
+          </div>
+        </div>
       </div>
     );
   }

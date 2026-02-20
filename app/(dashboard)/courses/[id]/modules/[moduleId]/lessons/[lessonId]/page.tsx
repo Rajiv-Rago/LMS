@@ -60,9 +60,7 @@ export default function LessonDetailPage({
           fileUrl: data.lesson.fileUrl || "",
           aiContext: data.lesson.aiContext || "",
         });
-      } catch (error) {
-        console.error("Error fetching lesson:", error);
-      } finally {
+      } catch { } finally {
         setLoading(false);
       }
     }
@@ -85,9 +83,7 @@ export default function LessonDetailPage({
         setLesson(data.lesson);
         setEditing(false);
       }
-    } catch (error) {
-      console.error("Error updating lesson:", error);
-    }
+    } catch { }
   };
 
   const handlePublish = async () => {
@@ -105,9 +101,7 @@ export default function LessonDetailPage({
         const data = await res.json();
         setLesson(data.lesson);
       }
-    } catch (error) {
-      console.error("Error updating lesson:", error);
-    }
+    } catch { }
   };
 
   const handleDelete = async () => {
@@ -125,9 +119,7 @@ export default function LessonDetailPage({
       if (res.ok) {
         router.push(`/courses/${id}/modules/${moduleId}`);
       }
-    } catch (error) {
-      console.error("Error deleting lesson:", error);
-    }
+    } catch { }
   };
 
   if (loading) {

@@ -4,61 +4,102 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-LMS (Learning Management System) - A full-stack web application built with Next.js 16 (App Router) and React 19, using MongoDB with Mongoose for data persistence.
+LMS (Learning Management System) - A full-stack web application for course management with AI-powered content generation. Teachers create courses with modules/lessons/assignments; students enroll, submit work, and take quizzes. AI features allow automated syllabus and lesson content generation via multiple LLM providers.
 
 ## Commands
 
 ```bash
-# Development
 npm run dev              # Start dev server at http://localhost:3000
-
-# Production
 npm run build            # Build for production
 npm start                # Start production server
-
-# Testing
 npm test                 # Run Jest tests
 npm test -- path/to/file.test.ts   # Run a single test file
 npm run test:watch       # Run Jest in watch mode
 npm run test:coverage    # Run tests with coverage
-
-# Linting
 npm run lint             # Run ESLint
 ```
 
-## Environment Setup
+## Environment Variables
 
-Required environment variable:
-- `MONGODB_URI` - MongoDB connection string (set in `.env` file)
+Required in `.env`:
+- `MONGODB_URI` - MongoDB connection string
+- `JWT_SECRET` - Secret for JWT token signing
+
+AI provider keys (at least one required for AI features):
+- `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, `GROQ_API_KEY`, `CEREBRAS_API_KEY`
+- `AI_PROVIDER` - Default provider name (defaults to "openai")
+- `AI_MODEL` - Default model override (optional)
 
 ## Architecture
 
+### Route Groups & Auth Flow
+
+The app uses two Next.js route groups:
+- `app/(auth)/` - Login/register pages (no sidebar, unauthenticated)
+- `app/(dashboard)/` - All authenticated pages with sidebar layout
+
+Authentication is JWT-based via httpOnly cookies. The dashboard layout (`app/(dashboard)/layout.tsx`) fetches the user from `GET /api/auth/me` on mount and redirects to `/login` if unauthenticated. This is a client-side auth check, not middleware-based.
+
+### API Route Patterns
+
+API routes live under `app/api/` and follow Next.js Route Handlers. The standard pattern:
+
+1. Call `authenticate(request)` to get the `JWTPayload` (userId, email, role)
+2. Call `await dbConnect()` before any database operations
+3. Validate request body with Zod schemas
+4. Return `NextResponse.json()`
+
+For routes requiring auth, use the `requireAuth` or `requireRole` HOF wrappers from `lib/auth/middleware.ts`. Route params in Next.js 16 are async: `const { id } = await params;`.
+
+### Data Model Hierarchy
+
 ```
-app/                    # Next.js App Router
-├── api/                # API route handlers (REST endpoints)
-│   └── [resource]/route.ts
-├── layout.tsx          # Root layout with Geist fonts
-├── page.tsx            # Home page
-└── globals.css         # Tailwind CSS with theme variables
-
-lib/                    # Shared utilities and business logic
-├── db.ts               # MongoDB connection (cached singleton via global._mongoose)
-└── models/             # Mongoose schema definitions
-    └── User.ts
+User (student | teacher | admin)
+└── Course (standard | ai-generated)
+    ├── Module
+    │   └── Lesson (text | video | quiz | assignment)
+    ├── Assignment (standard_quiz | lab_project)
+    │   └── Submission
+    └── AIChatSession (AI tutor conversations)
 ```
 
-**Database Connection Pattern**: The `dbConnect()` function in `lib/db.ts` caches the Mongoose connection at global scope to prevent connection exhaustion across API requests. Always use this function rather than calling `mongoose.connect()` directly.
+Courses have an `instructor` (teacher who created it) and optionally an `owner` (for AI-generated courses, the student who owns it). The `enrolledStudents` array tracks enrollment.
 
-**API Routes**: Follow Next.js Route Handler pattern - export named functions (GET, POST, etc.) from `route.ts` files. Use `@/lib/db` import alias for database connection.
+### AI System (`lib/ai/`)
 
-**Models**: Use the `mongoose.models.X || mongoose.model()` pattern to prevent model recompilation errors in development.
+The AI subsystem uses a provider pattern with a common `AIProvider` interface:
 
-**Path Aliases**: Use `@/*` to import from project root (e.g., `import { dbConnect } from "@/lib/db"`). Configured in `tsconfig.json`.
+- **Providers** (`lib/ai/providers/`): OpenAI, Anthropic, Gemini, Groq, Cerebras - each implements `chat()` and `generateText()`
+- **Services** (`lib/ai/services/`): Higher-level services built on providers:
+  - `SyllabusGeneratorService` - Generates course syllabi from prompts
+  - `LessonContentGeneratorService` - Generates lesson content for modules
+  - `AITutorService` - Powers the AI tutor chat
+  - `AIContentGenerator` - General content generation
+- **Provider resolution** (`lib/ai/utils/providerResolver.ts`): Resolves which provider to use with priority: request → course preferences → env vars → openai default
+
+Use `createAIProvider(config)` to instantiate a provider. Validation for AI requests uses Zod schemas in `lib/validation/aiSchemas.ts`.
+
+### Key Conventions
+
+- **Database connection**: Always use `dbConnect()` from `lib/db.ts` - it caches the connection globally
+- **Models**: Use `mongoose.models.X || mongoose.model()` pattern to prevent recompilation
+- **Path aliases**: `@/*` maps to project root
+- **Roles**: Three roles (`student`, `teacher`, `admin`) checked via `user.role` from JWT payload
+- **Course ownership**: Use helpers from `lib/auth/courseOwnership.ts` (`checkCourseOwnership`, `canModifyAICourse`, `canAccessAICourse`) for authorization checks on courses
+
+### Components
+
+Reusable UI components live in `components/` organized by feature:
+- `components/quiz/` - Quiz taking/building (QuestionBuilder, QuestionCard, QuizTimer, QuizResults)
+- `components/project/` - Lab project submissions (FileUploader, FileList, InstructionsViewer)
 
 ## Tech Stack
 
 - **Framework**: Next.js 16 with App Router
 - **UI**: React 19, Tailwind CSS 4
 - **Database**: MongoDB with Mongoose 8
+- **Auth**: JWT (jsonwebtoken) + bcryptjs
+- **Validation**: Zod 4
+- **AI SDKs**: openai, @anthropic-ai/sdk, @google/generative-ai
 - **Testing**: Jest 30
 - **Language**: TypeScript 5 (strict mode)

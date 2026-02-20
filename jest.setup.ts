@@ -1,5 +1,8 @@
 import '@testing-library/jest-dom'
 
+// Increase default timeout for integration tests (bcrypt hashing, DB setup)
+jest.setTimeout(15000);
+
 // Provide required env vars for tests — these must be set before any app modules
 // are imported (lib/env.ts validates at import time).
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-jwt-secret-for-jest';

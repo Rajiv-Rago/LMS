@@ -7,13 +7,19 @@ export interface IUser extends Document {
   name: string;
   password: string;
   role: "student" | "teacher" | "admin";
+  resetPasswordToken?: string;
+  resetPasswordExpires?: Date;
+  failedLoginAttempts: number;
+  lockUntil?: Date;
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
+  isLocked(): boolean;
 }
 
 interface IUserMethods {
   comparePassword(candidatePassword: string): Promise<boolean>;
+  isLocked(): boolean;
 }
 
 type UserModel = Model<IUser, object, IUserMethods>;
@@ -49,6 +55,21 @@ const userSchema = new mongoose.Schema<IUser, UserModel, IUserMethods>(
       },
       default: "student",
     },
+    resetPasswordToken: {
+      type: String,
+      select: false,
+    },
+    resetPasswordExpires: {
+      type: Date,
+      select: false,
+    },
+    failedLoginAttempts: {
+      type: Number,
+      default: 0,
+    },
+    lockUntil: {
+      type: Date,
+    },
   },
   {
     timestamps: true,
@@ -67,6 +88,10 @@ userSchema.methods.comparePassword = async function (
   candidatePassword: string
 ): Promise<boolean> {
   return bcrypt.compare(candidatePassword, this.password);
+};
+
+userSchema.methods.isLocked = function (): boolean {
+  return !!(this.lockUntil && this.lockUntil > new Date());
 };
 
 userSchema.index({ role: 1 });

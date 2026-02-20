@@ -17,3 +17,4 @@ export {
   canAccessAICourse,
 } from "./courseOwnership";
 export type { CourseOwnershipResult } from "./courseOwnership";
+export { logAuditEvent } from "./auditLog";

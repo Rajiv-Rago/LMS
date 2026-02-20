@@ -3,6 +3,8 @@ import { z } from "zod";
 import { dbConnect, DatabaseConnectionError } from "@/lib/db";
 import User from "@/lib/models/User";
 import { signToken, setAuthCookie } from "@/lib/auth";
+import { logAuditEvent } from "@/lib/auth/auditLog";
+import { captureException } from "@/lib/logger";
 
 const registerSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -58,9 +60,17 @@ export async function POST(request: NextRequest) {
     );
 
     setAuthCookie(response, token);
+
+    await logAuditEvent(request, {
+      userId: user._id.toString(),
+      action: "account.created",
+      resource: "user",
+      resourceId: user._id.toString(),
+    });
+
     return response;
   } catch (error) {
-    console.error("Registration error:", error);
+    captureException(error, { message: "Registration error" });
 
     if (error instanceof DatabaseConnectionError) {
       return NextResponse.json(

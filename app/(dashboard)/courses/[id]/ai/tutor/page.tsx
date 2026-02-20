@@ -84,7 +84,7 @@ export default function AITutorPage({
     try {
       const res = await fetch("/api/ai/chat", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "X-Requested-With": "XMLHttpRequest" },
         body: JSON.stringify({
           courseId: id,
           lessonId: lessonId || undefined,

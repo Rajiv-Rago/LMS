@@ -58,7 +58,7 @@ export default function FileList({
     try {
       const res = await fetch(
         `/api/courses/${courseId}/assignments/${assignmentId}/files?fileId=${fileId}`,
-        { method: "DELETE" }
+        { method: "DELETE", headers: { "X-Requested-With": "XMLHttpRequest" } }
       );
 
       if (!res.ok) {

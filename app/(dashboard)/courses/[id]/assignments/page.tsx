@@ -77,7 +77,7 @@ export default function AssignmentsPage({
     try {
       const res = await fetch(`/api/courses/${id}/assignments`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "X-Requested-With": "XMLHttpRequest" },
         body: JSON.stringify({
           ...formData,
           dueDate: new Date(formData.dueDate).toISOString(),

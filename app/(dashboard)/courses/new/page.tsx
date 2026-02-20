@@ -21,7 +21,7 @@ export default function NewCoursePage() {
     try {
       const res = await fetch("/api/courses", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "X-Requested-With": "XMLHttpRequest" },
         body: JSON.stringify(formData),
       });
 

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { dbConnect } from "@/lib/db";
 import { Course, Assignment, Submission } from "@/lib/models";
 import { authenticate } from "@/lib/auth";
+import { captureException } from "@/lib/logger";
 
 export async function GET(
   request: NextRequest,
@@ -86,7 +87,7 @@ export async function GET(
       },
     });
   } catch (error) {
-    console.error("Get grades error:", error);
+    captureException(error, { message: "Get grades error" });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { dbConnect } from "@/lib/db";
 import { Course, Module } from "@/lib/models";
 import { authenticate } from "@/lib/auth";
+import { captureException } from "@/lib/logger";
 
 const createModuleSchema = z.object({
   title: z.string().min(1).max(200),
@@ -50,7 +51,7 @@ export async function GET(
 
     return NextResponse.json({ modules });
   } catch (error) {
-    console.error("Get modules error:", error);
+    captureException(error, { message: "Get modules error" });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -106,7 +107,7 @@ export async function POST(
 
     return NextResponse.json({ module }, { status: 201 });
   } catch (error) {
-    console.error("Create module error:", error);
+    captureException(error, { message: "Create module error" });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

@@ -10,6 +10,7 @@ import {
   getRemainingTime,
   shuffleArray,
 } from "@/lib/utils/quizGrader";
+import { captureException } from "@/lib/logger";
 
 const submitQuizSchema = z.object({
   answers: z.record(z.string(), z.number()), // questionId -> selectedAnswer index
@@ -276,7 +277,7 @@ export async function POST(
       );
     }
   } catch (error) {
-    console.error("Quiz error:", error);
+    captureException(error, { message: "Quiz error" });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -374,7 +375,7 @@ export async function GET(
       activeAttemptExpired,
     });
   } catch (error) {
-    console.error("Get quiz error:", error);
+    captureException(error, { message: "Get quiz error" });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

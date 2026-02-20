@@ -182,7 +182,7 @@ export async function POST(
       totalFiles: submission.files.length,
     });
   } catch (error) {
-    console.error("File upload error:", error);
+    captureException(error, { message: "File upload error" });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -192,6 +192,7 @@ export async function POST(
 
 // DELETE /api/courses/[id]/assignments/[assignmentId]/files?fileId=xxx
 // Remove a file from a project submission
+import { captureException } from "@/lib/logger";
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string; assignmentId: string }> }
@@ -273,7 +274,7 @@ export async function DELETE(
       totalFiles: submission.files!.length,
     });
   } catch (error) {
-    console.error("File delete error:", error);
+    captureException(error, { message: "File delete error" });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -329,7 +330,7 @@ export async function GET(
       totalFiles: submission?.files?.length || 0,
     });
   } catch (error) {
-    console.error("Get files error:", error);
+    captureException(error, { message: "Get files error" });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

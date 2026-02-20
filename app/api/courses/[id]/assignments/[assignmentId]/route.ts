@@ -3,6 +3,7 @@ import { z } from "zod";
 import { dbConnect } from "@/lib/db";
 import { Course, Assignment, Submission } from "@/lib/models";
 import { authenticate } from "@/lib/auth";
+import { captureException } from "@/lib/logger";
 
 const quizQuestionSchema = z.object({
   id: z.string(),
@@ -128,7 +129,7 @@ export async function GET(
       },
     });
   } catch (error) {
-    console.error("Get assignment error:", error);
+    captureException(error, { message: "Get assignment error" });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -196,7 +197,7 @@ export async function PATCH(
 
     return NextResponse.json({ assignment });
   } catch (error) {
-    console.error("Update assignment error:", error);
+    captureException(error, { message: "Update assignment error" });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -245,7 +246,7 @@ export async function DELETE(
 
     return NextResponse.json({ message: "Assignment deleted successfully" });
   } catch (error) {
-    console.error("Delete assignment error:", error);
+    captureException(error, { message: "Delete assignment error" });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

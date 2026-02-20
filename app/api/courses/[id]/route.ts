@@ -3,6 +3,7 @@ import { z } from "zod";
 import { dbConnect } from "@/lib/db";
 import { Course } from "@/lib/models";
 import { authenticate } from "@/lib/auth";
+import { captureException } from "@/lib/logger";
 
 const updateCourseSchema = z.object({
   title: z.string().min(1).max(200).optional(),
@@ -52,7 +53,7 @@ export async function GET(
       },
     });
   } catch (error) {
-    console.error("Get course error:", error);
+    captureException(error, { message: "Get course error" });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -101,7 +102,7 @@ export async function PATCH(
 
     return NextResponse.json({ course });
   } catch (error) {
-    console.error("Update course error:", error);
+    captureException(error, { message: "Update course error" });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -137,7 +138,7 @@ export async function DELETE(
 
     return NextResponse.json({ message: "Course deleted successfully" });
   } catch (error) {
-    console.error("Delete course error:", error);
+    captureException(error, { message: "Delete course error" });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

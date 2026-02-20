@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { dbConnect } from "@/lib/db";
 import { Course } from "@/lib/models";
 import { authenticate } from "@/lib/auth";
+import { captureException } from "@/lib/logger";
 
 export async function POST(
   request: NextRequest,
@@ -53,7 +54,7 @@ export async function POST(
 
     return NextResponse.json({ message: "Enrolled successfully" });
   } catch (error) {
-    console.error("Enroll error:", error);
+    captureException(error, { message: "Enroll error" });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -99,7 +100,7 @@ export async function DELETE(
 
     return NextResponse.json({ message: "Unenrolled successfully" });
   } catch (error) {
-    console.error("Unenroll error:", error);
+    captureException(error, { message: "Unenroll error" });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

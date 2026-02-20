@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { dbConnect } from "@/lib/db";
 import { AIChatSession } from "@/lib/models";
 import { authenticate } from "@/lib/auth";
+import { captureException } from "@/lib/logger";
 
 export async function GET(
   request: NextRequest,
@@ -33,7 +34,7 @@ export async function GET(
 
     return NextResponse.json({ session });
   } catch (error) {
-    console.error("Get chat session error:", error);
+    captureException(error, { message: "Get chat session error" });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -71,7 +72,7 @@ export async function DELETE(
 
     return NextResponse.json({ message: "Session deleted successfully" });
   } catch (error) {
-    console.error("Delete chat session error:", error);
+    captureException(error, { message: "Delete chat session error" });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

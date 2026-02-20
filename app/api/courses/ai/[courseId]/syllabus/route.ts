@@ -5,6 +5,7 @@ import { dbConnect } from "@/lib/db";
 import { Course, Module, Lesson } from "@/lib/models";
 import { authenticate } from "@/lib/auth";
 import { recalculateModuleStatus } from "@/lib/utils/moduleStatusUpdater";
+import { captureException } from "@/lib/logger";
 
 const updateModuleSchema = z.object({
   _id: z.string().optional(),
@@ -67,7 +68,7 @@ export async function GET(
 
     return NextResponse.json({ course });
   } catch (error) {
-    console.error("Get syllabus error:", error);
+    captureException(error, { message: "Get syllabus error" });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -270,7 +271,7 @@ export async function PATCH(
 
     return NextResponse.json({ course: updatedCourse });
   } catch (error) {
-    console.error("Update syllabus error:", error);
+    captureException(error, { message: "Update syllabus error" });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -317,7 +318,7 @@ export async function DELETE(
 
     return NextResponse.json({ message: "Course deleted successfully" });
   } catch (error) {
-    console.error("Delete course error:", error);
+    captureException(error, { message: "Delete course error" });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

@@ -10,6 +10,7 @@ import {
   TargetLevel,
 } from "@/lib/ai/services/syllabusGenerator";
 import { logAIGeneration } from "@/lib/utils/aiGenerationLogger";
+import { captureException } from "@/lib/logger";
 
 const createSyllabusSchema = z.object({
   topic: z.string().min(1).max(500),
@@ -146,7 +147,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ course: populatedCourse }, { status: 201 });
   } catch (error) {
-    console.error("Create syllabus error:", error);
+    captureException(error, { message: "Create syllabus error" });
 
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
 

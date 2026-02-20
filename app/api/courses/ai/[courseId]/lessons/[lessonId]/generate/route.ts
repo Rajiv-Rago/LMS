@@ -10,6 +10,7 @@ import { LessonContentGeneratorService } from "@/lib/ai/services/lessonContentGe
 import { generateContentSchema } from "@/lib/validation/aiSchemas";
 import { logAIGeneration } from "@/lib/utils/aiGenerationLogger";
 import { markModuleCompletedIfReady } from "@/lib/utils/moduleStatusUpdater";
+import { captureException } from "@/lib/logger";
 
 const MAX_SUMMARY_LENGTH = 2000;
 
@@ -173,7 +174,7 @@ export async function POST(
         durationMs: Date.now() - startTime,
       });
     } catch (generateError) {
-      console.error("Error generating lesson content:", generateError);
+      captureException(generateError, { message: "Error generating lesson content" });
 
       lesson.generationStatus = "failed";
       await lesson.save();
@@ -196,7 +197,7 @@ export async function POST(
       throw generateError;
     }
   } catch (error) {
-    console.error("Generate lesson content error:", error);
+    captureException(error, { message: "Generate lesson content error" });
     return NextResponse.json(
       {
         error: `Failed to generate content: ${error instanceof Error ? error.message : "Unknown error"}`,

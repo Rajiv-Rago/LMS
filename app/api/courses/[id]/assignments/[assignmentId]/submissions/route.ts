@@ -3,6 +3,7 @@ import { z } from "zod";
 import { dbConnect } from "@/lib/db";
 import { Course, Assignment, Submission } from "@/lib/models";
 import { authenticate } from "@/lib/auth";
+import { captureException } from "@/lib/logger";
 
 const createSubmissionSchema = z.object({
   content: z.string().max(50000).optional(),
@@ -44,7 +45,7 @@ export async function GET(
 
     return NextResponse.json({ submissions });
   } catch (error) {
-    console.error("Get submissions error:", error);
+    captureException(error, { message: "Get submissions error" });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -142,7 +143,7 @@ export async function POST(
 
     return NextResponse.json({ submission }, { status: submission.isNew ? 201 : 200 });
   } catch (error) {
-    console.error("Create submission error:", error);
+    captureException(error, { message: "Create submission error" });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

@@ -10,6 +10,11 @@ interface User {
   name: string;
   email: string;
   role: "student" | "teacher" | "admin";
+  aiPreferences?: {
+    defaultTier?: "fast" | "balanced" | "powerful";
+    defaultProvider?: string;
+    defaultModel?: string;
+  };
 }
 
 function useDarkMode() {
@@ -84,6 +89,7 @@ export default function DashboardLayout({
     { name: "Dashboard", href: "/dashboard", roles: ["student", "teacher", "admin"] },
     { name: "My Courses", href: "/courses", roles: ["student", "teacher", "admin"] },
     { name: "Profile", href: "/profile", roles: ["student", "teacher", "admin"] },
+    { name: "Settings", href: "/settings", roles: ["student", "teacher", "admin"] },
   ];
 
   const filteredNav = navigation.filter(

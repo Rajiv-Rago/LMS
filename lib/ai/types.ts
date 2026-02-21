@@ -38,3 +38,11 @@ export interface AIProviderConfig {
   apiKey: string;
   model?: string;
 }
+
+export type AITier = "fast" | "balanced" | "powerful";
+
+export interface UserAIPreferences {
+  defaultTier?: AITier;
+  defaultProvider?: AIProviderName;
+  defaultModel?: string;
+}

@@ -3,8 +3,9 @@ import mongoose from "mongoose";
 import { dbConnect } from "@/lib/db";
 import { Course, Module, Lesson } from "@/lib/models";
 import { authenticate } from "@/lib/auth";
-import { AIProviderName } from "@/lib/ai/types";
+import { AIProviderName, AITier } from "@/lib/ai/types";
 import { resolveProvider } from "@/lib/ai/utils/providerResolver";
+import { getUserAIPreferences } from "@/lib/ai/utils/userPreferences";
 import { extractTargetLevel } from "@/lib/ai/utils/promptUtils";
 import { LessonContentGeneratorService } from "@/lib/ai/services/lessonContentGenerator";
 import { generateContentSchema } from "@/lib/validation/aiSchemas";
@@ -83,10 +84,14 @@ export async function POST(
       );
     }
 
+    const userPreferences = await getUserAIPreferences(user.userId);
+
     const resolved = resolveProvider({
       requestProvider: validation.data.provider as AIProviderName,
       requestModel: validation.data.model,
+      requestTier: validation.data.tier as AITier,
       coursePreferences: course.aiPreferences,
+      userPreferences,
     });
 
     if (!resolved) {

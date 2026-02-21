@@ -3,6 +3,7 @@
 import { useEffect, useState, use } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { ModelSelector, ModelSelectorValue } from "@/components/ai/ModelSelector";
 
 interface Lesson {
   _id: string;
@@ -43,6 +44,9 @@ export default function AIGeneratePage({
     contentType: "quiz" as "quiz" | "summary" | "practice" | "flashcards",
     numQuestions: 5,
   });
+  const [modelValue, setModelValue] = useState<ModelSelectorValue>({
+    tier: "balanced",
+  });
 
   useEffect(() => {
     async function fetchData() {
@@ -80,6 +84,9 @@ export default function AIGeneratePage({
           courseId: id,
           lessonId: formData.lessonId || undefined,
           contentType: formData.contentType,
+          tier: modelValue.tier || undefined,
+          provider: modelValue.provider || undefined,
+          model: modelValue.model || undefined,
           options: {
             numQuestions: formData.numQuestions,
             numProblems: formData.numQuestions,
@@ -238,6 +245,12 @@ export default function AIGeneratePage({
                 />
               </div>
             )}
+
+            <ModelSelector
+              value={modelValue}
+              onChange={setModelValue}
+              disabled={generating}
+            />
 
             <button
               type="submit"

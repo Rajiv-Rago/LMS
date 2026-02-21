@@ -26,6 +26,7 @@ export async function GET(request: NextRequest) {
         name: user.name,
         role: user.role,
         createdAt: user.createdAt,
+        aiPreferences: user.aiPreferences,
       },
     });
   } catch (error) {

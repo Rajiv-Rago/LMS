@@ -3,23 +3,31 @@ import { z } from "zod";
 import { dbConnect } from "@/lib/db";
 import { Course, Module, Lesson } from "@/lib/models";
 import { authenticate } from "@/lib/auth";
-import { AIProviderName } from "@/lib/ai/types";
+import { AIProviderName, AITier } from "@/lib/ai/types";
 import { resolveProvider } from "@/lib/ai/utils/providerResolver";
+import { getUserAIPreferences } from "@/lib/ai/utils/userPreferences";
 import {
   SyllabusGeneratorService,
   TargetLevel,
 } from "@/lib/ai/services/syllabusGenerator";
+import { aiTierSchema, aiProviderSchema } from "@/lib/validation/aiSchemas";
 import { logAIGeneration } from "@/lib/utils/aiGenerationLogger";
 import { captureException } from "@/lib/logger";
 
-const createSyllabusSchema = z.object({
-  topic: z.string().min(1).max(500),
-  targetLevel: z.enum(["beginner", "intermediate", "advanced"]),
-  estimatedDuration: z.string().min(1).max(100),
-  additionalContext: z.string().max(2000).optional(),
-  provider: z.enum(["openai", "anthropic", "groq", "cerebras", "gemini"]).optional(),
-  model: z.string().optional(),
-});
+const createSyllabusSchema = z
+  .object({
+    topic: z.string().min(1).max(500),
+    targetLevel: z.enum(["beginner", "intermediate", "advanced"]),
+    estimatedDuration: z.string().min(1).max(100),
+    additionalContext: z.string().max(2000).optional(),
+    tier: aiTierSchema.optional(),
+    provider: aiProviderSchema.optional(),
+    model: z.string().optional(),
+  })
+  .refine((data) => !(data.tier && data.provider), {
+    message: "Cannot specify both tier and provider",
+    path: ["tier"],
+  });
 
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
@@ -41,12 +49,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { topic, targetLevel, estimatedDuration, additionalContext, provider, model } =
+    const { topic, targetLevel, estimatedDuration, additionalContext, tier, provider, model } =
       validation.data;
+
+    const userPreferences = await getUserAIPreferences(user.userId);
 
     const resolved = resolveProvider({
       requestProvider: provider as AIProviderName,
       requestModel: model,
+      requestTier: tier as AITier,
+      userPreferences,
     });
 
     if (!resolved) {

@@ -1,4 +1,5 @@
-import { AIProviderName } from "../types";
+import { AIProviderName, AITier, UserAIPreferences } from "../types";
+import { resolveTier } from "./tierCatalog";
 
 export const API_KEY_ENV_MAP: Record<AIProviderName, string> = {
   openai: "OPENAI_API_KEY",
@@ -22,40 +23,87 @@ export interface ResolvedProvider {
 export interface ResolveProviderOptions {
   requestProvider?: AIProviderName;
   requestModel?: string;
+  requestTier?: AITier;
   coursePreferences?: CourseAIPreferences;
+  userPreferences?: UserAIPreferences;
 }
 
 /**
- * Resolves the AI provider to use based on request, course preferences, and environment.
- * Priority order:
- * 1. Request provider/model
- * 2. Course preferences
- * 3. Environment variables
- * 4. Default to OpenAI
+ * Resolves the AI provider to use based on a 6-level priority chain:
+ * 1. Request explicit provider+model (advanced override)
+ * 2. Request tier (tier buttons)
+ * 3. Course preferences (existing course.aiPreferences)
+ * 4. User preferences (user.aiPreferences.defaultTier or defaultProvider)
+ * 5. Environment variables (AI_PROVIDER / AI_MODEL)
+ * 6. Fallback → openai
  */
 export function resolveProvider(
   options: ResolveProviderOptions
 ): ResolvedProvider | null {
-  const provider =
-    options.requestProvider ||
-    options.coursePreferences?.defaultProvider ||
-    (process.env.AI_PROVIDER as AIProviderName) ||
-    "openai";
-
-  const model =
-    options.requestModel ||
-    options.coursePreferences?.defaultModel ||
-    process.env.AI_MODEL;
-
-  const apiKey = getApiKey(provider);
-
-  if (!apiKey) {
-    return null;
+  // 1. Request explicit provider+model
+  if (options.requestProvider) {
+    const apiKey = getApiKey(options.requestProvider);
+    if (!apiKey) return null;
+    return {
+      provider: options.requestProvider,
+      model: options.requestModel,
+      apiKey,
+    };
   }
 
+  // 2. Request tier
+  if (options.requestTier) {
+    return resolveTier(options.requestTier);
+  }
+
+  // 3. Course preferences
+  if (options.coursePreferences?.defaultProvider) {
+    const apiKey = getApiKey(options.coursePreferences.defaultProvider);
+    if (apiKey) {
+      return {
+        provider: options.coursePreferences.defaultProvider,
+        model: options.coursePreferences.defaultModel,
+        apiKey,
+      };
+    }
+  }
+
+  // 4. User preferences (tier takes precedence over explicit provider)
+  if (options.userPreferences?.defaultTier) {
+    const resolved = resolveTier(options.userPreferences.defaultTier);
+    if (resolved) return resolved;
+  }
+  if (options.userPreferences?.defaultProvider) {
+    const apiKey = getApiKey(options.userPreferences.defaultProvider);
+    if (apiKey) {
+      return {
+        provider: options.userPreferences.defaultProvider,
+        model: options.userPreferences.defaultModel,
+        apiKey,
+      };
+    }
+  }
+
+  // 5. Environment variables
+  const envProvider = process.env.AI_PROVIDER as AIProviderName | undefined;
+  if (envProvider) {
+    const apiKey = getApiKey(envProvider);
+    if (apiKey) {
+      return {
+        provider: envProvider,
+        model: process.env.AI_MODEL,
+        apiKey,
+      };
+    }
+  }
+
+  // 6. Fallback → openai
+  const apiKey = getApiKey("openai");
+  if (!apiKey) return null;
+
   return {
-    provider,
-    model,
+    provider: "openai",
+    model: process.env.AI_MODEL,
     apiKey,
   };
 }

@@ -11,6 +11,11 @@ export interface IUser extends Document {
   resetPasswordExpires?: Date;
   failedLoginAttempts: number;
   lockUntil?: Date;
+  aiPreferences?: {
+    defaultTier?: "fast" | "balanced" | "powerful";
+    defaultProvider?: "openai" | "anthropic" | "groq" | "cerebras" | "gemini";
+    defaultModel?: string;
+  };
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -69,6 +74,19 @@ const userSchema = new mongoose.Schema<IUser, UserModel, IUserMethods>(
     },
     lockUntil: {
       type: Date,
+    },
+    aiPreferences: {
+      defaultTier: {
+        type: String,
+        enum: ["fast", "balanced", "powerful"],
+      },
+      defaultProvider: {
+        type: String,
+        enum: ["openai", "anthropic", "groq", "cerebras", "gemini"],
+      },
+      defaultModel: {
+        type: String,
+      },
     },
   },
   {

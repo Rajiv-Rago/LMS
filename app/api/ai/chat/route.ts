@@ -3,16 +3,27 @@ import { z } from "zod";
 import { dbConnect } from "@/lib/db";
 import { Course, Lesson, AIChatSession } from "@/lib/models";
 import { authenticate } from "@/lib/auth";
-import { getDefaultProvider, getProviderName } from "@/lib/ai";
+import { createAIProvider, resolveProvider } from "@/lib/ai";
+import { AITier, AIProviderName } from "@/lib/ai/types";
+import { getUserAIPreferences } from "@/lib/ai/utils/userPreferences";
 import { AITutorService } from "@/lib/ai/services/tutor";
+import { aiTierSchema, aiProviderSchema } from "@/lib/validation/aiSchemas";
 import { captureException } from "@/lib/logger";
 
-const createChatSchema = z.object({
-  courseId: z.string(),
-  lessonId: z.string().optional(),
-  message: z.string().min(1).max(5000),
-  sessionId: z.string().optional(),
-});
+const createChatSchema = z
+  .object({
+    courseId: z.string(),
+    lessonId: z.string().optional(),
+    message: z.string().min(1).max(5000),
+    sessionId: z.string().optional(),
+    tier: aiTierSchema.optional(),
+    provider: aiProviderSchema.optional(),
+    model: z.string().optional(),
+  })
+  .refine((data) => !(data.tier && data.provider), {
+    message: "Cannot specify both tier and provider",
+    path: ["tier"],
+  });
 
 export async function POST(request: NextRequest) {
   try {
@@ -32,7 +43,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { courseId, lessonId, message, sessionId } = validation.data;
+    const { courseId, lessonId, message, sessionId, tier, provider: reqProvider, model: reqModel } = validation.data;
 
     await dbConnect();
 
@@ -56,6 +67,23 @@ export async function POST(request: NextRequest) {
       lesson = await Lesson.findById(lessonId);
     }
 
+    const userPreferences = await getUserAIPreferences(user.userId);
+
+    const resolved = resolveProvider({
+      requestProvider: reqProvider as AIProviderName,
+      requestModel: reqModel,
+      requestTier: tier as AITier,
+      coursePreferences: course.aiPreferences,
+      userPreferences,
+    });
+
+    if (!resolved) {
+      return NextResponse.json(
+        { error: "No AI provider configured. Please set up an API key." },
+        { status: 500 }
+      );
+    }
+
     let session;
     if (sessionId) {
       session = await AIChatSession.findOne({
@@ -71,14 +99,13 @@ export async function POST(request: NextRequest) {
         );
       }
     } else {
-      const providerName = getProviderName();
       session = await AIChatSession.create({
         user: user.userId,
         course: courseId,
         lesson: lessonId,
         title: message.slice(0, 50) + (message.length > 50 ? "..." : ""),
         messages: [],
-        provider: providerName,
+        provider: resolved.provider,
       });
     }
 
@@ -88,8 +115,12 @@ export async function POST(request: NextRequest) {
       timestamp: new Date(),
     });
 
-    const provider = getDefaultProvider();
-    const tutorService = new AITutorService(provider);
+    const aiProvider = createAIProvider({
+      provider: resolved.provider,
+      apiKey: resolved.apiKey,
+      model: resolved.model,
+    });
+    const tutorService = new AITutorService(aiProvider);
 
     const conversationHistory = session.messages.map((m: { role: string; content: string }) => ({
       role: m.role as "user" | "assistant" | "system",

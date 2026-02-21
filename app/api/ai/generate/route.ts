@@ -3,22 +3,33 @@ import { z } from "zod";
 import { dbConnect } from "@/lib/db";
 import { Course, Lesson, AIGeneratedContent } from "@/lib/models";
 import { authenticate } from "@/lib/auth";
-import { getDefaultProvider, getProviderName } from "@/lib/ai";
+import { createAIProvider, resolveProvider } from "@/lib/ai";
+import { AITier, AIProviderName } from "@/lib/ai/types";
+import { getUserAIPreferences } from "@/lib/ai/utils/userPreferences";
 import { AIContentGenerator } from "@/lib/ai/services/generator";
+import { aiTierSchema, aiProviderSchema } from "@/lib/validation/aiSchemas";
 import { captureException } from "@/lib/logger";
 
-const generateSchema = z.object({
-  courseId: z.string(),
-  lessonId: z.string().optional(),
-  contentType: z.enum(["quiz", "summary", "practice", "flashcards"]),
-  options: z
-    .object({
-      numQuestions: z.number().min(1).max(20).optional(),
-      numProblems: z.number().min(1).max(10).optional(),
-      numCards: z.number().min(1).max(30).optional(),
-    })
-    .optional(),
-});
+const generateSchema = z
+  .object({
+    courseId: z.string(),
+    lessonId: z.string().optional(),
+    contentType: z.enum(["quiz", "summary", "practice", "flashcards"]),
+    tier: aiTierSchema.optional(),
+    provider: aiProviderSchema.optional(),
+    model: z.string().optional(),
+    options: z
+      .object({
+        numQuestions: z.number().min(1).max(20).optional(),
+        numProblems: z.number().min(1).max(10).optional(),
+        numCards: z.number().min(1).max(30).optional(),
+      })
+      .optional(),
+  })
+  .refine((data) => !(data.tier && data.provider), {
+    message: "Cannot specify both tier and provider",
+    path: ["tier"],
+  });
 
 export async function POST(request: NextRequest) {
   try {
@@ -45,7 +56,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { courseId, lessonId, contentType, options } = validation.data;
+    const { courseId, lessonId, contentType, tier, provider: reqProvider, model: reqModel, options } = validation.data;
 
     await dbConnect();
 
@@ -70,8 +81,29 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const provider = getDefaultProvider();
-    const generator = new AIContentGenerator(provider);
+    const userPreferences = await getUserAIPreferences(user.userId);
+
+    const resolved = resolveProvider({
+      requestProvider: reqProvider as AIProviderName,
+      requestModel: reqModel,
+      requestTier: tier as AITier,
+      coursePreferences: course.aiPreferences,
+      userPreferences,
+    });
+
+    if (!resolved) {
+      return NextResponse.json(
+        { error: "No AI provider configured. Please set up an API key." },
+        { status: 500 }
+      );
+    }
+
+    const aiProvider = createAIProvider({
+      provider: resolved.provider,
+      apiKey: resolved.apiKey,
+      model: resolved.model,
+    });
+    const generator = new AIContentGenerator(aiProvider);
 
     const context = {
       courseName: course.title,
@@ -99,8 +131,6 @@ export async function POST(request: NextRequest) {
         break;
     }
 
-    const providerName = getProviderName();
-
     const generatedContent = await AIGeneratedContent.create({
       course: courseId,
       lesson: lessonId,
@@ -109,7 +139,7 @@ export async function POST(request: NextRequest) {
       title: result.title,
       content: result.content,
       quizQuestions: result.type === "quiz" ? result.questions : undefined,
-      provider: providerName,
+      provider: resolved.provider,
       approvalStatus: "pending",
     });
 

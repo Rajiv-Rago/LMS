@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef, use } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { ModelSelector, ModelSelectorValue } from "@/components/ai/ModelSelector";
 
 interface Message {
   role: "user" | "assistant";
@@ -31,6 +32,9 @@ export default function AITutorPage({
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [loadingSessions, setLoadingSessions] = useState(true);
+  const [modelValue, setModelValue] = useState<ModelSelectorValue>({
+    tier: "balanced",
+  });
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -86,6 +90,9 @@ export default function AITutorPage({
           lessonId: lessonId || undefined,
           message: userMessage,
           sessionId: currentSessionId || undefined,
+          tier: modelValue.tier || undefined,
+          provider: modelValue.provider || undefined,
+          model: modelValue.model || undefined,
         }),
       });
 
@@ -150,13 +157,18 @@ export default function AITutorPage({
           </h2>
         </div>
 
-        <div className="p-4">
+        <div className="p-4 space-y-3">
           <button
             onClick={startNewChat}
             className="w-full px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-500"
           >
             New Chat
           </button>
+          <ModelSelector
+            value={modelValue}
+            onChange={setModelValue}
+            disabled={loading}
+          />
         </div>
 
         <div className="flex-1 overflow-y-auto">

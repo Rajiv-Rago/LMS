@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { ModelSelector, ModelSelectorValue } from "@/components/ai/ModelSelector";
 
 type TargetLevel = "beginner" | "intermediate" | "advanced";
 type GenerationPhase = "idle" | "submitting" | "designing" | "creating-modules" | "setting-up" | "complete";
@@ -23,12 +24,12 @@ export default function NewAICoursePage() {
     targetLevel: "beginner" as TargetLevel,
     estimatedDuration: "",
     additionalContext: "",
-    provider: "",
-    model: "",
+  });
+  const [modelValue, setModelValue] = useState<ModelSelectorValue>({
+    tier: "balanced",
   });
   const [error, setError] = useState("");
   const [phase, setPhase] = useState<GenerationPhase>("idle");
-  const [showAdvanced, setShowAdvanced] = useState(false);
 
   const isGenerating = phase !== "idle";
 
@@ -52,11 +53,14 @@ export default function NewAICoursePage() {
       if (formData.additionalContext) {
         payload.additionalContext = formData.additionalContext;
       }
-      if (formData.provider) {
-        payload.provider = formData.provider;
+      if (modelValue.tier) {
+        payload.tier = modelValue.tier;
       }
-      if (formData.model) {
-        payload.model = formData.model;
+      if (modelValue.provider) {
+        payload.provider = modelValue.provider;
+      }
+      if (modelValue.model) {
+        payload.model = modelValue.model;
       }
 
       const res = await fetch("/api/courses/ai/syllabus", {
@@ -226,78 +230,11 @@ export default function NewAICoursePage() {
               />
             </div>
 
-            {/* Advanced Settings */}
-            <div>
-              <button
-                type="button"
-                onClick={() => setShowAdvanced(!showAdvanced)}
-                className="flex items-center gap-2 text-sm text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
-              >
-                <svg
-                  className={`w-4 h-4 transition-transform ${showAdvanced ? "rotate-90" : ""}`}
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 5l7 7-7 7"
-                  />
-                </svg>
-                Advanced Settings
-              </button>
-
-              {showAdvanced && (
-                <div className="mt-4 space-y-4 pl-6 border-l-2 border-zinc-200 dark:border-zinc-700">
-                  <div>
-                    <label
-                      htmlFor="provider"
-                      className="block text-sm font-medium text-zinc-700 dark:text-zinc-300"
-                    >
-                      AI Provider (optional)
-                    </label>
-                    <select
-                      id="provider"
-                      disabled={isGenerating}
-                      value={formData.provider}
-                      onChange={(e) =>
-                        setFormData({ ...formData, provider: e.target.value })
-                      }
-                      className="mt-1 block w-full rounded-md border border-zinc-300 dark:border-zinc-700 px-3 py-2 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <option value="">Use default</option>
-                      <option value="openai">OpenAI</option>
-                      <option value="anthropic">Anthropic</option>
-                      <option value="gemini">Gemini</option>
-                      <option value="groq">Groq</option>
-                      <option value="cerebras">Cerebras</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label
-                      htmlFor="model"
-                      className="block text-sm font-medium text-zinc-700 dark:text-zinc-300"
-                    >
-                      Model (optional)
-                    </label>
-                    <input
-                      id="model"
-                      type="text"
-                      disabled={isGenerating}
-                      value={formData.model}
-                      onChange={(e) =>
-                        setFormData({ ...formData, model: e.target.value })
-                      }
-                      className="mt-1 block w-full rounded-md border border-zinc-300 dark:border-zinc-700 px-3 py-2 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white placeholder-zinc-400 focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                      placeholder="e.g., gpt-4o, claude-3-opus"
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
+            <ModelSelector
+              value={modelValue}
+              onChange={setModelValue}
+              disabled={isGenerating}
+            />
 
             {/* Progress Indicator */}
             {isGenerating && (

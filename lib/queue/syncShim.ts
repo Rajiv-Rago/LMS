@@ -1,4 +1,4 @@
-import { getHandler } from "./handlers";
+import { getHandler, handlersReady } from "./handlers";
 import type { QueueAdapter, EnqueueOptions, JobStatusResult } from "./index";
 
 interface SyncJobResult {
@@ -15,6 +15,9 @@ let counter = 0;
 
 export class SyncShim implements QueueAdapter {
   async enqueueJob(options: EnqueueOptions): Promise<string> {
+    // Wait for async handler registration before looking up
+    await handlersReady;
+
     const id = `sync-${++counter}-${Date.now()}`;
     const handler = getHandler(options.type);
 

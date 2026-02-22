@@ -1,6 +1,6 @@
 import { dbConnect } from "@/lib/db";
 import Job from "@/lib/models/Job";
-import { getHandler } from "./handlers";
+import { getHandler, handlersReady } from "./handlers";
 import { captureException } from "@/lib/logger";
 
 const POLL_INTERVAL_MS = 2000;
@@ -115,7 +115,7 @@ export async function startWorker(): Promise<void> {
   running = true;
 
   // Ensure handlers are loaded
-  await import("./handlers");
+  await handlersReady;
 
   console.log("[Queue Worker] Started, polling every", POLL_INTERVAL_MS, "ms");
   pollTimer = setInterval(poll, POLL_INTERVAL_MS);

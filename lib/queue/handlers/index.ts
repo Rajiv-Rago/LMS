@@ -12,7 +12,7 @@ export function getHandler(type: string): JobHandler | undefined {
   return handlers.get(type);
 }
 
-// Auto-register AI generation handlers on import
-import("./aiGeneration").catch(() => {
-  // Silently fail if handlers can't be loaded
-});
+// Eagerly start loading AI handlers; consumers must await this before calling getHandler()
+export const handlersReady: Promise<void> = import("./aiGeneration")
+  .then(() => {})
+  .catch(() => {});

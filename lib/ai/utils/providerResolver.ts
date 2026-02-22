@@ -1,13 +1,9 @@
 import { AIProviderName, AITier, UserAIPreferences } from "../types";
+import { getApiKey } from "./apiKeys";
+import { getModelDisplayName, getProviderDisplayName } from "./modelRegistry";
 import { resolveTier } from "./tierCatalog";
 
-export const API_KEY_ENV_MAP: Record<AIProviderName, string> = {
-  openai: "OPENAI_API_KEY",
-  anthropic: "ANTHROPIC_API_KEY",
-  groq: "GROQ_API_KEY",
-  cerebras: "CEREBRAS_API_KEY",
-  gemini: "GEMINI_API_KEY",
-};
+export { API_KEY_ENV_MAP, getApiKey } from "./apiKeys";
 
 export interface CourseAIPreferences {
   defaultProvider?: AIProviderName;
@@ -18,6 +14,8 @@ export interface ResolvedProvider {
   provider: AIProviderName;
   model?: string;
   apiKey: string;
+  displayName?: string;
+  providerDisplayName?: string;
 }
 
 export interface ResolveProviderOptions {
@@ -26,6 +24,19 @@ export interface ResolveProviderOptions {
   requestTier?: AITier;
   coursePreferences?: CourseAIPreferences;
   userPreferences?: UserAIPreferences;
+}
+
+/**
+ * Builds display name fields for a resolved provider.
+ */
+function withDisplayNames(
+  provider: AIProviderName,
+  model?: string
+): { displayName?: string; providerDisplayName: string } {
+  return {
+    displayName: model ? getModelDisplayName(model) : undefined,
+    providerDisplayName: getProviderDisplayName(provider),
+  };
 }
 
 /**
@@ -48,12 +59,21 @@ export function resolveProvider(
       provider: options.requestProvider,
       model: options.requestModel,
       apiKey,
+      ...withDisplayNames(options.requestProvider, options.requestModel),
     };
   }
 
   // 2. Request tier
   if (options.requestTier) {
-    return resolveTier(options.requestTier);
+    const resolved = resolveTier(options.requestTier);
+    if (!resolved) return null;
+    return {
+      provider: resolved.provider,
+      model: resolved.model,
+      apiKey: resolved.apiKey,
+      displayName: resolved.displayName,
+      providerDisplayName: resolved.providerDisplayName,
+    };
   }
 
   // 3. Course preferences
@@ -64,6 +84,10 @@ export function resolveProvider(
         provider: options.coursePreferences.defaultProvider,
         model: options.coursePreferences.defaultModel,
         apiKey,
+        ...withDisplayNames(
+          options.coursePreferences.defaultProvider,
+          options.coursePreferences.defaultModel
+        ),
       };
     }
   }
@@ -71,7 +95,15 @@ export function resolveProvider(
   // 4. User preferences (tier takes precedence over explicit provider)
   if (options.userPreferences?.defaultTier) {
     const resolved = resolveTier(options.userPreferences.defaultTier);
-    if (resolved) return resolved;
+    if (resolved) {
+      return {
+        provider: resolved.provider,
+        model: resolved.model,
+        apiKey: resolved.apiKey,
+        displayName: resolved.displayName,
+        providerDisplayName: resolved.providerDisplayName,
+      };
+    }
   }
   if (options.userPreferences?.defaultProvider) {
     const apiKey = getApiKey(options.userPreferences.defaultProvider);
@@ -80,6 +112,10 @@ export function resolveProvider(
         provider: options.userPreferences.defaultProvider,
         model: options.userPreferences.defaultModel,
         apiKey,
+        ...withDisplayNames(
+          options.userPreferences.defaultProvider,
+          options.userPreferences.defaultModel
+        ),
       };
     }
   }
@@ -93,6 +129,7 @@ export function resolveProvider(
         provider: envProvider,
         model: process.env.AI_MODEL,
         apiKey,
+        ...withDisplayNames(envProvider, process.env.AI_MODEL),
       };
     }
   }
@@ -105,15 +142,6 @@ export function resolveProvider(
     provider: "openai",
     model: process.env.AI_MODEL,
     apiKey,
+    ...withDisplayNames("openai", process.env.AI_MODEL),
   };
-}
-
-/**
- * Gets the API key for a given provider from environment variables.
- * Returns null if not configured.
- */
-export function getApiKey(provider: AIProviderName): string | null {
-  const envVar = API_KEY_ENV_MAP[provider];
-  const apiKey = process.env[envVar];
-  return apiKey || null;
 }

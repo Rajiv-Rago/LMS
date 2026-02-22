@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-
-type AITier = "fast" | "balanced" | "powerful";
+import { useEffect, useState, useRef } from "react";
+import type { AITier, AIProviderName } from "@/lib/ai/types";
 
 interface TierDetail {
   tier: AITier;
@@ -11,16 +10,26 @@ interface TierDetail {
   available: boolean;
   resolvedProvider: string | null;
   resolvedModel: string | null;
+  resolvedDisplayName: string | null;
+  resolvedProviderDisplayName: string | null;
+}
+
+interface AvailableModel {
+  id: string;
+  displayName: string;
+  provider: AIProviderName;
+  providerDisplayName: string;
 }
 
 interface AIConfig {
   tiers: TierDetail[];
   configuredProviders: string[];
+  availableModels: AvailableModel[];
 }
 
 export interface ModelSelectorValue {
   tier?: AITier;
-  provider?: string;
+  provider?: AIProviderName;
   model?: string;
 }
 
@@ -31,7 +40,23 @@ interface ModelSelectorProps {
   className?: string;
 }
 
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
 let cachedConfig: AIConfig | null = null;
+let cachedAt = 0;
+
+function getCachedConfig(): AIConfig | null {
+  if (cachedConfig && Date.now() - cachedAt < CACHE_TTL_MS) {
+    return cachedConfig;
+  }
+  cachedConfig = null;
+  return null;
+}
+
+function setCachedConfig(config: AIConfig) {
+  cachedConfig = config;
+  cachedAt = Date.now();
+}
 
 export function ModelSelector({
   value,
@@ -39,30 +64,41 @@ export function ModelSelector({
   disabled,
   className = "",
 }: ModelSelectorProps) {
-  const [config, setConfig] = useState<AIConfig | null>(cachedConfig);
-  const [loading, setLoading] = useState(!cachedConfig);
+  const cached = getCachedConfig();
+  const [config, setConfig] = useState<AIConfig | null>(cached);
+  const [loading, setLoading] = useState(!cached);
   const [showAdvanced, setShowAdvanced] = useState(
     !!(value.provider && !value.tier)
   );
+  const lastTierRef = useRef<AITier | undefined>(value.tier);
+
+  // Track the last selected tier so we can restore it when toggling back from advanced
+  useEffect(() => {
+    if (value.tier) {
+      lastTierRef.current = value.tier;
+    }
+  }, [value.tier]);
 
   useEffect(() => {
-    if (cachedConfig) return;
+    if (getCachedConfig()) return;
 
+    let cancelled = false;
     async function fetchConfig() {
       try {
         const res = await fetch("/api/ai/config");
-        if (res.ok) {
+        if (res.ok && !cancelled) {
           const data = await res.json();
-          cachedConfig = data;
+          setCachedConfig(data);
           setConfig(data);
         }
       } catch {
         // Silently fail — tiers just won't show
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     }
     fetchConfig();
+    return () => { cancelled = true; };
   }, []);
 
   const handleTierSelect = (tier: AITier) => {
@@ -76,13 +112,20 @@ export function ModelSelector({
     const next = !showAdvanced;
     setShowAdvanced(next);
     if (next) {
+      // Entering advanced mode — clear tier, keep provider/model
       onChange({ provider: value.provider, model: value.model });
     } else {
-      onChange({ tier: value.tier });
+      // Leaving advanced mode — restore last selected tier
+      onChange({ tier: lastTierRef.current || "balanced" });
     }
   };
 
   const resolvedInfo = config?.tiers.find((t) => t.tier === value.tier);
+
+  // Filter available models by selected provider in advanced mode
+  const filteredModels = config?.availableModels.filter(
+    (m) => !value.provider || m.provider === value.provider
+  ) ?? [];
 
   if (loading) {
     return (
@@ -130,11 +173,11 @@ export function ModelSelector({
         })}
       </div>
 
-      {/* Resolved model info */}
-      {value.tier && !showAdvanced && resolvedInfo?.resolvedModel && (
+      {/* Resolved model info — display names */}
+      {value.tier && !showAdvanced && resolvedInfo?.resolvedDisplayName && (
         <p className="mt-1.5 text-xs text-zinc-500 dark:text-zinc-400">
-          Using {resolvedInfo.resolvedModel} via{" "}
-          {resolvedInfo.resolvedProvider}
+          Using {resolvedInfo.resolvedDisplayName} via{" "}
+          {resolvedInfo.resolvedProviderDisplayName}
         </p>
       )}
 
@@ -173,8 +216,8 @@ export function ModelSelector({
               value={value.provider || ""}
               onChange={(e) =>
                 onChange({
-                  provider: e.target.value || undefined,
-                  model: value.model,
+                  provider: (e.target.value || undefined) as AIProviderName | undefined,
+                  model: undefined, // Reset model when provider changes
                 })
               }
               className="w-full rounded-md border border-zinc-300 dark:border-zinc-700 px-3 py-1.5 text-sm bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white disabled:opacity-50"
@@ -191,8 +234,7 @@ export function ModelSelector({
             <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1">
               Model
             </label>
-            <input
-              type="text"
+            <select
               disabled={disabled}
               value={value.model || ""}
               onChange={(e) =>
@@ -201,9 +243,15 @@ export function ModelSelector({
                   model: e.target.value || undefined,
                 })
               }
-              placeholder="e.g., gpt-4o, claude-3-opus"
-              className="w-full rounded-md border border-zinc-300 dark:border-zinc-700 px-3 py-1.5 text-sm bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white placeholder-zinc-400 disabled:opacity-50"
-            />
+              className="w-full rounded-md border border-zinc-300 dark:border-zinc-700 px-3 py-1.5 text-sm bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white disabled:opacity-50"
+            >
+              <option value="">Use default</option>
+              {filteredModels.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.displayName} ({m.providerDisplayName})
+                </option>
+              ))}
+            </select>
           </div>
         </div>
       )}

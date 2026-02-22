@@ -8,6 +8,7 @@ import { AITier, AIProviderName } from "@/lib/ai/types";
 import { getUserAIPreferences } from "@/lib/ai/utils/userPreferences";
 import { AITutorService } from "@/lib/ai/services/tutor";
 import { aiTierSchema, aiProviderSchema } from "@/lib/validation/aiSchemas";
+import { enforceAIRateLimit, addRateLimitHeaders } from "@/lib/ai/rateLimit";
 import { captureException } from "@/lib/logger";
 
 const createChatSchema = z
@@ -18,7 +19,7 @@ const createChatSchema = z
     sessionId: z.string().optional(),
     tier: aiTierSchema.optional(),
     provider: aiProviderSchema.optional(),
-    model: z.string().optional(),
+    model: z.string().max(256).optional(),
   })
   .refine((data) => !(data.tier && data.provider), {
     message: "Cannot specify both tier and provider",
@@ -32,6 +33,10 @@ export async function POST(request: NextRequest) {
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    // Rate limit check
+    const rateCheck = await enforceAIRateLimit(user.userId, user.role, "chat");
+    if (rateCheck.blocked) return rateCheck.response;
 
     const body = await request.json();
     const validation = createChatSchema.safeParse(body);
@@ -67,7 +72,7 @@ export async function POST(request: NextRequest) {
       lesson = await Lesson.findById(lessonId);
     }
 
-    const userPreferences = await getUserAIPreferences(user.userId);
+    const userPreferences = (tier || reqProvider) ? undefined : await getUserAIPreferences(user.userId);
 
     const resolved = resolveProvider({
       requestProvider: reqProvider as AIProviderName,
@@ -142,13 +147,15 @@ export async function POST(request: NextRequest) {
 
     await session.save();
 
-    return NextResponse.json({
+    const jsonResponse = NextResponse.json({
       sessionId: session._id,
       message: {
         role: "assistant",
         content: response.content,
       },
     });
+    addRateLimitHeaders(jsonResponse, rateCheck.result);
+    return jsonResponse;
   } catch (error) {
     captureException(error, { operation: "AI chat error" });
     return NextResponse.json(

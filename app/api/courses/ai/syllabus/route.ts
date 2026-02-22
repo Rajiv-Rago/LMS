@@ -1,17 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { dbConnect } from "@/lib/db";
-import { Course, Module, Lesson } from "@/lib/models";
 import { authenticate } from "@/lib/auth";
 import { AIProviderName, AITier } from "@/lib/ai/types";
 import { resolveProvider } from "@/lib/ai/utils/providerResolver";
 import { getUserAIPreferences } from "@/lib/ai/utils/userPreferences";
-import {
-  SyllabusGeneratorService,
-  TargetLevel,
-} from "@/lib/ai/services/syllabusGenerator";
 import { aiTierSchema, aiProviderSchema } from "@/lib/validation/aiSchemas";
-import { logAIGeneration } from "@/lib/utils/aiGenerationLogger";
+import { enqueueJob } from "@/lib/queue";
+import { enforceAIRateLimit, addRateLimitHeaders } from "@/lib/ai/rateLimit";
 import { captureException } from "@/lib/logger";
 
 const createSyllabusSchema = z
@@ -22,7 +17,7 @@ const createSyllabusSchema = z
     additionalContext: z.string().max(2000).optional(),
     tier: aiTierSchema.optional(),
     provider: aiProviderSchema.optional(),
-    model: z.string().optional(),
+    model: z.string().max(256).optional(),
   })
   .refine((data) => !(data.tier && data.provider), {
     message: "Cannot specify both tier and provider",
@@ -30,14 +25,16 @@ const createSyllabusSchema = z
   });
 
 export async function POST(request: NextRequest) {
-  const startTime = Date.now();
-
   try {
     const user = await authenticate(request);
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    // Rate limit check
+    const rateCheck = await enforceAIRateLimit(user.userId, user.role, "course_generation");
+    if (rateCheck.blocked) return rateCheck.response;
 
     const body = await request.json();
     const validation = createSyllabusSchema.safeParse(body);
@@ -52,7 +49,8 @@ export async function POST(request: NextRequest) {
     const { topic, targetLevel, estimatedDuration, additionalContext, tier, provider, model } =
       validation.data;
 
-    const userPreferences = await getUserAIPreferences(user.userId);
+    // Fail fast: verify provider is configured before enqueueing
+    const userPreferences = (tier || provider) ? undefined : await getUserAIPreferences(user.userId);
 
     const resolved = resolveProvider({
       requestProvider: provider as AIProviderName,
@@ -69,95 +67,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    await dbConnect();
-
-    const syllabusService = new SyllabusGeneratorService({
-      provider: resolved.provider,
-      apiKey: resolved.apiKey,
-      model: resolved.model,
+    const jobId = await enqueueJob({
+      type: "ai.generate-syllabus",
+      data: { topic, targetLevel, estimatedDuration, additionalContext, tier, provider, model },
+      userId: user.userId,
     });
 
-    const { syllabus, usage } = await syllabusService.generateSyllabus({
-      topic,
-      targetLevel: targetLevel as TargetLevel,
-      estimatedDuration,
-      additionalContext,
-    });
-
-    const course = await Course.create({
-      title: syllabus.courseTitle,
-      description: syllabus.courseDescription,
-      instructor: user.userId,
-      courseType: "ai-generated",
-      owner: user.userId,
-      syllabusStatus: "completed",
-      syllabusPrompt: `Topic: ${topic}\nLevel: ${targetLevel}\nDuration: ${estimatedDuration}${additionalContext ? `\nContext: ${additionalContext}` : ""}`,
-      aiPreferences: {
-        defaultProvider: resolved.provider,
-        defaultModel: resolved.model,
-      },
-      isPublished: false,
-    });
-
-    const modulePromises = syllabus.modules.map(async (moduleData, moduleIndex) => {
-      const courseModule = await Module.create({
-        title: moduleData.title,
-        description: moduleData.description,
-        course: course._id,
-        order: moduleData.order ?? moduleIndex,
-        contentStatus: "skeleton",
-        isPublished: false,
-      });
-
-      const lessonPromises = moduleData.lessons.map(async (lessonData, lessonIndex) => {
-        const lesson = await Lesson.create({
-          title: lessonData.title,
-          module: courseModule._id,
-          contentType: "text",
-          content: "",
-          order: lessonData.order ?? lessonIndex,
-          generationStatus: "skeleton",
-          lessonOutline: lessonData.outline,
-          isPublished: false,
-        });
-        return lesson;
-      });
-
-      const lessons = await Promise.all(lessonPromises);
-      courseModule.lessons = lessons.map((l) => l._id);
-      await courseModule.save();
-
-      return courseModule;
-    });
-
-    const modules = await Promise.all(modulePromises);
-    course.modules = modules.map((m) => m._id);
-    await course.save();
-
-    await logAIGeneration({
-      user: user.userId,
-      course: course._id.toString(),
-      generationType: "syllabus",
-      provider: resolved.provider,
-      model: resolved.model || "default",
-      prompt: `Topic: ${topic}\nLevel: ${targetLevel}\nDuration: ${estimatedDuration}${additionalContext ? `\nContext: ${additionalContext}` : ""}`,
-      response: JSON.stringify(syllabus),
-      tokenUsage: usage,
-      status: "completed",
-      durationMs: Date.now() - startTime,
-    });
-
-    const populatedCourse = await Course.findById(course._id)
-      .populate({
-        path: "modules",
-        populate: {
-          path: "lessons",
-          model: "Lesson",
-        },
-      })
-      .populate("owner", "name email");
-
-    return NextResponse.json({ course: populatedCourse }, { status: 201 });
+    const jsonResponse = NextResponse.json({ jobId }, { status: 202 });
+    addRateLimitHeaders(jsonResponse, rateCheck.result);
+    return jsonResponse;
   } catch (error) {
     captureException(error, { operation: "Create syllabus error" });
 

@@ -1,11 +1,12 @@
-import { AIProviderName } from "../types";
-import { getApiKey } from "./providerResolver";
-
-export type AITier = "fast" | "balanced" | "powerful";
+import { AIProviderName, AITier } from "../types";
+import { getApiKey } from "./apiKeys";
+import { getModelsForTier, getModelDisplayName, getProviderDisplayName } from "./modelRegistry";
 
 export interface TierCandidate {
   provider: AIProviderName;
   model: string;
+  displayName: string;
+  providerDisplayName: string;
 }
 
 export interface TierMetadata {
@@ -13,25 +14,43 @@ export interface TierMetadata {
   description: string;
 }
 
+/**
+ * Provider priority order per tier. Models are sorted by this order
+ * when building the candidate list from the registry.
+ */
+const TIER_PROVIDER_ORDER: Record<AITier, AIProviderName[]> = {
+  fast: ["groq", "cerebras", "gemini", "openai", "anthropic"],
+  balanced: ["openai", "anthropic", "gemini"],
+  powerful: ["anthropic", "openai", "gemini"],
+};
+
+/**
+ * Derives the tier candidate list from MODEL_REGISTRY, ordered by TIER_PROVIDER_ORDER.
+ */
+function buildTierCandidates(tier: AITier): TierCandidate[] {
+  const order = TIER_PROVIDER_ORDER[tier];
+  const models = getModelsForTier(tier);
+
+  // Sort models by provider priority order
+  const sorted = [...models].sort((a, b) => {
+    const ai = order.indexOf(a.provider);
+    const bi = order.indexOf(b.provider);
+    // Providers not in the priority list go to the end
+    return (ai === -1 ? Infinity : ai) - (bi === -1 ? Infinity : bi);
+  });
+
+  return sorted.map((m) => ({
+    provider: m.provider,
+    model: m.id,
+    displayName: m.displayName,
+    providerDisplayName: getProviderDisplayName(m.provider),
+  }));
+}
+
 export const TIER_CATALOG: Record<AITier, TierCandidate[]> = {
-  fast: [
-    { provider: "groq", model: "llama-3.3-70b-versatile" },
-    { provider: "cerebras", model: "llama-3.3-70b" },
-    { provider: "gemini", model: "gemini-1.5-flash" },
-    { provider: "openai", model: "gpt-4o-mini" },
-    { provider: "anthropic", model: "claude-3-haiku-20240307" },
-  ],
-  balanced: [
-    { provider: "openai", model: "gpt-4o" },
-    { provider: "anthropic", model: "claude-3-5-sonnet-20241022" },
-    { provider: "gemini", model: "gemini-1.5-pro" },
-    { provider: "groq", model: "llama-3.3-70b-versatile" },
-  ],
-  powerful: [
-    { provider: "anthropic", model: "claude-3-opus-20240229" },
-    { provider: "openai", model: "gpt-4o" },
-    { provider: "gemini", model: "gemini-1.5-pro" },
-  ],
+  fast: buildTierCandidates("fast"),
+  balanced: buildTierCandidates("balanced"),
+  powerful: buildTierCandidates("powerful"),
 };
 
 export const TIER_METADATA: Record<AITier, TierMetadata> = {
@@ -49,13 +68,19 @@ export const TIER_METADATA: Record<AITier, TierMetadata> = {
   },
 };
 
+export interface ResolvedTier {
+  provider: AIProviderName;
+  model: string;
+  apiKey: string;
+  displayName: string;
+  providerDisplayName: string;
+}
+
 /**
  * Resolves a tier to the first candidate whose provider has a configured API key.
  * Returns null if no candidate is available.
  */
-export function resolveTier(
-  tier: AITier
-): { provider: AIProviderName; model: string; apiKey: string } | null {
+export function resolveTier(tier: AITier): ResolvedTier | null {
   const candidates = TIER_CATALOG[tier];
 
   for (const candidate of candidates) {
@@ -65,6 +90,8 @@ export function resolveTier(
         provider: candidate.provider,
         model: candidate.model,
         apiKey,
+        displayName: candidate.displayName,
+        providerDisplayName: candidate.providerDisplayName,
       };
     }
   }

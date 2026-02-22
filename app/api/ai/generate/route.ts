@@ -8,6 +8,7 @@ import { AITier, AIProviderName } from "@/lib/ai/types";
 import { getUserAIPreferences } from "@/lib/ai/utils/userPreferences";
 import { AIContentGenerator } from "@/lib/ai/services/generator";
 import { aiTierSchema, aiProviderSchema } from "@/lib/validation/aiSchemas";
+import { enforceAIRateLimit, addRateLimitHeaders } from "@/lib/ai/rateLimit";
 import { captureException } from "@/lib/logger";
 
 const generateSchema = z
@@ -17,7 +18,7 @@ const generateSchema = z
     contentType: z.enum(["quiz", "summary", "practice", "flashcards"]),
     tier: aiTierSchema.optional(),
     provider: aiProviderSchema.optional(),
-    model: z.string().optional(),
+    model: z.string().max(256).optional(),
     options: z
       .object({
         numQuestions: z.number().min(1).max(20).optional(),
@@ -38,6 +39,10 @@ export async function POST(request: NextRequest) {
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    // Rate limit check
+    const rateCheck = await enforceAIRateLimit(user.userId, user.role, "generate");
+    if (rateCheck.blocked) return rateCheck.response;
 
     if (user.role !== "teacher" && user.role !== "admin") {
       return NextResponse.json(
@@ -81,7 +86,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const userPreferences = await getUserAIPreferences(user.userId);
+    const userPreferences = (tier || reqProvider) ? undefined : await getUserAIPreferences(user.userId);
 
     const resolved = resolveProvider({
       requestProvider: reqProvider as AIProviderName,
@@ -143,7 +148,9 @@ export async function POST(request: NextRequest) {
       approvalStatus: "pending",
     });
 
-    return NextResponse.json({ content: generatedContent }, { status: 201 });
+    const jsonResponse = NextResponse.json({ content: generatedContent }, { status: 201 });
+    addRateLimitHeaders(jsonResponse, rateCheck.result);
+    return jsonResponse;
   } catch (error) {
     captureException(error, { operation: "AI generate error" });
     return NextResponse.json(

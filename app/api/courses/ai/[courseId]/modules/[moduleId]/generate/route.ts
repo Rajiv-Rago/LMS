@@ -1,33 +1,30 @@
 import { NextRequest, NextResponse } from "next/server";
 import mongoose from "mongoose";
 import { dbConnect } from "@/lib/db";
-import { Course, Module, Lesson } from "@/lib/models";
+import { Course, Module } from "@/lib/models";
 import { authenticate } from "@/lib/auth";
 import { AIProviderName, AITier } from "@/lib/ai/types";
 import { resolveProvider } from "@/lib/ai/utils/providerResolver";
 import { getUserAIPreferences } from "@/lib/ai/utils/userPreferences";
-import { extractTargetLevel } from "@/lib/ai/utils/promptUtils";
-import { LessonContentGeneratorService } from "@/lib/ai/services/lessonContentGenerator";
 import { generateContentSchema } from "@/lib/validation/aiSchemas";
-import { logAIGeneration } from "@/lib/utils/aiGenerationLogger";
-import { recalculateModuleStatus } from "@/lib/utils/moduleStatusUpdater";
+import { enqueueJob } from "@/lib/queue";
+import { enforceAIRateLimit, addRateLimitHeaders } from "@/lib/ai/rateLimit";
 import { captureException } from "@/lib/logger";
-import { sendNotification } from "@/lib/notifications";
-
-const MAX_SUMMARY_LENGTH = 2000;
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ courseId: string; moduleId: string }> }
 ) {
-  const startTime = Date.now();
-
   try {
     const user = await authenticate(request);
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    // Rate limit check
+    const rateCheck = await enforceAIRateLimit(user.userId, user.role, "course_generation");
+    if (rateCheck.blocked) return rateCheck.response;
 
     const { courseId, moduleId } = await params;
 
@@ -70,25 +67,27 @@ export async function POST(
     const courseModule = await Module.findOne({
       _id: moduleId,
       course: courseId,
-    }).populate("lessons");
+    });
 
     if (!courseModule) {
       return NextResponse.json({ error: "Module not found" }, { status: 404 });
     }
 
-    const userPreferences = await getUserAIPreferences(user.userId);
+    // Fail fast: verify provider
+    const { tier: reqTier, provider: reqProvider, model: reqModel } = validation.data;
+    const userPreferences = (reqTier || reqProvider) ? undefined : await getUserAIPreferences(user.userId);
 
     const resolved = resolveProvider({
-      requestProvider: validation.data.provider as AIProviderName,
-      requestModel: validation.data.model,
-      requestTier: validation.data.tier as AITier,
+      requestProvider: reqProvider as AIProviderName,
+      requestModel: reqModel,
+      requestTier: reqTier as AITier,
       coursePreferences: course.aiPreferences,
       userPreferences,
     });
 
     if (!resolved) {
       const requestedProvider =
-        validation.data.provider ||
+        reqProvider ||
         course.aiPreferences?.defaultProvider ||
         process.env.AI_PROVIDER ||
         "openai";
@@ -98,130 +97,21 @@ export async function POST(
       );
     }
 
-    const lessonService = new LessonContentGeneratorService({
-      provider: resolved.provider,
-      apiKey: resolved.apiKey,
-      model: resolved.model,
-    });
-
-    courseModule.contentStatus = "generating";
-    courseModule.generationConfig = {
-      provider: resolved.provider,
-      model: resolved.model,
-    };
-    await courseModule.save();
-
-    const targetLevel = extractTargetLevel(course.syllabusPrompt);
-    const lessons = await Lesson.find({ module: moduleId }).sort({ order: 1 });
-
-    let previousLessonsSummary = "";
-
-    try {
-      for (const lesson of lessons) {
-        try {
-          lesson.generationStatus = "generating";
-          lesson.generationConfig = {
-            provider: resolved.provider,
-            model: resolved.model,
-          };
-          await lesson.save();
-
-          const lessonStartTime = Date.now();
-
-          // Limit previousLessonsSummary size to avoid prompt bloat
-          let summaryForPrompt = previousLessonsSummary;
-          if (summaryForPrompt.length > MAX_SUMMARY_LENGTH) {
-            summaryForPrompt = summaryForPrompt.slice(-MAX_SUMMARY_LENGTH);
-          }
-
-          const { content, usage } = await lessonService.generateLessonContent({
-            courseTitle: course.title,
-            courseDescription: course.description,
-            moduleTitle: courseModule.title,
-            lessonTitle: lesson.title,
-            lessonOutline: lesson.lessonOutline || "",
-            previousLessonsSummary: summaryForPrompt || undefined,
-            targetLevel,
-          });
-
-          lesson.content = content.content;
-          lesson.keyTakeaways = content.keyTakeaways;
-          lesson.generationStatus = "completed";
-          await lesson.save();
-
-          await logAIGeneration({
-            user: user.userId,
-            course: courseId,
-            module: moduleId,
-            lesson: lesson._id.toString(),
-            generationType: "lesson_content",
-            provider: resolved.provider,
-            model: resolved.model || "default",
-            prompt: `Generate content for lesson: ${lesson.title}\nOutline: ${lesson.lessonOutline}`,
-            response: content.content.substring(0, 5000),
-            tokenUsage: usage,
-            status: "completed",
-            durationMs: Date.now() - lessonStartTime,
-          });
-
-          if (content.keyTakeaways.length > 0) {
-            previousLessonsSummary += `\n${lesson.title}: ${content.keyTakeaways.join("; ")}`;
-          }
-        } catch (lessonError) {
-          captureException(lessonError, { operation: `Error generating lesson ${lesson._id}` });
-
-          lesson.generationStatus = "failed";
-          await lesson.save();
-
-          await logAIGeneration({
-            user: user.userId,
-            course: courseId,
-            module: moduleId,
-            lesson: lesson._id.toString(),
-            generationType: "lesson_content",
-            provider: resolved.provider,
-            model: resolved.model || "default",
-            prompt: `Generate content for lesson: ${lesson.title}`,
-            status: "failed",
-            error: lessonError instanceof Error ? lessonError.message : "Unknown error",
-            durationMs: Date.now() - startTime,
-          });
-        }
-      }
-    } finally {
-      // Recalculate module status even if an error occurred
-      await recalculateModuleStatus(moduleId);
-    }
-
-    const failedLessons = await Lesson.countDocuments({
-      module: moduleId,
-      generationStatus: "failed",
-    });
-
-    const skeletonLessons = await Lesson.countDocuments({
-      module: moduleId,
-      generationStatus: "skeleton",
-    });
-
-    const updatedModule = await Module.findById(moduleId).populate("lessons");
-
-    await sendNotification({
-      userId: user.userId,
-      type: "ai.generation.completed",
-      title: "Content generation complete",
-      message: `Module "${courseModule.title}" content has been generated`,
-      link: `/courses/${courseId}`,
-    });
-
-    return NextResponse.json({
-      module: updatedModule,
-      stats: {
-        totalLessons: lessons.length,
-        completedLessons: lessons.length - failedLessons - skeletonLessons,
-        failedLessons,
-        durationMs: Date.now() - startTime,
+    const jobId = await enqueueJob({
+      type: "ai.generate-module-content",
+      data: {
+        courseId,
+        moduleId,
+        tier: reqTier,
+        provider: reqProvider,
+        model: reqModel,
       },
+      userId: user.userId,
     });
+
+    const jsonResponse = NextResponse.json({ jobId }, { status: 202 });
+    addRateLimitHeaders(jsonResponse, rateCheck.result);
+    return jsonResponse;
   } catch (error) {
     captureException(error, { operation: "Generate module content error" });
     return NextResponse.json(

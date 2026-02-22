@@ -6,27 +6,25 @@ import { authenticate } from "@/lib/auth";
 import { AIProviderName, AITier } from "@/lib/ai/types";
 import { resolveProvider } from "@/lib/ai/utils/providerResolver";
 import { getUserAIPreferences } from "@/lib/ai/utils/userPreferences";
-import { extractTargetLevel } from "@/lib/ai/utils/promptUtils";
-import { LessonContentGeneratorService } from "@/lib/ai/services/lessonContentGenerator";
 import { generateContentSchema } from "@/lib/validation/aiSchemas";
-import { logAIGeneration } from "@/lib/utils/aiGenerationLogger";
-import { markModuleCompletedIfReady } from "@/lib/utils/moduleStatusUpdater";
+import { enqueueJob } from "@/lib/queue";
+import { enforceAIRateLimit, addRateLimitHeaders } from "@/lib/ai/rateLimit";
 import { captureException } from "@/lib/logger";
-
-const MAX_SUMMARY_LENGTH = 2000;
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ courseId: string; lessonId: string }> }
 ) {
-  const startTime = Date.now();
-
   try {
     const user = await authenticate(request);
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    // Rate limit check
+    const rateCheck = await enforceAIRateLimit(user.userId, user.role, "course_generation");
+    if (rateCheck.blocked) return rateCheck.response;
 
     const { courseId, lessonId } = await params;
 
@@ -84,19 +82,21 @@ export async function POST(
       );
     }
 
-    const userPreferences = await getUserAIPreferences(user.userId);
+    // Fail fast: verify provider
+    const { tier: reqTier, provider: reqProvider, model: reqModel } = validation.data;
+    const userPreferences = (reqTier || reqProvider) ? undefined : await getUserAIPreferences(user.userId);
 
     const resolved = resolveProvider({
-      requestProvider: validation.data.provider as AIProviderName,
-      requestModel: validation.data.model,
-      requestTier: validation.data.tier as AITier,
+      requestProvider: reqProvider as AIProviderName,
+      requestModel: reqModel,
+      requestTier: reqTier as AITier,
       coursePreferences: course.aiPreferences,
       userPreferences,
     });
 
     if (!resolved) {
       const requestedProvider =
-        validation.data.provider ||
+        reqProvider ||
         course.aiPreferences?.defaultProvider ||
         process.env.AI_PROVIDER ||
         "openai";
@@ -106,101 +106,21 @@ export async function POST(
       );
     }
 
-    const lessonService = new LessonContentGeneratorService({
-      provider: resolved.provider,
-      apiKey: resolved.apiKey,
-      model: resolved.model,
+    const jobId = await enqueueJob({
+      type: "ai.generate-lesson-content",
+      data: {
+        courseId,
+        lessonId,
+        tier: reqTier,
+        provider: reqProvider,
+        model: reqModel,
+      },
+      userId: user.userId,
     });
 
-    lesson.generationStatus = "generating";
-    lesson.generationConfig = {
-      provider: resolved.provider,
-      model: resolved.model,
-    };
-    await lesson.save();
-
-    const targetLevel = extractTargetLevel(course.syllabusPrompt);
-
-    const previousLessons = await Lesson.find({
-      module: lesson.module,
-      order: { $lt: lesson.order },
-      generationStatus: "completed",
-    }).sort({ order: 1 });
-
-    let previousLessonsSummary = "";
-    for (const prevLesson of previousLessons) {
-      if (prevLesson.keyTakeaways && prevLesson.keyTakeaways.length > 0) {
-        previousLessonsSummary += `\n${prevLesson.title}: ${prevLesson.keyTakeaways.join("; ")}`;
-      }
-    }
-
-    // Limit previousLessonsSummary size to avoid prompt bloat
-    if (previousLessonsSummary.length > MAX_SUMMARY_LENGTH) {
-      previousLessonsSummary = previousLessonsSummary.slice(-MAX_SUMMARY_LENGTH);
-    }
-
-    try {
-      const { content, usage } = await lessonService.generateLessonContent({
-        courseTitle: course.title,
-        courseDescription: course.description,
-        moduleTitle: courseModule.title,
-        lessonTitle: lesson.title,
-        lessonOutline: lesson.lessonOutline || "",
-        previousLessonsSummary: previousLessonsSummary || undefined,
-        targetLevel,
-      });
-
-      lesson.content = content.content;
-      lesson.keyTakeaways = content.keyTakeaways;
-      lesson.generationStatus = "completed";
-      await lesson.save();
-
-      await logAIGeneration({
-        user: user.userId,
-        course: courseId,
-        module: courseModule._id.toString(),
-        lesson: lessonId,
-        generationType: "lesson_content",
-        provider: resolved.provider,
-        model: resolved.model || "default",
-        prompt: `Generate content for lesson: ${lesson.title}\nOutline: ${lesson.lessonOutline}`,
-        response: content.content.substring(0, 5000),
-        tokenUsage: usage,
-        status: "completed",
-        durationMs: Date.now() - startTime,
-      });
-
-      // Update module status if all lessons are now completed
-      await markModuleCompletedIfReady(courseModule._id.toString());
-
-      return NextResponse.json({
-        lesson,
-        usage,
-        durationMs: Date.now() - startTime,
-      });
-    } catch (generateError) {
-      captureException(generateError, { operation: "Error generating lesson content" });
-
-      lesson.generationStatus = "failed";
-      await lesson.save();
-
-      await logAIGeneration({
-        user: user.userId,
-        course: courseId,
-        module: courseModule._id.toString(),
-        lesson: lessonId,
-        generationType: "lesson_content",
-        provider: resolved.provider,
-        model: resolved.model || "default",
-        prompt: `Generate content for lesson: ${lesson.title}`,
-        status: "failed",
-        error:
-          generateError instanceof Error ? generateError.message : "Unknown error",
-        durationMs: Date.now() - startTime,
-      });
-
-      throw generateError;
-    }
+    const jsonResponse = NextResponse.json({ jobId }, { status: 202 });
+    addRateLimitHeaders(jsonResponse, rateCheck.result);
+    return jsonResponse;
   } catch (error) {
     captureException(error, { operation: "Generate lesson content error" });
     return NextResponse.json(

@@ -1,19 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ModelSelector, ModelSelectorValue } from "@/components/ai/ModelSelector";
+import { useUserAIDefaults } from "@/lib/hooks/useUserAIDefaults";
 
 type TargetLevel = "beginner" | "intermediate" | "advanced";
-type GenerationPhase = "idle" | "submitting" | "designing" | "creating-modules" | "setting-up" | "complete";
+type GenerationPhase = "idle" | "submitting" | "generating" | "complete";
 
 const phaseMessages: Record<GenerationPhase, string> = {
   idle: "",
   submitting: "Submitting request...",
-  designing: "Designing curriculum...",
-  "creating-modules": "Creating modules...",
-  "setting-up": "Setting up lessons...",
+  generating: "Generating course content...",
   complete: "Complete!",
 };
 
@@ -25,13 +24,65 @@ export default function NewAICoursePage() {
     estimatedDuration: "",
     additionalContext: "",
   });
+  const userDefaults = useUserAIDefaults();
   const [modelValue, setModelValue] = useState<ModelSelectorValue>({
     tier: "balanced",
   });
+
+  useEffect(() => {
+    if (!userDefaults.loading) {
+      setModelValue(userDefaults.value);
+    }
+  }, [userDefaults.loading, userDefaults.value]);
   const [error, setError] = useState("");
   const [phase, setPhase] = useState<GenerationPhase>("idle");
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const isGenerating = phase !== "idle";
+
+  const stopPolling = useCallback(() => {
+    if (pollRef.current) {
+      clearInterval(pollRef.current);
+      pollRef.current = null;
+    }
+  }, []);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => stopPolling();
+  }, [stopPolling]);
+
+  const pollJobStatus = useCallback(
+    (jobId: string) => {
+      setPhase("generating");
+
+      pollRef.current = setInterval(async () => {
+        try {
+          const res = await fetch(`/api/jobs/${jobId}`);
+          if (!res.ok) return;
+
+          const data = await res.json();
+          const job = data.job;
+
+          if (job.status === "completed") {
+            stopPolling();
+            setPhase("complete");
+            const courseId = job.result?.courseId;
+            if (courseId) {
+              setTimeout(() => router.push(`/courses/${courseId}`), 500);
+            }
+          } else if (job.status === "failed") {
+            stopPolling();
+            setError(job.error || "Generation failed");
+            setPhase("idle");
+          }
+        } catch {
+          // Silently retry on network errors
+        }
+      }, 2000);
+    },
+    [router, stopPolling]
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,11 +90,6 @@ export default function NewAICoursePage() {
     setPhase("submitting");
 
     try {
-      // Simulate phase progression for better UX
-      const phaseTimer = setTimeout(() => setPhase("designing"), 1000);
-      const phase2Timer = setTimeout(() => setPhase("creating-modules"), 5000);
-      const phase3Timer = setTimeout(() => setPhase("setting-up"), 10000);
-
       const payload: Record<string, string> = {
         topic: formData.topic,
         targetLevel: formData.targetLevel,
@@ -69,20 +115,20 @@ export default function NewAICoursePage() {
         body: JSON.stringify(payload),
       });
 
-      clearTimeout(phaseTimer);
-      clearTimeout(phase2Timer);
-      clearTimeout(phase3Timer);
-
       const data = await res.json();
 
       if (!res.ok) {
         throw new Error(data.error || "Failed to generate course");
       }
 
-      setPhase("complete");
-      setTimeout(() => {
-        router.push(`/courses/${data.course._id}`);
-      }, 500);
+      if (data.jobId) {
+        // Async mode: poll for job completion
+        pollJobStatus(data.jobId);
+      } else if (data.course) {
+        // Sync mode (SyncShim completed inline)
+        setPhase("complete");
+        setTimeout(() => router.push(`/courses/${data.course._id}`), 500);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to generate course");
       setPhase("idle");
@@ -91,10 +137,8 @@ export default function NewAICoursePage() {
 
   const getProgress = () => {
     switch (phase) {
-      case "submitting": return 10;
-      case "designing": return 35;
-      case "creating-modules": return 65;
-      case "setting-up": return 85;
+      case "submitting": return 15;
+      case "generating": return 55;
       case "complete": return 100;
       default: return 0;
     }

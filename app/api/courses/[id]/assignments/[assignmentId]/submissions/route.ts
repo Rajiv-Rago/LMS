@@ -40,11 +40,29 @@ export async function GET(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const submissions = await Submission.find({ assignment: assignmentId })
-      .populate("student", "name email")
-      .sort({ submittedAt: -1 });
+    const page = Math.max(1, parseInt(request.nextUrl.searchParams.get("page") || "1"));
+    const limit = Math.min(100, Math.max(1, parseInt(request.nextUrl.searchParams.get("limit") || "20")));
+    const skip = (page - 1) * limit;
 
-    return NextResponse.json({ submissions });
+    const query = { assignment: assignmentId };
+    const [submissions, total] = await Promise.all([
+      Submission.find(query)
+        .populate("student", "name email")
+        .sort({ submittedAt: -1 })
+        .skip(skip)
+        .limit(limit),
+      Submission.countDocuments(query),
+    ]);
+
+    return NextResponse.json({
+      submissions,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit),
+      },
+    });
   } catch (error) {
     captureException(error, { operation: "Get submissions error" });
     return NextResponse.json(

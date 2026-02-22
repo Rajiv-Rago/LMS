@@ -16,6 +16,7 @@ export interface IUser extends Document {
     defaultProvider?: "openai" | "anthropic" | "groq" | "cerebras" | "gemini";
     defaultModel?: string;
   };
+  deletedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -87,6 +88,10 @@ const userSchema = new mongoose.Schema<IUser, UserModel, IUserMethods>(
       defaultModel: {
         type: String,
       },
+    },
+    deletedAt: {
+      type: Date,
+      default: null,
     },
   },
   {

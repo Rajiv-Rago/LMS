@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { dbConnect } from "@/lib/db";
 import User from "@/lib/models/User";
-import { authenticate } from "@/lib/auth";
+import { authenticate, requireCsrf } from "@/lib/auth";
 import { updateAIPreferencesSchema } from "@/lib/validation/aiSchemas";
 import { captureException } from "@/lib/logger";
 
@@ -35,6 +35,9 @@ export async function GET(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
   try {
+    const csrfError = requireCsrf(request);
+    if (csrfError) return csrfError;
+
     const user = await authenticate(request);
 
     if (!user) {

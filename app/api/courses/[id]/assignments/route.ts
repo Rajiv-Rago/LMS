@@ -77,11 +77,28 @@ export async function GET(
       assignmentQuery.isPublished = true;
     }
 
-    const assignments = await Assignment.find(assignmentQuery)
-      .populate("module", "title")
-      .sort({ dueDate: 1 });
+    const page = Math.max(1, parseInt(request.nextUrl.searchParams.get("page") || "1"));
+    const limit = Math.min(100, Math.max(1, parseInt(request.nextUrl.searchParams.get("limit") || "20")));
+    const skip = (page - 1) * limit;
 
-    return NextResponse.json({ assignments });
+    const [assignments, total] = await Promise.all([
+      Assignment.find(assignmentQuery)
+        .populate("module", "title")
+        .sort({ dueDate: 1 })
+        .skip(skip)
+        .limit(limit),
+      Assignment.countDocuments(assignmentQuery),
+    ]);
+
+    return NextResponse.json({
+      assignments,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit),
+      },
+    });
   } catch (error) {
     captureException(error, { operation: "Get assignments error" });
     return NextResponse.json(

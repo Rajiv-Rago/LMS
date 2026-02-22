@@ -35,10 +35,7 @@ export async function GET(
 
     await dbConnect();
 
-    const course = await Course.findById(id).populate(
-      "enrolledStudents",
-      "name email"
-    );
+    const course = await Course.findById(id);
 
     if (!course) {
       return NextResponse.json({ error: "Course not found" }, { status: 404 });
@@ -51,13 +48,32 @@ export async function GET(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    const page = Math.max(1, parseInt(request.nextUrl.searchParams.get("page") || "1"));
+    const limit = Math.min(100, Math.max(1, parseInt(request.nextUrl.searchParams.get("limit") || "20")));
+    const skip = (page - 1) * limit;
+
+    const totalStudents = course.enrolledStudents.length;
+
+    // Paginate the enrolled students populate
+    const paginatedCourse = await Course.findById(id).populate({
+      path: "enrolledStudents",
+      select: "name email",
+      options: { skip, limit },
+    });
+
     const assignments = await Assignment.find({
       course: id,
       isPublished: true,
     }).sort({ dueDate: 1 });
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const pagedStudents = paginatedCourse!.enrolledStudents as any[];
+
+    // Only fetch submissions for the paged students
+    const studentIds = pagedStudents.map((s: { _id: { toString: () => string } }) => s._id);
     const submissions = await Submission.find({
       assignment: { $in: assignments.map((a) => a._id) },
+      student: { $in: studentIds },
     });
 
     const submissionMap = new Map<string, typeof submissions[0]>();
@@ -68,8 +84,7 @@ export async function GET(
 
     const totalPossiblePoints = assignments.reduce((sum, a) => sum + a.points, 0);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const gradebook: GradebookEntry[] = (course.enrolledStudents as any[]).map(
+    const gradebook: GradebookEntry[] = pagedStudents.map(
       (student: { _id: { toString: () => string }; name: string; email: string }) => {
         const grades = assignments.map((assignment) => {
           const key = `${student._id.toString()}-${assignment._id.toString()}`;
@@ -111,8 +126,14 @@ export async function GET(
         assignmentType: a.assignmentType || "standard",
       })),
       gradebook,
+      pagination: {
+        page,
+        limit,
+        total: totalStudents,
+        pages: Math.ceil(totalStudents / limit),
+      },
       summary: {
-        totalStudents: course.enrolledStudents.length,
+        totalStudents,
         totalAssignments: assignments.length,
         totalPossiblePoints,
       },

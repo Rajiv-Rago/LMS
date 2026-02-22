@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { dbConnect } from "@/lib/db";
+import { dbConnect, withTransaction } from "@/lib/db";
 import { Course, Assignment, Submission } from "@/lib/models";
 import { authenticate } from "@/lib/auth";
 import { captureException } from "@/lib/logger";
@@ -241,8 +241,10 @@ export async function DELETE(
       );
     }
 
-    await Submission.deleteMany({ assignment: assignmentId });
-    await assignment.deleteOne();
+    await withTransaction(async (session) => {
+      await Submission.deleteMany({ assignment: assignmentId }, { session });
+      await assignment.deleteOne({ session });
+    });
 
     return NextResponse.json({ message: "Assignment deleted successfully" });
   } catch (error) {

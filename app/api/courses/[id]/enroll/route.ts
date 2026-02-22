@@ -4,6 +4,7 @@ import { Course } from "@/lib/models";
 import { authenticate } from "@/lib/auth";
 import { captureException } from "@/lib/logger";
 import { sendNotification } from "@/lib/notifications";
+import * as cache from "@/lib/cache";
 
 export async function POST(
   request: NextRequest,
@@ -52,6 +53,8 @@ export async function POST(
 
     course.enrolledStudents.push(user.userId as unknown as typeof course.enrolledStudents[0]);
     await course.save();
+
+    cache.invalidate(`course:${id}`);
 
     await sendNotification({
       userId: course.instructor.toString(),

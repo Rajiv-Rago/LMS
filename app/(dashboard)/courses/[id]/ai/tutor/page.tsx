@@ -4,6 +4,7 @@ import { useEffect, useState, useRef, use } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ModelSelector, ModelSelectorValue } from "@/components/ai/ModelSelector";
+import { useUserAIDefaults } from "@/lib/hooks/useUserAIDefaults";
 
 interface Message {
   role: "user" | "assistant";
@@ -32,9 +33,16 @@ export default function AITutorPage({
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [loadingSessions, setLoadingSessions] = useState(true);
+  const userDefaults = useUserAIDefaults();
   const [modelValue, setModelValue] = useState<ModelSelectorValue>({
     tier: "balanced",
   });
+
+  useEffect(() => {
+    if (!userDefaults.loading) {
+      setModelValue(userDefaults.value);
+    }
+  }, [userDefaults.loading, userDefaults.value]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {

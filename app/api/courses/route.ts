@@ -4,6 +4,7 @@ import { dbConnect } from "@/lib/db";
 import { Course } from "@/lib/models";
 import { authenticate, JWTPayload } from "@/lib/auth";
 import { captureException } from "@/lib/logger";
+import * as cache from "@/lib/cache";
 
 const createCourseSchema = z.object({
   title: z.string().min(1).max(200),
@@ -54,6 +55,17 @@ export async function GET(request: NextRequest) {
       query.$text = { $search: search };
     }
 
+    // Cache unauthenticated published course listings
+    const isPublicListing = !user && !search;
+    const cacheKey = isPublicListing ? `courses:published:p${page}:l${limit}` : null;
+
+    if (cacheKey) {
+      const cached = cache.get<{ courses: unknown[]; pagination: unknown }>(cacheKey);
+      if (cached) {
+        return NextResponse.json(cached);
+      }
+    }
+
     const total = await Course.countDocuments(query);
     const courses = await Course.find(query)
       .populate("instructor", "name email")
@@ -61,7 +73,7 @@ export async function GET(request: NextRequest) {
       .skip((page - 1) * limit)
       .limit(limit);
 
-    return NextResponse.json({
+    const responseData = {
       courses,
       pagination: {
         page,
@@ -69,7 +81,13 @@ export async function GET(request: NextRequest) {
         total,
         pages: Math.ceil(total / limit),
       },
-    });
+    };
+
+    if (cacheKey) {
+      cache.set(cacheKey, responseData, 30);
+    }
+
+    return NextResponse.json(responseData);
   } catch (error) {
     captureException(error, { operation: "Get courses error" });
     return NextResponse.json(

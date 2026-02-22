@@ -4,6 +4,7 @@ import { useEffect, useState, use } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ModelSelector, ModelSelectorValue } from "@/components/ai/ModelSelector";
+import { useUserAIDefaults } from "@/lib/hooks/useUserAIDefaults";
 
 interface Lesson {
   _id: string;
@@ -44,9 +45,16 @@ export default function AIGeneratePage({
     contentType: "quiz" as "quiz" | "summary" | "practice" | "flashcards",
     numQuestions: 5,
   });
+  const userDefaults = useUserAIDefaults();
   const [modelValue, setModelValue] = useState<ModelSelectorValue>({
     tier: "balanced",
   });
+
+  useEffect(() => {
+    if (!userDefaults.loading) {
+      setModelValue(userDefaults.value);
+    }
+  }, [userDefaults.loading, userDefaults.value]);
 
   useEffect(() => {
     async function fetchData() {

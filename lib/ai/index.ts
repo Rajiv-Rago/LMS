@@ -4,7 +4,7 @@ import { AnthropicProvider } from "./providers/anthropic";
 import { GroqProvider } from "./providers/groq";
 import { CerebrasProvider } from "./providers/cerebras";
 import { GeminiProvider } from "./providers/gemini";
-import { API_KEY_ENV_MAP } from "./utils/providerResolver";
+import { API_KEY_ENV_MAP } from "./utils/apiKeys";
 
 export type { AIProvider, AIMessage, AICompletionOptions, AICompletionResponse, AIProviderConfig, AIProviderName, AITier, UserAIPreferences } from "./types";
 export { OpenAIProvider } from "./providers/openai";

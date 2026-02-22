@@ -4,6 +4,7 @@ import { dbConnect } from "@/lib/db";
 import { Course } from "@/lib/models";
 import { authenticate } from "@/lib/auth";
 import { captureException } from "@/lib/logger";
+import * as cache from "@/lib/cache";
 
 const updateCourseSchema = z.object({
   title: z.string().min(1).max(200).optional(),
@@ -100,6 +101,9 @@ export async function PATCH(
 
     await course.populate("instructor", "name email");
 
+    cache.invalidate(`course:${id}`);
+    cache.invalidatePrefix("courses:published");
+
     return NextResponse.json({ course });
   } catch (error) {
     captureException(error, { operation: "Update course error" });
@@ -134,7 +138,12 @@ export async function DELETE(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    await course.deleteOne();
+    // Soft-delete: mark as deleted instead of removing
+    course.deletedAt = new Date();
+    await course.save();
+
+    cache.invalidate(`course:${id}`);
+    cache.invalidatePrefix("courses:published");
 
     return NextResponse.json({ message: "Course deleted successfully" });
   } catch (error) {

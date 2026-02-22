@@ -12,6 +12,7 @@ interface Module {
   description?: string;
   order: number;
   isPublished: boolean;
+  contentStatus?: string;
   lessons: Lesson[];
 }
 
@@ -30,6 +31,8 @@ interface Course {
   instructor: { _id: string; name: string; email: string };
   enrolledStudents: { _id: string; name: string }[];
   isPublished: boolean;
+  courseType?: string;
+  syllabusStatus?: string;
 }
 
 interface Permissions {
@@ -277,9 +280,37 @@ export default function CourseDetailPage({
                 AI Content Generator
               </Link>
             )}
+            {course.courseType === "ai-generated" && permissions?.isInstructor && (
+              <Link
+                href={`/courses/${id}/ai/content`}
+                className="px-3 py-1.5 text-sm text-purple-700 dark:text-purple-300 bg-purple-100 dark:bg-purple-900/50 rounded-md hover:bg-purple-200 dark:hover:bg-purple-900/70"
+              >
+                AI Content
+              </Link>
+            )}
           </div>
         )}
       </div>
+
+      {/* AI Content Banner */}
+      {course.courseType === "ai-generated" && permissions?.isInstructor && (
+        <div className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-lg border border-purple-200 dark:border-purple-800 p-4 flex items-center justify-between">
+          <div>
+            <h3 className="text-sm font-medium text-purple-900 dark:text-purple-200">
+              AI Content Generation
+            </h3>
+            <p className="text-sm text-purple-700 dark:text-purple-300">
+              {modules.filter((m) => m.contentStatus === "completed").length} / {modules.length} modules have generated content
+            </p>
+          </div>
+          <Link
+            href={`/courses/${id}/ai/content`}
+            className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-purple-600 to-blue-600 rounded-md hover:from-purple-500 hover:to-blue-500"
+          >
+            Manage Content
+          </Link>
+        </div>
+      )}
 
       {/* Modules */}
       <div>
@@ -354,6 +385,18 @@ export default function CourseDetailPage({
                         <span className="px-2 py-0.5 text-xs bg-yellow-100 dark:bg-yellow-900/50 text-yellow-700 dark:text-yellow-300 rounded">
                           Draft
                         </span>
+                      )}
+                      {module.contentStatus && module.contentStatus !== "completed" && (
+                        <span
+                          className={`w-2 h-2 rounded-full ${
+                            module.contentStatus === "generating"
+                              ? "bg-blue-500 animate-pulse"
+                              : module.contentStatus === "failed"
+                              ? "bg-red-500"
+                              : "bg-zinc-400"
+                          }`}
+                          title={`Content: ${module.contentStatus}`}
+                        />
                       )}
                     </div>
                     {permissions?.canEdit && (

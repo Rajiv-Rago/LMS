@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Skeleton } from "@/components/ui/Skeleton";
 
 interface User {
@@ -12,8 +13,14 @@ interface User {
 }
 
 export default function ProfilePage() {
+  const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deletePassword, setDeletePassword] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
 
   useEffect(() => {
     async function fetchUser() {
@@ -31,6 +38,51 @@ export default function ProfilePage() {
     }
     fetchUser();
   }, []);
+
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      const res = await fetch("/api/users/me/export");
+      if (res.ok) {
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `user-data-export.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+    } catch {
+      // Silently fail
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const handleDeleteAccount = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setDeleting(true);
+    setDeleteError("");
+    try {
+      const res = await fetch("/api/users/me/delete", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json", "X-Requested-With": "XMLHttpRequest" },
+        body: JSON.stringify({ password: deletePassword }),
+      });
+      if (res.ok) {
+        router.push("/login");
+      } else {
+        const data = await res.json();
+        setDeleteError(data.error || "Failed to delete account");
+      }
+    } catch {
+      setDeleteError("Failed to delete account");
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -95,6 +147,103 @@ export default function ProfilePage() {
           </div>
         </dl>
       </div>
+
+      {/* Data & Privacy */}
+      <div className="bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800 p-6">
+        <h2 className="text-lg font-semibold text-zinc-900 dark:text-white mb-4">
+          Data & Privacy
+        </h2>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-zinc-900 dark:text-white">
+                Export my data
+              </p>
+              <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                Download all your personal data as a JSON file.
+              </p>
+            </div>
+            <button
+              onClick={handleExport}
+              disabled={exporting}
+              className="px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800 rounded-md hover:bg-zinc-200 dark:hover:bg-zinc-700 disabled:opacity-50"
+            >
+              {exporting ? "Exporting..." : "Export"}
+            </button>
+          </div>
+
+          <hr className="border-zinc-200 dark:border-zinc-800" />
+
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-red-600 dark:text-red-400">
+                Delete my account
+              </p>
+              <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                Permanently delete your account and anonymize your data.
+              </p>
+            </div>
+            <button
+              onClick={() => setShowDeleteDialog(true)}
+              className="px-4 py-2 text-sm font-medium text-red-600 border border-red-300 dark:border-red-800 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Delete confirmation dialog */}
+      {showDeleteDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800 p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold text-zinc-900 dark:text-white mb-2">
+              Delete Account
+            </h3>
+            <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-4">
+              This action is permanent. Your account will be anonymized and your
+              data removed. Enter your password to confirm.
+            </p>
+
+            {deleteError && (
+              <div className="rounded-md bg-red-50 dark:bg-red-900/50 p-3 mb-4">
+                <p className="text-sm text-red-700 dark:text-red-200">{deleteError}</p>
+              </div>
+            )}
+
+            <form onSubmit={handleDeleteAccount}>
+              <input
+                type="password"
+                value={deletePassword}
+                onChange={(e) => setDeletePassword(e.target.value)}
+                placeholder="Enter your password"
+                required
+                className="w-full rounded-md border border-zinc-300 dark:border-zinc-700 px-3 py-2 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white mb-4"
+              />
+              <div className="flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowDeleteDialog(false);
+                    setDeletePassword("");
+                    setDeleteError("");
+                  }}
+                  className="px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-md"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={deleting}
+                  className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-500 disabled:opacity-50"
+                >
+                  {deleting ? "Deleting..." : "Delete Account"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

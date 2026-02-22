@@ -24,7 +24,7 @@ export const generateContentSchema = z
   .object({
     tier: aiTierSchema.optional(),
     provider: aiProviderSchema.optional(),
-    model: z.string().optional(),
+    model: z.string().max(256).optional(),
   })
   .refine((data) => !(data.tier && data.provider), {
     message: "Cannot specify both tier and provider",
@@ -40,7 +40,7 @@ export const updateAIPreferencesSchema = z
   .object({
     defaultTier: aiTierSchema.nullable().optional(),
     defaultProvider: aiProviderSchema.nullable().optional(),
-    defaultModel: z.string().nullable().optional(),
+    defaultModel: z.string().max(256).nullable().optional(),
   })
   .refine((data) => !(data.defaultTier && data.defaultProvider), {
     message: "Cannot specify both defaultTier and defaultProvider",

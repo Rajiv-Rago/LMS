@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { dbConnect } from "@/lib/db";
-import { Course, Module } from "@/lib/models";
+import { dbConnect, withTransaction } from "@/lib/db";
+import { Course, Module, Lesson } from "@/lib/models";
 import { authenticate } from "@/lib/auth";
 import { captureException } from "@/lib/logger";
 
@@ -142,12 +142,14 @@ export async function DELETE(
       return NextResponse.json({ error: "Module not found" }, { status: 404 });
     }
 
-    course.modules = course.modules.filter(
-      (m: { toString: () => string }) => m.toString() !== moduleId
-    );
-    await course.save();
-
-    await module.deleteOne();
+    await withTransaction(async (session) => {
+      await Lesson.deleteMany({ module: moduleId }, { session });
+      course.modules = course.modules.filter(
+        (m: { toString: () => string }) => m.toString() !== moduleId
+      );
+      await course.save({ session });
+      await module.deleteOne({ session });
+    });
 
     return NextResponse.json({ message: "Module deleted successfully" });
   } catch (error) {

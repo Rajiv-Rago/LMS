@@ -1,7 +1,14 @@
 // lib/db.ts
 
-import mongoose from "mongoose";
+import mongoose, { ClientSession } from "mongoose";
 import { env } from "@/lib/env";
+
+// Augment Mongoose query options for soft-delete support
+declare module "mongoose" {
+  interface QueryOptions {
+    includeSoftDeleted?: boolean;
+  }
+}
 
 declare global {
   // eslint-disable-next-line no-var
@@ -68,5 +75,43 @@ export async function dbConnect() {
       "Database connection failed. Please check your connection settings.",
       error
     );
+  }
+}
+
+/**
+ * Run a function inside a MongoDB transaction.
+ * Starts a session, executes `fn`, commits on success, aborts on error.
+ * Falls back to running without a transaction if replica set is not available
+ * (e.g., standalone dev/test instances).
+ */
+export async function withTransaction<T>(
+  fn: (session: ClientSession) => Promise<T>
+): Promise<T> {
+  const conn = await dbConnect();
+  const session = await conn.startSession();
+  try {
+    session.startTransaction();
+    const result = await fn(session);
+    await session.commitTransaction();
+    return result;
+  } catch (error) {
+    try {
+      await session.abortTransaction();
+    } catch {
+      // Abort may fail if transaction wasn't started (e.g., no replica set)
+    }
+
+    // If transactions aren't supported (standalone), retry without session
+    const message = error instanceof Error ? error.message : "";
+    if (
+      message.includes("Transaction numbers") ||
+      message.includes("replica set")
+    ) {
+      return fn(undefined as unknown as ClientSession);
+    }
+
+    throw error;
+  } finally {
+    session.endSession();
   }
 }

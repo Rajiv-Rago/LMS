@@ -26,7 +26,11 @@ const envSchema = z.object({
   S3_ACCESS_KEY_ID: z.string().optional(),
   S3_SECRET_ACCESS_KEY: z.string().optional(),
 
-  // Optional queue vars (no default)
+  // Storage provider
+  STORAGE_PROVIDER: z.enum(["local", "s3"]).default("local"),
+
+  // Queue
+  QUEUE_ENABLED: z.string().default("false").transform(v => v === "true"),
   REDIS_URL: z.string().optional(),
 
   // Optional test DB

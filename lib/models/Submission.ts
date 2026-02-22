@@ -45,6 +45,7 @@ export interface ISubmission extends Document {
   bestScore?: number; // Highest score across all attempts (used for grade)
   // Project submission fields
   files?: IUploadedFile[];
+  deletedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -141,13 +142,27 @@ const submissionSchema = new mongoose.Schema<ISubmission, SubmissionModel>(
     },
     // Project submission fields
     files: [uploadedFileSchema],
+    deletedAt: {
+      type: Date,
+      default: null,
+    },
   },
   {
     timestamps: true,
   }
 );
 
+// Soft-delete: exclude deleted documents from all find queries by default
+submissionSchema.pre(/^find/, function (this: mongoose.Query<unknown, ISubmission>, next) {
+  if (!this.getOptions().includeSoftDeleted) {
+    this.where({ deletedAt: null });
+  }
+  next();
+});
+
+submissionSchema.index({ deletedAt: 1 });
 submissionSchema.index({ assignment: 1, student: 1 }, { unique: true });
+submissionSchema.index({ student: 1, createdAt: -1 });
 submissionSchema.index({ student: 1 });
 submissionSchema.index({ status: 1 });
 

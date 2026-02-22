@@ -42,6 +42,7 @@ export interface IAssignment extends Document {
   quizSettings?: IQuizSettings;
   instructions?: string; // markdown for projects
   projectSettings?: IProjectSettings;
+  deletedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -149,13 +150,27 @@ const assignmentSchema = new mongoose.Schema<IAssignment, AssignmentModel>(
       maxlength: [50000, "Instructions cannot exceed 50000 characters"],
     },
     projectSettings: projectSettingsSchema,
+    deletedAt: {
+      type: Date,
+      default: null,
+    },
   },
   {
     timestamps: true,
   }
 );
 
+// Soft-delete: exclude deleted documents from all find queries by default
+assignmentSchema.pre(/^find/, function (this: mongoose.Query<unknown, IAssignment>, next) {
+  if (!this.getOptions().includeSoftDeleted) {
+    this.where({ deletedAt: null });
+  }
+  next();
+});
+
+assignmentSchema.index({ deletedAt: 1 });
 assignmentSchema.index({ course: 1 });
+assignmentSchema.index({ course: 1, isPublished: 1, dueDate: 1 });
 assignmentSchema.index({ module: 1 });
 assignmentSchema.index({ dueDate: 1 });
 

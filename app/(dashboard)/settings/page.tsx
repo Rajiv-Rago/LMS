@@ -3,12 +3,7 @@
 import { useEffect, useState } from "react";
 import { ModelSelector, ModelSelectorValue } from "@/components/ai/ModelSelector";
 import { useToast } from "@/lib/hooks/useToast";
-
-interface AIPreferences {
-  defaultTier?: "fast" | "balanced" | "powerful";
-  defaultProvider?: string;
-  defaultModel?: string;
-}
+import type { UserAIPreferences } from "@/lib/ai/types";
 
 export default function SettingsPage() {
   const toast = useToast();
@@ -22,7 +17,7 @@ export default function SettingsPage() {
         const res = await fetch("/api/users/preferences");
         if (res.ok) {
           const data = await res.json();
-          const prefs: AIPreferences = data.aiPreferences || {};
+          const prefs: UserAIPreferences = data.aiPreferences || {};
           if (prefs.defaultTier) {
             setModelValue({ tier: prefs.defaultTier });
           } else if (prefs.defaultProvider) {

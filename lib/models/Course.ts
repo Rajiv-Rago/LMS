@@ -23,6 +23,7 @@ export interface ICourse extends Document {
   syllabusStatus?: SyllabusStatus;
   syllabusPrompt?: string;
   aiPreferences?: AIPreferences;
+  deletedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -98,12 +99,25 @@ const courseSchema = new mongoose.Schema<ICourse, CourseModel>(
         type: String,
       },
     },
+    deletedAt: {
+      type: Date,
+      default: null,
+    },
   },
   {
     timestamps: true,
   }
 );
 
+// Soft-delete: exclude deleted documents from all find queries by default
+courseSchema.pre(/^find/, function (this: mongoose.Query<unknown, ICourse>, next) {
+  if (!this.getOptions().includeSoftDeleted) {
+    this.where({ deletedAt: null });
+  }
+  next();
+});
+
+courseSchema.index({ deletedAt: 1 });
 courseSchema.index({ instructor: 1 });
 courseSchema.index({ enrolledStudents: 1 });
 courseSchema.index({ isPublished: 1 });

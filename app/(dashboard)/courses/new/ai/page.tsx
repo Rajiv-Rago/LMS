@@ -69,7 +69,7 @@ export default function NewAICoursePage() {
             setPhase("complete");
             const courseId = job.result?.courseId;
             if (courseId) {
-              setTimeout(() => router.push(`/courses/${courseId}/ai/content`), 500);
+              setTimeout(() => router.push(`/courses/${courseId}`), 500);
             }
           } else if (job.status === "failed") {
             stopPolling();
@@ -127,7 +127,7 @@ export default function NewAICoursePage() {
       } else if (data.course) {
         // Sync mode (SyncShim completed inline)
         setPhase("complete");
-        setTimeout(() => router.push(`/courses/${data.course._id}/ai/content`), 500);
+        setTimeout(() => router.push(`/courses/${data.course._id}`), 500);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to generate course");

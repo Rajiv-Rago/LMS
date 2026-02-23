@@ -11,6 +11,8 @@ export interface LessonContentRequest {
   lessonOutline: string;
   previousLessonsSummary?: string;
   targetLevel: TargetLevel;
+  feedback?: string;
+  previousContent?: string;
 }
 
 export interface GeneratedLessonContent {
@@ -93,6 +95,18 @@ Target Level: ${request.targetLevel}`;
 
     if (request.previousLessonsSummary) {
       prompt += `\n\nContext from previous lessons:\n${request.previousLessonsSummary}`;
+    }
+
+    if (request.feedback && request.previousContent) {
+      prompt += `\n\n--- REVISION REQUEST ---
+The following content was previously generated for this lesson:
+
+${request.previousContent}
+
+The user has requested the following changes:
+${request.feedback}
+
+Please regenerate the lesson content addressing this feedback while maintaining the overall structure and quality.`;
     }
 
     prompt += "\n\nRemember to respond with ONLY the JSON object, no other text.";

@@ -51,6 +51,7 @@ export async function GET(
 
     return NextResponse.json({
       lesson,
+      courseType: course.courseType,
       permissions: {
         canEdit: isInstructor || isAdmin,
       },

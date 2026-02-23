@@ -337,6 +337,7 @@ registerHandler(
       tier,
       provider,
       model,
+      feedback,
       userId,
     } = data as {
       courseId: string;
@@ -344,6 +345,7 @@ registerHandler(
       tier?: string;
       provider?: string;
       model?: string;
+      feedback?: string;
       userId: string;
     };
 
@@ -423,6 +425,8 @@ registerHandler(
         lessonOutline: lesson.lessonOutline || "",
         previousLessonsSummary: previousLessonsSummary || undefined,
         targetLevel,
+        feedback: feedback || undefined,
+        previousContent: feedback ? lesson.content : undefined,
       });
 
       lesson.content = content.content;

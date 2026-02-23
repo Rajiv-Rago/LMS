@@ -10,10 +10,13 @@ const JWT_SECRET: string = process.env.JWT_SECRET;
 const JWT_EXPIRES_IN = (process.env.JWT_EXPIRES_IN || "7d") as SignOptions["expiresIn"];
 const REFRESH_GRACE_PERIOD_SECONDS = 60 * 60; // 1 hour in seconds
 
+export type SubscriptionTier = "free" | "plus" | "admin";
+
 export interface JWTPayload {
   userId: string;
   email: string;
   role: "student" | "teacher" | "admin";
+  subscriptionTier: SubscriptionTier;
   iat?: number;
   exp?: number;
 }
@@ -23,6 +26,7 @@ export function signToken(user: IUser): string {
     userId: user._id.toString(),
     email: user.email,
     role: user.role,
+    subscriptionTier: user.role === "admin" ? "admin" : (user.subscriptionTier || "free"),
   };
 
   return jwt.sign(payload, JWT_SECRET, {

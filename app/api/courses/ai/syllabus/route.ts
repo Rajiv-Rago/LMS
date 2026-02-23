@@ -33,7 +33,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Rate limit check
-    const rateCheck = await enforceAIRateLimit(user.userId, user.role, "course_generation");
+    const subTier = user.role === "admin" ? "admin" as const : user.subscriptionTier;
+    const rateCheck = await enforceAIRateLimit(user.userId, subTier, "credits");
     if (rateCheck.blocked) return rateCheck.response;
 
     const body = await request.json();

@@ -22,8 +22,9 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Rate limit check
-    const rateCheck = await enforceAIRateLimit(user.userId, user.role, "course_generation");
+    // Rate limit check — single lesson costs 1 credit
+    const subTier = user.role === "admin" ? "admin" as const : user.subscriptionTier;
+    const rateCheck = await enforceAIRateLimit(user.userId, subTier, "credits");
     if (rateCheck.blocked) return rateCheck.response;
 
     const { courseId, lessonId } = await params;
@@ -114,6 +115,7 @@ export async function POST(
         tier: reqTier,
         provider: reqProvider,
         model: reqModel,
+        feedback: validation.data.feedback,
       },
       userId: user.userId,
     });

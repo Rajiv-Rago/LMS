@@ -1,16 +1,15 @@
 import { NextResponse } from "next/server";
 import AIUsage, { AIUsageCategory } from "@/lib/models/AIUsage";
 import { dbConnect } from "@/lib/db";
-
-type UserRole = "student" | "teacher" | "admin";
+import type { SubscriptionTier } from "@/lib/auth/jwt";
 
 /**
- * Daily request limits by role and category.
+ * Daily limits by category and subscription tier.
+ * Infinity means unlimited (skip DB entirely).
  */
-const DAILY_LIMITS: Record<AIUsageCategory, Record<UserRole, number>> = {
-  chat: { student: 50, teacher: 200, admin: 10_000 },
-  generate: { student: 10, teacher: 50, admin: 10_000 },
-  course_generation: { student: 5, teacher: 20, admin: 10_000 },
+const DAILY_LIMITS: Record<AIUsageCategory, Record<SubscriptionTier, number>> = {
+  questions: { free: 50,  plus: Infinity, admin: Infinity },
+  credits:   { free: 10,  plus: 100,      admin: Infinity },
 };
 
 /**
@@ -25,22 +24,36 @@ export interface RateLimitResult {
   limit: number;
   used: number;
   remaining: number;
+  cost: number;
   resetAt: string; // ISO timestamp of next UTC midnight
 }
 
 /**
  * Checks and atomically increments the AI rate limit counter.
- * Race-condition-free: uses conditional $inc so two concurrent requests
- * cannot both sneak past the limit.
+ * Supports variable cost (e.g. 1 credit per lesson in a module).
+ * For unlimited tiers, skips the DB entirely.
  */
 export async function checkAIRateLimit(
   userId: string,
-  role: UserRole,
-  category: AIUsageCategory
+  tier: SubscriptionTier,
+  category: AIUsageCategory,
+  cost: number = 1
 ): Promise<RateLimitResult> {
+  const limit = DAILY_LIMITS[category][tier];
+
+  // Compute next UTC midnight for reset header
+  const tomorrow = new Date();
+  tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+  tomorrow.setUTCHours(0, 0, 0, 0);
+  const resetAt = tomorrow.toISOString();
+
+  // Unlimited tier — skip DB entirely
+  if (!isFinite(limit)) {
+    return { allowed: true, limit, used: 0, remaining: Infinity, cost, resetAt };
+  }
+
   await dbConnect();
 
-  const limit = DAILY_LIMITS[category][role];
   const dateKey = getDateKey();
 
   // Ensure document exists
@@ -50,24 +63,18 @@ export async function checkAIRateLimit(
     { upsert: true }
   );
 
-  // Conditionally increment — only if under the limit
+  // Conditionally increment — only if there's enough headroom for the full cost
   const result = await AIUsage.findOneAndUpdate(
-    { user: userId, category, dateKey, count: { $lt: limit } },
-    { $inc: { count: 1 } },
+    { user: userId, category, dateKey, count: { $lte: limit - cost } },
+    { $inc: { count: cost } },
     { new: true }
   );
-
-  // Compute next UTC midnight for reset header
-  const tomorrow = new Date();
-  tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
-  tomorrow.setUTCHours(0, 0, 0, 0);
-  const resetAt = tomorrow.toISOString();
 
   if (!result) {
     // Limit reached — fetch current count for headers
     const doc = await AIUsage.findOne({ user: userId, category, dateKey });
     const used = doc?.count ?? limit;
-    return { allowed: false, limit, used, remaining: 0, resetAt };
+    return { allowed: false, limit, used, remaining: Math.max(0, limit - used), cost, resetAt };
   }
 
   return {
@@ -75,6 +82,7 @@ export async function checkAIRateLimit(
     limit,
     used: result.count,
     remaining: limit - result.count,
+    cost,
     resetAt,
   };
 }
@@ -84,13 +92,14 @@ export async function checkAIRateLimit(
  */
 export async function enforceAIRateLimit(
   userId: string,
-  role: UserRole,
-  category: AIUsageCategory
+  tier: SubscriptionTier,
+  category: AIUsageCategory,
+  cost: number = 1
 ): Promise<
   | { blocked: true; response: NextResponse }
   | { blocked: false; result: RateLimitResult }
 > {
-  const result = await checkAIRateLimit(userId, role, category);
+  const result = await checkAIRateLimit(userId, tier, category, cost);
 
   if (!result.allowed) {
     const response = NextResponse.json(
@@ -98,6 +107,8 @@ export async function enforceAIRateLimit(
         error: "Daily AI rate limit exceeded. Please try again tomorrow.",
         limit: result.limit,
         used: result.used,
+        remaining: result.remaining,
+        cost: result.cost,
         resetAt: result.resetAt,
       },
       { status: 429 }

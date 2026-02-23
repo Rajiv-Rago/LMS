@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import mongoose from "mongoose";
 import { dbConnect } from "@/lib/db";
-import { Course, Module } from "@/lib/models";
+import { Course, Module, Lesson } from "@/lib/models";
 import { authenticate } from "@/lib/auth";
 import { AIProviderName, AITier } from "@/lib/ai/types";
 import { resolveProvider } from "@/lib/ai/utils/providerResolver";
@@ -21,10 +21,6 @@ export async function POST(
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-
-    // Rate limit check
-    const rateCheck = await enforceAIRateLimit(user.userId, user.role, "course_generation");
-    if (rateCheck.blocked) return rateCheck.response;
 
     const { courseId, moduleId } = await params;
 
@@ -72,6 +68,15 @@ export async function POST(
     if (!courseModule) {
       return NextResponse.json({ error: "Module not found" }, { status: 404 });
     }
+
+    // Count lessons in this module to determine credit cost
+    const lessonCount = await Lesson.countDocuments({ module: moduleId });
+    const creditCost = Math.max(lessonCount, 1);
+
+    // Rate limit check — costs 1 credit per lesson in the module
+    const subTier = user.role === "admin" ? "admin" as const : user.subscriptionTier;
+    const rateCheck = await enforceAIRateLimit(user.userId, subTier, "credits", creditCost);
+    if (rateCheck.blocked) return rateCheck.response;
 
     // Fail fast: verify provider
     const { tier: reqTier, provider: reqProvider, model: reqModel } = validation.data;

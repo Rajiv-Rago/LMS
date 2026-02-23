@@ -1,5 +1,5 @@
 export { signToken, verifyToken, verifyTokenForRefresh, decodeToken } from "./jwt";
-export type { JWTPayload } from "./jwt";
+export type { JWTPayload, SubscriptionTier } from "./jwt";
 export {
   authenticate,
   getAuthenticatedUser,

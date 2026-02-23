@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import mongoose from "mongoose";
 import { dbConnect } from "@/lib/db";
-import { Course, Module } from "@/lib/models";
+import { Course, Module, Lesson } from "@/lib/models";
 import { authenticate } from "@/lib/auth";
 import { AIProviderName, AITier } from "@/lib/ai/types";
 import { resolveProvider } from "@/lib/ai/utils/providerResolver";
@@ -21,10 +21,6 @@ export async function POST(
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-
-    // Single rate limit check for the entire batch
-    const rateCheck = await enforceAIRateLimit(user.userId, user.role, "course_generation");
-    if (rateCheck.blocked) return rateCheck.response;
 
     const { courseId } = await params;
 
@@ -61,6 +57,31 @@ export async function POST(
       );
     }
 
+    // Find eligible modules (skeleton or failed — skip generating and completed)
+    const eligibleModules = await Module.find({
+      course: courseId,
+      contentStatus: { $in: ["skeleton", "failed"] },
+    }).sort({ order: 1 });
+
+    if (eligibleModules.length === 0) {
+      return NextResponse.json({
+        jobs: [],
+        message: "All modules already completed or generating",
+      });
+    }
+
+    // Count total lessons across all eligible modules to determine credit cost
+    const eligibleModuleIds = eligibleModules.map((m) => m._id);
+    const totalLessonCount = await Lesson.countDocuments({
+      module: { $in: eligibleModuleIds },
+    });
+    const creditCost = Math.max(totalLessonCount, 1);
+
+    // Rate limit check — costs 1 credit per lesson across all eligible modules
+    const subTier = user.role === "admin" ? "admin" as const : user.subscriptionTier;
+    const rateCheck = await enforceAIRateLimit(user.userId, subTier, "credits", creditCost);
+    if (rateCheck.blocked) return rateCheck.response;
+
     // Fail fast: verify provider before enqueueing any jobs
     const { tier: reqTier, provider: reqProvider, model: reqModel } = validation.data;
     const userPreferences = (reqTier || reqProvider) ? undefined : await getUserAIPreferences(user.userId);
@@ -83,19 +104,6 @@ export async function POST(
         { error: `API key not configured for provider: ${requestedProvider}` },
         { status: 500 }
       );
-    }
-
-    // Find eligible modules (skeleton or failed — skip generating and completed)
-    const eligibleModules = await Module.find({
-      course: courseId,
-      contentStatus: { $in: ["skeleton", "failed"] },
-    }).sort({ order: 1 });
-
-    if (eligibleModules.length === 0) {
-      return NextResponse.json({
-        jobs: [],
-        message: "All modules already completed or generating",
-      });
     }
 
     // Enqueue a job for each eligible module

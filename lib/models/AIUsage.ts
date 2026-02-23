@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document, Types } from "mongoose";
 
-export type AIUsageCategory = "chat" | "generate" | "course_generation";
+export type AIUsageCategory = "questions" | "credits";
 
 export interface IAIUsage extends Document {
   _id: Types.ObjectId;
@@ -22,7 +22,7 @@ const AIUsageSchema = new Schema<IAIUsage>(
     },
     category: {
       type: String,
-      enum: ["chat", "generate", "course_generation"],
+      enum: ["questions", "credits"],
       required: true,
     },
     dateKey: {

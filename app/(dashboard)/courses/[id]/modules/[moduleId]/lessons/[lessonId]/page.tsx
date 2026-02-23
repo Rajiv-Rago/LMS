@@ -1,8 +1,13 @@
 "use client";
 
-import { useEffect, useState, use } from "react";
+import { useEffect, useState, useRef, useCallback, use } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import {
+  ModelSelector,
+  type ModelSelectorValue,
+} from "@/components/ai/ModelSelector";
+import { useUserAIDefaults } from "@/lib/hooks/useUserAIDefaults";
 
 interface Lesson {
   _id: string;
@@ -13,6 +18,9 @@ interface Lesson {
   fileUrl?: string;
   isPublished: boolean;
   aiContext?: string;
+  generationStatus?: "skeleton" | "generating" | "completed" | "failed";
+  lessonOutline?: string;
+  keyTakeaways?: string[];
 }
 
 interface Permissions {
@@ -28,6 +36,7 @@ export default function LessonDetailPage({
   const router = useRouter();
   const [lesson, setLesson] = useState<Lesson | null>(null);
   const [permissions, setPermissions] = useState<Permissions | null>(null);
+  const [courseType, setCourseType] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [formData, setFormData] = useState({
@@ -39,33 +48,63 @@ export default function LessonDetailPage({
     aiContext: "",
   });
 
+  // AI generation state
+  const [feedback, setFeedback] = useState("");
+  const [generating, setGenerating] = useState(false);
+  const [genError, setGenError] = useState("");
+  const [modelValue, setModelValue] = useState<ModelSelectorValue>({
+    tier: "balanced",
+  });
+  const [showFeedback, setShowFeedback] = useState(false);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const { value: defaultModelValue, loading: defaultsLoading } =
+    useUserAIDefaults();
+
   useEffect(() => {
-    async function fetchLesson() {
-      try {
-        const res = await fetch(
-          `/api/courses/${id}/modules/${moduleId}/lessons/${lessonId}`
-        );
-        if (!res.ok) {
-          router.push(`/courses/${id}/modules/${moduleId}`);
-          return;
-        }
-        const data = await res.json();
-        setLesson(data.lesson);
-        setPermissions(data.permissions);
-        setFormData({
-          title: data.lesson.title,
-          contentType: data.lesson.contentType,
-          content: data.lesson.content || "",
-          videoUrl: data.lesson.videoUrl || "",
-          fileUrl: data.lesson.fileUrl || "",
-          aiContext: data.lesson.aiContext || "",
-        });
-      } catch { } finally {
-        setLoading(false);
-      }
+    if (!defaultsLoading) {
+      setModelValue(defaultModelValue);
     }
-    fetchLesson();
+  }, [defaultModelValue, defaultsLoading]);
+
+  // Cleanup polling on unmount
+  useEffect(() => {
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
+  }, []);
+
+  const fetchLesson = useCallback(async () => {
+    try {
+      const res = await fetch(
+        `/api/courses/${id}/modules/${moduleId}/lessons/${lessonId}`
+      );
+      if (!res.ok) {
+        router.push(`/courses/${id}`);
+        return;
+      }
+      const data = await res.json();
+      setLesson(data.lesson);
+      setPermissions(data.permissions);
+      setCourseType(data.courseType || "");
+      setFormData({
+        title: data.lesson.title,
+        contentType: data.lesson.contentType,
+        content: data.lesson.content || "",
+        videoUrl: data.lesson.videoUrl || "",
+        fileUrl: data.lesson.fileUrl || "",
+        aiContext: data.lesson.aiContext || "",
+      });
+    } catch {
+      /* ignore */
+    } finally {
+      setLoading(false);
+    }
   }, [id, moduleId, lessonId, router]);
+
+  useEffect(() => {
+    fetchLesson();
+  }, [fetchLesson]);
 
   const handleSave = async () => {
     try {
@@ -73,7 +112,10 @@ export default function LessonDetailPage({
         `/api/courses/${id}/modules/${moduleId}/lessons/${lessonId}`,
         {
           method: "PATCH",
-          headers: { "Content-Type": "application/json", "X-Requested-With": "XMLHttpRequest" },
+          headers: {
+            "Content-Type": "application/json",
+            "X-Requested-With": "XMLHttpRequest",
+          },
           body: JSON.stringify(formData),
         }
       );
@@ -83,7 +125,9 @@ export default function LessonDetailPage({
         setLesson(data.lesson);
         setEditing(false);
       }
-    } catch { }
+    } catch {
+      /* ignore */
+    }
   };
 
   const handlePublish = async () => {
@@ -92,7 +136,10 @@ export default function LessonDetailPage({
         `/api/courses/${id}/modules/${moduleId}/lessons/${lessonId}`,
         {
           method: "PATCH",
-          headers: { "Content-Type": "application/json", "X-Requested-With": "XMLHttpRequest" },
+          headers: {
+            "Content-Type": "application/json",
+            "X-Requested-With": "XMLHttpRequest",
+          },
           body: JSON.stringify({ isPublished: !lesson?.isPublished }),
         }
       );
@@ -101,7 +148,9 @@ export default function LessonDetailPage({
         const data = await res.json();
         setLesson(data.lesson);
       }
-    } catch { }
+    } catch {
+      /* ignore */
+    }
   };
 
   const handleDelete = async () => {
@@ -117,9 +166,72 @@ export default function LessonDetailPage({
       );
 
       if (res.ok) {
-        router.push(`/courses/${id}/modules/${moduleId}`);
+        router.push(`/courses/${id}`);
       }
-    } catch { }
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const handleGenerate = async (withFeedback?: string) => {
+    setGenError("");
+    setGenerating(true);
+
+    const payload: Record<string, string> = {};
+    if (modelValue.tier) payload.tier = modelValue.tier;
+    if (modelValue.provider) payload.provider = modelValue.provider;
+    if (modelValue.model) payload.model = modelValue.model;
+    if (withFeedback) payload.feedback = withFeedback;
+
+    try {
+      const res = await fetch(
+        `/api/courses/ai/${id}/lessons/${lessonId}/generate`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Requested-With": "XMLHttpRequest",
+          },
+          body: JSON.stringify(payload),
+        }
+      );
+
+      const data = await res.json();
+      if (!res.ok) {
+        setGenError(data.error || "Generation request failed");
+        setGenerating(false);
+        return;
+      }
+
+      // Poll for job completion
+      pollRef.current = setInterval(async () => {
+        try {
+          const jobRes = await fetch(`/api/jobs/${data.jobId}`);
+          const jobData = await jobRes.json();
+          if (jobData.job?.status === "completed") {
+            clearInterval(pollRef.current!);
+            pollRef.current = null;
+            await fetchLesson();
+            setFeedback("");
+            setShowFeedback(false);
+            setGenerating(false);
+          } else if (jobData.job?.status === "failed") {
+            clearInterval(pollRef.current!);
+            pollRef.current = null;
+            setGenError(jobData.job.error || "Generation failed");
+            setGenerating(false);
+          }
+        } catch {
+          clearInterval(pollRef.current!);
+          pollRef.current = null;
+          setGenError("Failed to check generation status");
+          setGenerating(false);
+        }
+      }, 2000);
+    } catch {
+      setGenError("Failed to start generation");
+      setGenerating(false);
+    }
   };
 
   if (loading) {
@@ -132,14 +244,21 @@ export default function LessonDetailPage({
 
   if (!lesson) return null;
 
+  const isAICourse = courseType === "ai-generated";
+  const canGenerate = isAICourse && permissions?.canEdit;
+  const isSkeleton =
+    lesson.generationStatus === "skeleton" || (!lesson.content && isAICourse);
+  const isCompleted = lesson.generationStatus === "completed";
+  const isFailed = lesson.generationStatus === "failed";
+
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div className="mb-6">
         <Link
-          href={`/courses/${id}/modules/${moduleId}`}
+          href={`/courses/${id}`}
           className="text-sm text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
         >
-          &larr; Back to module
+          &larr; Back to course
         </Link>
       </div>
 
@@ -301,47 +420,194 @@ export default function LessonDetailPage({
               )}
             </div>
 
-            {/* Video */}
-            {lesson.contentType === "video" && lesson.videoUrl && (
-              <div className="mb-6 aspect-video bg-black rounded-lg overflow-hidden">
-                <iframe
-                  src={lesson.videoUrl.replace("watch?v=", "embed/")}
-                  className="w-full h-full"
-                  allowFullScreen
-                />
+            {/* Generating progress banner */}
+            {generating && (
+              <div className="mb-4 flex items-center gap-3 rounded-lg bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 px-4 py-3">
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-purple-600 border-t-transparent"></div>
+                <span className="text-sm font-medium text-purple-700 dark:text-purple-300">
+                  Generating content...
+                </span>
               </div>
             )}
 
-            {/* File */}
-            {lesson.contentType === "file" && lesson.fileUrl && (
-              <div className="mb-6">
-                <a
-                  href={lesson.fileUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 dark:bg-blue-900/20 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/40"
-                >
-                  Download File
-                </a>
+            {/* Generation error */}
+            {genError && (
+              <div className="mb-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 px-4 py-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-red-700 dark:text-red-300">
+                    {genError}
+                  </span>
+                  <button
+                    onClick={() => {
+                      setGenError("");
+                      handleGenerate();
+                    }}
+                    className="ml-4 px-3 py-1 text-sm font-medium text-red-700 dark:text-red-300 bg-red-100 dark:bg-red-900/40 rounded-md hover:bg-red-200 dark:hover:bg-red-900/60"
+                  >
+                    Try Again
+                  </button>
+                </div>
               </div>
             )}
 
-            {/* Content */}
-            {lesson.content && (
-              <div className="prose dark:prose-invert max-w-none">
-                <div className="whitespace-pre-wrap">{lesson.content}</div>
+            {/* Skeleton state: no content generated yet */}
+            {canGenerate && isSkeleton && !generating && (
+              <div className="space-y-4">
+                {lesson.lessonOutline && (
+                  <div className="rounded-lg bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 p-4">
+                    <h3 className="text-sm font-medium text-zinc-600 dark:text-zinc-400 mb-2">
+                      Lesson Outline
+                    </h3>
+                    <p className="text-sm text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap">
+                      {lesson.lessonOutline}
+                    </p>
+                  </div>
+                )}
+
+                <div className="space-y-3">
+                  <ModelSelector
+                    value={modelValue}
+                    onChange={setModelValue}
+                    disabled={generating}
+                  />
+                  <button
+                    onClick={() => handleGenerate()}
+                    disabled={generating}
+                    className="px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-md hover:bg-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Generate Content
+                  </button>
+                </div>
               </div>
+            )}
+
+            {/* Content display (for completed or content-having lessons) */}
+            {!isSkeleton && (
+              <>
+                {/* Video */}
+                {lesson.contentType === "video" && lesson.videoUrl && (
+                  <div className="mb-6 aspect-video bg-black rounded-lg overflow-hidden">
+                    <iframe
+                      src={lesson.videoUrl.replace("watch?v=", "embed/")}
+                      className="w-full h-full"
+                      allowFullScreen
+                    />
+                  </div>
+                )}
+
+                {/* File */}
+                {lesson.contentType === "file" && lesson.fileUrl && (
+                  <div className="mb-6">
+                    <a
+                      href={lesson.fileUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 dark:bg-blue-900/20 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/40"
+                    >
+                      Download File
+                    </a>
+                  </div>
+                )}
+
+                {/* Content */}
+                {lesson.content && (
+                  <div
+                    className={`prose dark:prose-invert max-w-none ${generating ? "opacity-50" : ""}`}
+                  >
+                    <div className="whitespace-pre-wrap">{lesson.content}</div>
+                  </div>
+                )}
+
+                {/* Key Takeaways */}
+                {lesson.keyTakeaways && lesson.keyTakeaways.length > 0 && (
+                  <div className="mt-6 bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
+                    <h3 className="text-sm font-medium text-blue-900 dark:text-blue-200 mb-2">
+                      Key Takeaways
+                    </h3>
+                    <ul className="space-y-1">
+                      {lesson.keyTakeaways.map((t, i) => (
+                        <li
+                          key={i}
+                          className="text-sm text-blue-800 dark:text-blue-300"
+                        >
+                          &bull; {t}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* AI feedback section for completed AI lessons */}
+                {canGenerate && (isCompleted || isFailed) && !generating && (
+                  <div className="mt-6 border border-zinc-200 dark:border-zinc-700 rounded-lg">
+                    <button
+                      onClick={() => setShowFeedback(!showFeedback)}
+                      className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 rounded-lg"
+                    >
+                      <span>Improve with AI</span>
+                      <svg
+                        className={`w-4 h-4 transition-transform ${showFeedback ? "rotate-180" : ""}`}
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 9l-7 7-7-7"
+                        />
+                      </svg>
+                    </button>
+
+                    {showFeedback && (
+                      <div className="px-4 pb-4 space-y-3 border-t border-zinc-200 dark:border-zinc-700 pt-3">
+                        <textarea
+                          rows={3}
+                          value={feedback}
+                          onChange={(e) => setFeedback(e.target.value)}
+                          placeholder="What would you like changed? e.g., add more examples, simplify the language, focus more on X..."
+                          className="block w-full rounded-md border border-zinc-300 dark:border-zinc-700 px-3 py-2 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white text-sm"
+                        />
+                        <ModelSelector
+                          value={modelValue}
+                          onChange={setModelValue}
+                          disabled={generating}
+                        />
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleGenerate(feedback)}
+                            disabled={!feedback.trim() || generating}
+                            className="px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-md hover:bg-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            Regenerate with Feedback
+                          </button>
+                          <button
+                            onClick={() => handleGenerate()}
+                            disabled={generating}
+                            className="px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800 rounded-md hover:bg-zinc-200 dark:hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            Regenerate
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </>
             )}
 
             {/* AI Tutor Link */}
-            <div className="mt-8 pt-6 border-t border-zinc-200 dark:border-zinc-800">
-              <Link
-                href={`/courses/${id}/ai/tutor?lessonId=${lessonId}`}
-                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-500"
-              >
-                Ask AI Tutor about this lesson
-              </Link>
-            </div>
+            {lesson.content && (
+              <div className="mt-8 pt-6 border-t border-zinc-200 dark:border-zinc-800">
+                <Link
+                  href={`/courses/${id}/ai/tutor?lessonId=${lessonId}`}
+                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-500"
+                >
+                  Ask AI Tutor about this lesson
+                </Link>
+              </div>
+            )}
           </>
         )}
       </div>

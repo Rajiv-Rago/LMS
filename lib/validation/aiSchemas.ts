@@ -25,6 +25,7 @@ export const generateContentSchema = z
     tier: aiTierSchema.optional(),
     provider: aiProviderSchema.optional(),
     model: z.string().max(256).optional(),
+    feedback: z.string().max(2000).optional(),
   })
   .refine((data) => !(data.tier && data.provider), {
     message: "Cannot specify both tier and provider",

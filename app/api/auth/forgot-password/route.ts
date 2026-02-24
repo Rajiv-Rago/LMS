@@ -7,6 +7,8 @@ import { requireCsrf } from "@/lib/auth";
 import { forgotPasswordSchema } from "@/lib/validation/authSchemas";
 import { logAuditEvent } from "@/lib/auth/auditLog";
 import { captureException } from "@/lib/logger";
+import { sendEmail } from "@/lib/email";
+import { passwordResetEmail } from "@/lib/email/templates";
 
 const RESPONSE_MESSAGE =
   "If an account with that email exists, a password reset link has been sent.";
@@ -48,9 +50,17 @@ export async function POST(request: NextRequest) {
     user.resetPasswordExpires = new Date(Date.now() + 60 * 60 * 1000);
     await user.save({ validateBeforeSave: false });
 
-    // TODO: Send email via notification interface (Contract 4)
-    // Token is NOT logged — it would be sent via email in production
-    console.log(`[Password Reset] Reset requested for ${email}`);
+    // Build reset URL and send email via pluggable provider
+    const appUrl = process.env.APP_URL || "http://localhost:3000";
+    const resetUrl = `${appUrl}/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}`;
+    const template = passwordResetEmail(resetUrl);
+
+    await sendEmail({
+      to: { email },
+      subject: template.subject,
+      text: template.text,
+      html: template.html,
+    });
 
     await logAuditEvent(request, {
       userId: user._id.toString(),

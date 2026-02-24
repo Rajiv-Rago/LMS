@@ -1,64 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getClientIp } from "@/lib/utils/request";
-
-// --- Rate Limiting (in-memory, per-instance) ---
-
-interface RateLimitEntry {
-  count: number;
-  timestamp: number;
-}
-
-const rateLimitMap = new Map<string, RateLimitEntry>();
-
-const RATE_LIMIT_CONFIG: Record<string, { maxAttempts: number; windowMs: number }> = {
-  "/api/auth/login": { maxAttempts: 10, windowMs: 15 * 60 * 1000 },      // 10 per 15 min
-  "/api/auth/register": { maxAttempts: 5, windowMs: 60 * 60 * 1000 },    // 5 per hour
-  "/api/auth/forgot-password": { maxAttempts: 5, windowMs: 15 * 60 * 1000 }, // 5 per 15 min
-};
-
-// Clean up stale entries every 5 minutes
-const CLEANUP_INTERVAL = 5 * 60 * 1000;
-let lastCleanup = Date.now();
-
-function cleanupRateLimitMap() {
-  const now = Date.now();
-  if (now - lastCleanup < CLEANUP_INTERVAL) return;
-  lastCleanup = now;
-
-  const maxWindow = Math.max(...Object.values(RATE_LIMIT_CONFIG).map((c) => c.windowMs));
-  for (const [key, entry] of rateLimitMap) {
-    if (now - entry.timestamp > maxWindow) {
-      rateLimitMap.delete(key);
-    }
-  }
-}
-
-function checkRateLimit(
-  ip: string,
-  path: string
-): { allowed: boolean; retryAfter?: number } {
-  const config = RATE_LIMIT_CONFIG[path];
-  if (!config) return { allowed: true };
-
-  cleanupRateLimitMap();
-
-  const key = `${ip}:${path}`;
-  const now = Date.now();
-  const entry = rateLimitMap.get(key);
-
-  if (!entry || now - entry.timestamp > config.windowMs) {
-    rateLimitMap.set(key, { count: 1, timestamp: now });
-    return { allowed: true };
-  }
-
-  if (entry.count >= config.maxAttempts) {
-    const retryAfter = Math.ceil((entry.timestamp + config.windowMs - now) / 1000);
-    return { allowed: false, retryAfter };
-  }
-
-  entry.count++;
-  return { allowed: true };
-}
+import { checkRateLimit, RATE_LIMIT_RULES } from "@/lib/rateLimit";
 
 // --- Security Headers ---
 
@@ -79,13 +21,13 @@ function addSecurityHeaders(response: NextResponse): void {
 
 // --- Middleware ---
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // 1. Rate Limiting (auth endpoints only)
-  if (request.method === "POST" && RATE_LIMIT_CONFIG[pathname]) {
+  if (request.method === "POST" && RATE_LIMIT_RULES[pathname]) {
     const ip = getClientIp(request);
-    const { allowed, retryAfter } = checkRateLimit(ip, pathname);
+    const { allowed, retryAfter } = await checkRateLimit(ip, pathname);
 
     if (!allowed) {
       const response = NextResponse.json(

@@ -4,6 +4,7 @@ import { dbConnect } from "@/lib/db";
 import { Course, Module } from "@/lib/models";
 import { authenticate } from "@/lib/auth";
 import { captureException } from "@/lib/logger";
+import { parsePagination, paginationMeta } from "@/lib/utils/pagination";
 
 const createModuleSchema = z.object({
   title: z.string().min(1).max(200),
@@ -45,11 +46,18 @@ export async function GET(
       moduleQuery.isPublished = true;
     }
 
-    const modules = await Module.find(moduleQuery)
-      .populate("lessons")
-      .sort({ order: 1 });
+    const { page, limit, skip } = parsePagination(request.nextUrl.searchParams, { limit: 50, maxLimit: 100 });
 
-    return NextResponse.json({ modules });
+    const [modules, total] = await Promise.all([
+      Module.find(moduleQuery)
+        .populate("lessons")
+        .sort({ order: 1 })
+        .skip(skip)
+        .limit(limit),
+      Module.countDocuments(moduleQuery),
+    ]);
+
+    return NextResponse.json({ data: modules, pagination: paginationMeta(page, limit, total) });
   } catch (error) {
     captureException(error, { operation: "Get modules error" });
     return NextResponse.json(

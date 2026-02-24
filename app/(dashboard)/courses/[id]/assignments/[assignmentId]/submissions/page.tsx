@@ -51,7 +51,7 @@ export default function SubmissionsPage({
         const submissionsData = await submissionsRes.json();
 
         setAssignment(assignmentData.assignment);
-        setSubmissions(submissionsData.submissions);
+        setSubmissions(submissionsData.data);
       } catch { } finally {
         setLoading(false);
       }

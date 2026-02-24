@@ -9,6 +9,7 @@ import {
   Submission,
 } from "@/lib/models";
 import { captureException } from "@/lib/logger";
+import { parsePagination, paginationMeta } from "@/lib/utils/pagination";
 
 // GET — list soft-deleted courses
 export async function GET(request: NextRequest) {
@@ -21,15 +22,20 @@ export async function GET(request: NextRequest) {
 
     await dbConnect();
 
-    const deletedCourses = await Course.find(
-      { deletedAt: { $ne: null } },
-      null,
-      { includeSoftDeleted: true }
-    )
-      .populate("instructor", "name email")
-      .sort({ deletedAt: -1 });
+    const { page, limit, skip } = parsePagination(request.nextUrl.searchParams, { limit: 20, maxLimit: 100 });
+    const filter = { deletedAt: { $ne: null } };
+    const opts = { includeSoftDeleted: true };
 
-    return NextResponse.json({ courses: deletedCourses });
+    const [deletedCourses, total] = await Promise.all([
+      Course.find(filter, null, opts)
+        .populate("instructor", "name email")
+        .sort({ deletedAt: -1 })
+        .skip(skip)
+        .limit(limit),
+      Course.countDocuments(filter),
+    ]);
+
+    return NextResponse.json({ data: deletedCourses, pagination: paginationMeta(page, limit, total) });
   } catch (error) {
     captureException(error, { operation: "List trash error" });
     return NextResponse.json(

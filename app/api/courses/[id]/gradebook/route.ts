@@ -3,6 +3,7 @@ import { dbConnect } from "@/lib/db";
 import { Course, Assignment, Submission } from "@/lib/models";
 import { authenticate } from "@/lib/auth";
 import { captureException } from "@/lib/logger";
+import { parsePagination, paginationMeta } from "@/lib/utils/pagination";
 
 interface GradebookEntry {
   student: {
@@ -48,9 +49,7 @@ export async function GET(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const page = Math.max(1, parseInt(request.nextUrl.searchParams.get("page") || "1"));
-    const limit = Math.min(100, Math.max(1, parseInt(request.nextUrl.searchParams.get("limit") || "20")));
-    const skip = (page - 1) * limit;
+    const { page, limit, skip } = parsePagination(request.nextUrl.searchParams, { limit: 20, maxLimit: 100 });
 
     const totalStudents = course.enrolledStudents.length;
 
@@ -126,12 +125,7 @@ export async function GET(
         assignmentType: a.assignmentType || "standard",
       })),
       gradebook,
-      pagination: {
-        page,
-        limit,
-        total: totalStudents,
-        pages: Math.ceil(totalStudents / limit),
-      },
+      pagination: paginationMeta(page, limit, totalStudents),
       summary: {
         totalStudents,
         totalAssignments: assignments.length,

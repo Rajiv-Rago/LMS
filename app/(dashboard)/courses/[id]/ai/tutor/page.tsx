@@ -51,7 +51,7 @@ export default function AITutorPage({
         const res = await fetch(`/api/ai/chat/sessions?courseId=${id}`);
         if (res.ok) {
           const data = await res.json();
-          setSessions(data.sessions);
+          setSessions(data.data);
         }
       } catch { } finally {
         setLoadingSessions(false);

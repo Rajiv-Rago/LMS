@@ -65,7 +65,7 @@ export default function AssignmentsPage({
         }
 
         const assignmentsData = await assignmentsRes.json();
-        setAssignments(assignmentsData.assignments);
+        setAssignments(assignmentsData.data);
       } catch { } finally {
         setLoading(false);
       }

@@ -4,6 +4,7 @@ import { dbConnect } from "@/lib/db";
 import { Course, Module, Lesson } from "@/lib/models";
 import { authenticate } from "@/lib/auth";
 import { captureException } from "@/lib/logger";
+import { parsePagination, paginationMeta } from "@/lib/utils/pagination";
 
 const createLessonSchema = z.object({
   title: z.string().min(1).max(200),
@@ -47,9 +48,14 @@ export async function GET(
       lessonQuery.isPublished = true;
     }
 
-    const lessons = await Lesson.find(lessonQuery).sort({ order: 1 });
+    const { page, limit, skip } = parsePagination(request.nextUrl.searchParams, { limit: 50, maxLimit: 100 });
 
-    return NextResponse.json({ lessons });
+    const [lessons, total] = await Promise.all([
+      Lesson.find(lessonQuery).sort({ order: 1 }).skip(skip).limit(limit),
+      Lesson.countDocuments(lessonQuery),
+    ]);
+
+    return NextResponse.json({ data: lessons, pagination: paginationMeta(page, limit, total) });
   } catch (error) {
     captureException(error, { operation: "Get lessons error" });
     return NextResponse.json(

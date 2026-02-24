@@ -39,10 +39,10 @@ describe("Assignment CRUD", () => {
       const response = await GET(request, {
         params: Promise.resolve({ id: course._id.toString() }),
       });
-      const { status, data } = await parseResponse<{ assignments: { title: string }[] }>(response);
+      const { status, data } = await parseResponse<{ data: { title: string }[] }>(response);
 
       expect(status).toBe(200);
-      expect(data.assignments).toHaveLength(2);
+      expect(data.data).toHaveLength(2);
     });
 
     it("returns only published assignments for enrolled students", async () => {
@@ -64,11 +64,11 @@ describe("Assignment CRUD", () => {
       const response = await GET(request, {
         params: Promise.resolve({ id: course._id.toString() }),
       });
-      const { status, data } = await parseResponse<{ assignments: { title: string }[] }>(response);
+      const { status, data } = await parseResponse<{ data: { title: string }[] }>(response);
 
       expect(status).toBe(200);
-      expect(data.assignments).toHaveLength(1);
-      expect(data.assignments[0].title).toBe("Published");
+      expect(data.data).toHaveLength(1);
+      expect(data.data[0].title).toBe("Published");
     });
 
     it("returns 403 for non-enrolled users", async () => {

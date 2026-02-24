@@ -148,7 +148,7 @@ export default function CourseDetailPage({
       let mods: Module[] = [];
       if (modulesRes.ok) {
         const modulesData = await modulesRes.json();
-        mods = modulesData.modules;
+        mods = modulesData.data;
       }
 
       // For AI courses, fetch richer lesson data and merge

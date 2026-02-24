@@ -3,6 +3,7 @@ import { dbConnect } from "@/lib/db";
 import { AIChatSession } from "@/lib/models";
 import { authenticate } from "@/lib/auth";
 import { captureException } from "@/lib/logger";
+import { parsePagination, paginationMeta } from "@/lib/utils/pagination";
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,8 +15,7 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const courseId = searchParams.get("courseId");
-    const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "20");
+    const { page, limit, skip } = parsePagination(searchParams, { limit: 20, maxLimit: 100 });
 
     await dbConnect();
 
@@ -24,23 +24,20 @@ export async function GET(request: NextRequest) {
       query.course = courseId;
     }
 
-    const total = await AIChatSession.countDocuments(query);
-    const sessions = await AIChatSession.find(query)
-      .populate("course", "title")
-      .populate("lesson", "title")
-      .select("title course lesson provider createdAt updatedAt")
-      .sort({ updatedAt: -1 })
-      .skip((page - 1) * limit)
-      .limit(limit);
+    const [sessions, total] = await Promise.all([
+      AIChatSession.find(query)
+        .populate("course", "title")
+        .populate("lesson", "title")
+        .select("title course lesson provider createdAt updatedAt")
+        .sort({ updatedAt: -1 })
+        .skip(skip)
+        .limit(limit),
+      AIChatSession.countDocuments(query),
+    ]);
 
     return NextResponse.json({
-      sessions,
-      pagination: {
-        page,
-        limit,
-        total,
-        pages: Math.ceil(total / limit),
-      },
+      data: sessions,
+      pagination: paginationMeta(page, limit, total),
     });
   } catch (error) {
     captureException(error, { operation: "Get chat sessions error" });

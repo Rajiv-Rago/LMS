@@ -41,7 +41,7 @@ export default function CoursesPage() {
 
         if (coursesRes.ok) {
           const coursesData = await coursesRes.json();
-          setCourses(coursesData.courses);
+          setCourses(coursesData.data);
         }
       } catch {
         // Handled by error boundary

@@ -3,6 +3,7 @@ import { dbConnect } from "@/lib/db";
 import { Course } from "@/lib/models";
 import { authenticate } from "@/lib/auth";
 import { captureException } from "@/lib/logger";
+import { parsePagination, paginationMeta } from "@/lib/utils/pagination";
 
 export async function GET(request: NextRequest) {
   try {
@@ -13,8 +14,7 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "10");
+    const { page, limit, skip } = parsePagination(searchParams, { limit: 10, maxLimit: 100 });
     const status = searchParams.get("status");
 
     await dbConnect();
@@ -28,29 +28,26 @@ export async function GET(request: NextRequest) {
       query.syllabusStatus = status;
     }
 
-    const total = await Course.countDocuments(query);
-    const courses = await Course.find(query)
-      .populate({
-        path: "modules",
-        populate: {
-          path: "lessons",
-          model: "Lesson",
-          select: "title generationStatus order",
-        },
-        select: "title contentStatus order",
-      })
-      .sort({ createdAt: -1 })
-      .skip((page - 1) * limit)
-      .limit(limit);
+    const [courses, total] = await Promise.all([
+      Course.find(query)
+        .populate({
+          path: "modules",
+          populate: {
+            path: "lessons",
+            model: "Lesson",
+            select: "title generationStatus order",
+          },
+          select: "title contentStatus order",
+        })
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
+      Course.countDocuments(query),
+    ]);
 
     return NextResponse.json({
-      courses,
-      pagination: {
-        page,
-        limit,
-        total,
-        pages: Math.ceil(total / limit),
-      },
+      data: courses,
+      pagination: paginationMeta(page, limit, total),
     });
   } catch (error) {
     captureException(error, { operation: "Get my AI courses error" });

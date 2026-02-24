@@ -113,12 +113,12 @@ describe("Courses CRUD", () => {
       const request = buildRequest("GET", "/api/courses", { token });
       const response = await GET(request);
       const { status, data } = await parseResponse<{
-        courses: Array<{ title: string }>;
+        data: Array<{ title: string }>;
         pagination: { total: number };
       }>(response);
 
       expect(status).toBe(200);
-      expect(data.courses).toHaveLength(2);
+      expect(data.data).toHaveLength(2);
       expect(data.pagination.total).toBe(2);
     });
 
@@ -136,13 +136,13 @@ describe("Courses CRUD", () => {
       const request = buildRequest("GET", "/api/courses");
       const response = await GET(request);
       const { status, data } = await parseResponse<{
-        courses: Array<{ title: string }>;
+        data: Array<{ title: string }>;
         pagination: { total: number };
       }>(response);
 
       expect(status).toBe(200);
       expect(data.pagination.total).toBe(1);
-      expect(data.courses[0].title).toBe("Published");
+      expect(data.data[0].title).toBe("Published");
     });
   });
 

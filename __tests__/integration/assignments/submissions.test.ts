@@ -283,11 +283,11 @@ describe("Submissions", () => {
         }),
       });
       const { status, data } = await parseResponse<{
-        submissions: { content: string }[];
+        data: { content: string }[];
       }>(response);
 
       expect(status).toBe(200);
-      expect(data.submissions).toHaveLength(1);
+      expect(data.data).toHaveLength(1);
     });
 
     it("returns 403 for students", async () => {

@@ -191,7 +191,18 @@ export async function PATCH(
     if (dueDate) {
       assignment.dueDate = new Date(dueDate);
     }
-    Object.assign(assignment, updateData);
+    if (updateData.title !== undefined) assignment.title = updateData.title;
+    if (updateData.description !== undefined) assignment.description = updateData.description;
+    if (updateData.points !== undefined) assignment.points = updateData.points;
+    if (updateData.submissionType !== undefined) assignment.submissionType = updateData.submissionType;
+    if (updateData.allowedFileTypes !== undefined) assignment.allowedFileTypes = updateData.allowedFileTypes;
+    if (updateData.maxFileSize !== undefined) assignment.maxFileSize = updateData.maxFileSize;
+    if (updateData.isPublished !== undefined) assignment.isPublished = updateData.isPublished;
+    if (updateData.assignmentType !== undefined) assignment.assignmentType = updateData.assignmentType;
+    if (updateData.questions !== undefined) assignment.questions = updateData.questions;
+    if (updateData.quizSettings !== undefined) assignment.quizSettings = { ...assignment.quizSettings, ...updateData.quizSettings } as typeof assignment.quizSettings;
+    if (updateData.instructions !== undefined) assignment.instructions = updateData.instructions;
+    if (updateData.projectSettings !== undefined) assignment.projectSettings = { ...assignment.projectSettings, ...updateData.projectSettings } as typeof assignment.projectSettings;
 
     await assignment.save();
 

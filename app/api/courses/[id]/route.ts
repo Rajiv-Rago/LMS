@@ -96,7 +96,11 @@ export async function PATCH(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    Object.assign(course, validation.data);
+    const { title, description, coverImage, isPublished } = validation.data;
+    if (title !== undefined) course.title = title;
+    if (description !== undefined) course.description = description;
+    if (coverImage !== undefined) course.coverImage = coverImage ?? undefined;
+    if (isPublished !== undefined) course.isPublished = isPublished;
     await course.save();
 
     await course.populate("instructor", "name email");

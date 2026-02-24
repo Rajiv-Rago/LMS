@@ -105,7 +105,16 @@ export async function PATCH(
       return NextResponse.json({ error: "Lesson not found" }, { status: 404 });
     }
 
-    Object.assign(lesson, validation.data);
+    const { title, contentType, content, videoUrl, fileUrl, duration, order, isPublished, aiContext } = validation.data;
+    if (title !== undefined) lesson.title = title;
+    if (contentType !== undefined) lesson.contentType = contentType;
+    if (content !== undefined) lesson.content = content;
+    if (videoUrl !== undefined) lesson.videoUrl = videoUrl ?? undefined;
+    if (fileUrl !== undefined) lesson.fileUrl = fileUrl ?? undefined;
+    if (duration !== undefined) lesson.duration = duration ?? undefined;
+    if (order !== undefined) lesson.order = order;
+    if (isPublished !== undefined) lesson.isPublished = isPublished;
+    if (aiContext !== undefined) lesson.aiContext = aiContext ?? undefined;
     await lesson.save();
 
     return NextResponse.json({ lesson });

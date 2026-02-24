@@ -75,6 +75,10 @@ function addSecurityHeaders(response: NextResponse): void {
     "Permissions-Policy",
     "camera=(), microphone=(), geolocation=()"
   );
+  response.headers.set(
+    "Content-Security-Policy",
+    "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'"
+  );
 }
 
 // --- Middleware ---

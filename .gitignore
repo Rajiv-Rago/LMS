@@ -29,6 +29,9 @@ id_ed25519*
 lms
 *.pub
 
+# uploaded files (private, served via authenticated API)
+/data/uploads/
+
 # debug
 npm-debug.log*
 yarn-debug.log*

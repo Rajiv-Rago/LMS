@@ -6,7 +6,7 @@ import User from "@/lib/models/User";
 import { requireCsrf } from "@/lib/auth";
 import { forgotPasswordSchema } from "@/lib/validation/authSchemas";
 import { logAuditEvent } from "@/lib/auth/auditLog";
-import { captureException } from "@/lib/logger";
+import { captureException, logger } from "@/lib/logger";
 
 const RESPONSE_MESSAGE =
   "If an account with that email exists, a password reset link has been sent.";
@@ -49,8 +49,7 @@ export async function POST(request: NextRequest) {
     await user.save({ validateBeforeSave: false });
 
     // TODO: Send email via notification interface (Contract 4)
-    // Token is NOT logged — it would be sent via email in production
-    console.log(`[Password Reset] Reset requested for ${email}`);
+    logger.info("Password reset requested", { userId: user._id.toString() });
 
     await logAuditEvent(request, {
       userId: user._id.toString(),

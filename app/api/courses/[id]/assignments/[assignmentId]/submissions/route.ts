@@ -145,7 +145,11 @@ export async function POST(
         );
       }
 
-      Object.assign(submission, validation.data);
+      const { content: submissionContent, fileUrl, url, status } = validation.data;
+      if (submissionContent !== undefined) submission.content = submissionContent;
+      if (fileUrl !== undefined) submission.fileUrl = fileUrl;
+      if (url !== undefined) submission.url = url;
+      if (status !== undefined) submission.status = status;
       if (validation.data.status === "submitted") {
         submission.submittedAt = new Date();
       }

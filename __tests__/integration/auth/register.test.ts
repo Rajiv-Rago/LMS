@@ -18,7 +18,7 @@ describe("POST /api/auth/register", () => {
   const validBody = {
     email: "new@example.com",
     name: "New User",
-    password: "password123",
+    password: "Password123!",
     role: "student",
   };
 

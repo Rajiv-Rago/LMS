@@ -99,7 +99,11 @@ export async function PATCH(
       return NextResponse.json({ error: "Module not found" }, { status: 404 });
     }
 
-    Object.assign(module, validation.data);
+    const { title, description, order, isPublished } = validation.data;
+    if (title !== undefined) module.title = title;
+    if (description !== undefined) module.description = description ?? undefined;
+    if (order !== undefined) module.order = order;
+    if (isPublished !== undefined) module.isPublished = isPublished;
     await module.save();
 
     return NextResponse.json({ module });

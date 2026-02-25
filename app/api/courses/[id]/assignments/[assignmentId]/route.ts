@@ -183,7 +183,11 @@ export async function PATCH(
       );
     }
 
-    const { moduleId, dueDate, ...updateData } = validation.data;
+    const {
+      moduleId, dueDate, title, description, points, submissionType,
+      allowedFileTypes, maxFileSize, isPublished, assignmentType,
+      questions, quizSettings, instructions, projectSettings,
+    } = validation.data;
 
     if (moduleId !== undefined) {
       assignment.module = (moduleId || undefined) as typeof assignment.module;
@@ -191,7 +195,20 @@ export async function PATCH(
     if (dueDate) {
       assignment.dueDate = new Date(dueDate);
     }
-    Object.assign(assignment, updateData);
+    if (title !== undefined) assignment.title = title;
+    if (description !== undefined) assignment.description = description;
+    if (points !== undefined) assignment.points = points;
+    if (submissionType !== undefined) assignment.submissionType = submissionType;
+    if (allowedFileTypes !== undefined) assignment.allowedFileTypes = allowedFileTypes;
+    if (maxFileSize !== undefined) assignment.maxFileSize = maxFileSize;
+    if (isPublished !== undefined) assignment.isPublished = isPublished;
+    if (assignmentType !== undefined) assignment.assignmentType = assignmentType;
+    if (questions !== undefined) assignment.questions = questions;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if (quizSettings !== undefined) assignment.quizSettings = quizSettings as any;
+    if (instructions !== undefined) assignment.instructions = instructions;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if (projectSettings !== undefined) assignment.projectSettings = projectSettings as any;
 
     await assignment.save();
 

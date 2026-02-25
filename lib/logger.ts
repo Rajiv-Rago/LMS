@@ -20,7 +20,7 @@ function formatError(error: unknown): ErrorDetails {
     return {
       errorName: error.name,
       errorMessage: error.message,
-      stack: error.stack,
+      ...(!isProduction && { stack: error.stack }),
     };
   }
   return { errorName: "UnknownError", errorMessage: String(error) };

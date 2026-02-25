@@ -5,6 +5,7 @@ import { Course, Assignment, Submission } from "@/lib/models";
 import { authenticate } from "@/lib/auth";
 import { captureException } from "@/lib/logger";
 import { sendNotification } from "@/lib/notifications";
+import { parsePagination, paginationMeta } from "@/lib/utils/pagination";
 
 const createSubmissionSchema = z.object({
   content: z.string().max(50000).optional(),
@@ -40,9 +41,7 @@ export async function GET(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const page = Math.max(1, parseInt(request.nextUrl.searchParams.get("page") || "1"));
-    const limit = Math.min(100, Math.max(1, parseInt(request.nextUrl.searchParams.get("limit") || "20")));
-    const skip = (page - 1) * limit;
+    const { page, limit, skip } = parsePagination(request);
 
     const query = { assignment: assignmentId };
     const [submissions, total] = await Promise.all([
@@ -56,12 +55,7 @@ export async function GET(
 
     return NextResponse.json({
       submissions,
-      pagination: {
-        page,
-        limit,
-        total,
-        pages: Math.ceil(total / limit),
-      },
+      pagination: paginationMeta(total, page, limit),
     });
   } catch (error) {
     captureException(error, { operation: "Get submissions error" });
@@ -145,7 +139,11 @@ export async function POST(
         );
       }
 
-      Object.assign(submission, validation.data);
+      const { content, fileUrl, url, status } = validation.data;
+      if (content !== undefined) submission.content = content;
+      if (fileUrl !== undefined) submission.fileUrl = fileUrl;
+      if (url !== undefined) submission.url = url;
+      if (status !== undefined) submission.status = status;
       if (validation.data.status === "submitted") {
         submission.submittedAt = new Date();
       }

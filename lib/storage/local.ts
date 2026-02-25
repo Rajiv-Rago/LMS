@@ -6,7 +6,7 @@ export class LocalFileStorage implements FileStorage {
   private basePath: string;
 
   constructor(basePath?: string) {
-    this.basePath = basePath || path.join(process.cwd(), "public", "uploads");
+    this.basePath = basePath || path.join(process.cwd(), "data", "uploads");
   }
 
   async upload(file: Buffer, key: string, _contentType: string): Promise<string> {
@@ -14,12 +14,17 @@ export class LocalFileStorage implements FileStorage {
     const dir = path.dirname(filePath);
     await mkdir(dir, { recursive: true });
     await writeFile(filePath, file);
-    return `/uploads/${key}`;
+    return `/api/files/${key}`;
   }
 
   async delete(key: string): Promise<void> {
-    // key may be a URL path like /uploads/... or just the key
-    const normalizedKey = key.startsWith("/uploads/") ? key.slice("/uploads/".length) : key;
+    // key may be a URL path like /api/files/... or legacy /uploads/... or just the key
+    let normalizedKey = key;
+    if (normalizedKey.startsWith("/api/files/")) {
+      normalizedKey = normalizedKey.slice("/api/files/".length);
+    } else if (normalizedKey.startsWith("/uploads/")) {
+      normalizedKey = normalizedKey.slice("/uploads/".length);
+    }
     const filePath = path.join(this.basePath, normalizedKey);
     try {
       await unlink(filePath);
@@ -29,8 +34,12 @@ export class LocalFileStorage implements FileStorage {
   }
 
   async getSignedUrl(key: string): Promise<string> {
-    // Local storage doesn't need signing — just return the public URL
-    const normalizedKey = key.startsWith("/uploads/") ? key : `/uploads/${key}`;
-    return normalizedKey;
+    // Local storage uses authenticated serving via /api/files/
+    let normalizedKey = key;
+    if (normalizedKey.startsWith("/api/files/")) return normalizedKey;
+    if (normalizedKey.startsWith("/uploads/")) {
+      normalizedKey = normalizedKey.slice("/uploads/".length);
+    }
+    return `/api/files/${normalizedKey}`;
   }
 }

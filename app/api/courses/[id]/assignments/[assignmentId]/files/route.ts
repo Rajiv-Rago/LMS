@@ -7,8 +7,9 @@ import { join } from "path";
 import { existsSync } from "fs";
 import { randomUUID } from "crypto";
 import { captureException } from "@/lib/logger";
+import { validateFileMagic } from "@/lib/utils/fileMagic";
 
-const UPLOAD_DIR = join(process.cwd(), "public", "uploads", "submissions");
+const UPLOAD_DIR = join(process.cwd(), "data", "uploads", "submissions");
 
 // Ensure upload directory exists
 async function ensureUploadDir(submissionId: string): Promise<string> {
@@ -156,15 +157,22 @@ export async function POST(
       const filename = `${fileId}.${ext}`;
       const filepath = join(uploadDir, filename);
 
-      // Write file to disk
+      // Read file bytes and validate magic bytes
       const bytes = await file.arrayBuffer();
-      await writeFile(filepath, Buffer.from(bytes));
+      const buffer = Buffer.from(bytes);
+      const magicError = validateFileMagic(buffer, file.name);
+      if (magicError) {
+        return NextResponse.json({ error: magicError }, { status: 400 });
+      }
+
+      // Write file to disk
+      await writeFile(filepath, buffer);
 
       const uploadedFile = {
         id: fileId,
         filename,
         originalName: file.name,
-        url: `/uploads/submissions/${submission._id}/${filename}`,
+        url: `/api/files/submissions/${submission._id}/${filename}`,
         mimeType: file.type || "application/octet-stream",
         size: file.size,
         uploadedAt: new Date(),

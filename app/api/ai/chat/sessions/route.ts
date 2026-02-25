@@ -3,6 +3,7 @@ import { dbConnect } from "@/lib/db";
 import { AIChatSession } from "@/lib/models";
 import { authenticate } from "@/lib/auth";
 import { captureException } from "@/lib/logger";
+import { parsePagination, paginationMeta } from "@/lib/utils/pagination";
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,8 +15,7 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const courseId = searchParams.get("courseId");
-    const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "20");
+    const { page, limit, skip } = parsePagination(request);
 
     await dbConnect();
 
@@ -30,17 +30,12 @@ export async function GET(request: NextRequest) {
       .populate("lesson", "title")
       .select("title course lesson provider createdAt updatedAt")
       .sort({ updatedAt: -1 })
-      .skip((page - 1) * limit)
+      .skip(skip)
       .limit(limit);
 
     return NextResponse.json({
       sessions,
-      pagination: {
-        page,
-        limit,
-        total,
-        pages: Math.ceil(total / limit),
-      },
+      pagination: paginationMeta(total, page, limit),
     });
   } catch (error) {
     captureException(error, { operation: "Get chat sessions error" });

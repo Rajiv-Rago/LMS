@@ -3,6 +3,7 @@ import { dbConnect } from "@/lib/db";
 import Notification from "@/lib/models/Notification";
 import { authenticate, requireCsrf } from "@/lib/auth";
 import { captureException } from "@/lib/logger";
+import { parsePagination, paginationMeta } from "@/lib/utils/pagination";
 
 export async function GET(request: NextRequest) {
   try {
@@ -11,10 +12,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get("page") || "1");
-    const limit = Math.min(parseInt(searchParams.get("limit") || "20"), 50);
-    const skip = (page - 1) * limit;
+    const { page, limit, skip } = parsePagination(request, { maxLimit: 50 });
 
     await dbConnect();
 
@@ -39,12 +37,7 @@ export async function GET(request: NextRequest) {
         createdAt: n.createdAt,
       })),
       unreadCount,
-      pagination: {
-        page,
-        limit,
-        total,
-        pages: Math.ceil(total / limit),
-      },
+      pagination: paginationMeta(total, page, limit),
     });
   } catch (error) {
     captureException(error, { operation: "List notifications error" });

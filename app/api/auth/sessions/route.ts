@@ -3,6 +3,7 @@ import { dbConnect } from "@/lib/db";
 import Session from "@/lib/models/Session";
 import { authenticate } from "@/lib/auth";
 import { captureException } from "@/lib/logger";
+import { parsePagination, paginationMeta } from "@/lib/utils/pagination";
 
 export async function GET(request: NextRequest) {
   try {
@@ -13,12 +14,21 @@ export async function GET(request: NextRequest) {
 
     await dbConnect();
 
-    const sessions = await Session.find({
+    const { page, limit, skip } = parsePagination(request);
+
+    const query = {
       userId: user.userId,
       expiresAt: { $gt: new Date() },
-    })
-      .select("ip userAgent lastActiveAt createdAt")
-      .sort({ lastActiveAt: -1 });
+    };
+
+    const [sessions, total] = await Promise.all([
+      Session.find(query)
+        .select("ip userAgent lastActiveAt createdAt")
+        .sort({ lastActiveAt: -1 })
+        .skip(skip)
+        .limit(limit),
+      Session.countDocuments(query),
+    ]);
 
     return NextResponse.json({
       data: sessions.map((s) => ({
@@ -28,6 +38,7 @@ export async function GET(request: NextRequest) {
         lastActiveAt: s.lastActiveAt,
         createdAt: s.createdAt,
       })),
+      pagination: paginationMeta(total, page, limit),
     });
   } catch (error) {
     captureException(error, { operation: "List sessions error" });

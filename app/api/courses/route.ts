@@ -5,6 +5,7 @@ import { Course } from "@/lib/models";
 import { authenticate, JWTPayload } from "@/lib/auth";
 import { captureException } from "@/lib/logger";
 import * as cache from "@/lib/cache";
+import { parsePagination, paginationMeta } from "@/lib/utils/pagination";
 
 const createCourseSchema = z.object({
   title: z.string().min(1).max(200),
@@ -18,8 +19,7 @@ export async function GET(request: NextRequest) {
   try {
     const user = await authenticate(request);
     const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "10");
+    const { page, limit, skip } = parsePagination(request, { limit: 10 });
     const search = searchParams.get("search");
 
     await dbConnect();
@@ -70,17 +70,12 @@ export async function GET(request: NextRequest) {
     const courses = await Course.find(query)
       .populate("instructor", "name email")
       .sort({ createdAt: -1 })
-      .skip((page - 1) * limit)
+      .skip(skip)
       .limit(limit);
 
     const responseData = {
       courses,
-      pagination: {
-        page,
-        limit,
-        total,
-        pages: Math.ceil(total / limit),
-      },
+      pagination: paginationMeta(total, page, limit),
     };
 
     if (cacheKey) {

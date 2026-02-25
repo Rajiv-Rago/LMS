@@ -3,6 +3,7 @@ import { dbConnect } from "@/lib/db";
 import { Course } from "@/lib/models";
 import { authenticate } from "@/lib/auth";
 import { captureException } from "@/lib/logger";
+import { parsePagination, paginationMeta } from "@/lib/utils/pagination";
 
 export async function GET(request: NextRequest) {
   try {
@@ -13,8 +14,7 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "10");
+    const { page, limit, skip } = parsePagination(request, { limit: 10 });
     const status = searchParams.get("status");
 
     await dbConnect();
@@ -40,17 +40,12 @@ export async function GET(request: NextRequest) {
         select: "title contentStatus order",
       })
       .sort({ createdAt: -1 })
-      .skip((page - 1) * limit)
+      .skip(skip)
       .limit(limit);
 
     return NextResponse.json({
       courses,
-      pagination: {
-        page,
-        limit,
-        total,
-        pages: Math.ceil(total / limit),
-      },
+      pagination: paginationMeta(total, page, limit),
     });
   } catch (error) {
     captureException(error, { operation: "Get my AI courses error" });

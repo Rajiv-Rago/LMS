@@ -33,6 +33,17 @@ const envSchema = z.object({
   QUEUE_ENABLED: z.string().default("false").transform(v => v === "true"),
   REDIS_URL: z.string().optional(),
 
+  // Email
+  EMAIL_PROVIDER: z.enum(["console", "sendgrid", "ses", "resend"]).default("console"),
+  EMAIL_FROM_ADDRESS: z.string().optional(),
+  SENDGRID_API_KEY: z.string().optional(),
+  RESEND_API_KEY: z.string().optional(),
+  AWS_REGION: z.string().optional(),
+
+  // App
+  APP_URL: z.string().default("http://localhost:3000"),
+  APP_NAME: z.string().default("LMS"),
+
   // Optional test DB
   MONGODB_URI_TEST: z.string().optional(),
 });

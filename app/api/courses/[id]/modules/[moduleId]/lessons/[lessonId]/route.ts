@@ -151,9 +151,9 @@ export async function DELETE(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const module = await Module.findOne({ _id: moduleId, course: id });
+    const moduleDoc = await Module.findOne({ _id: moduleId, course: id });
 
-    if (!module) {
+    if (!moduleDoc) {
       return NextResponse.json({ error: "Module not found" }, { status: 404 });
     }
 
@@ -163,10 +163,10 @@ export async function DELETE(
       return NextResponse.json({ error: "Lesson not found" }, { status: 404 });
     }
 
-    module.lessons = module.lessons.filter(
+    moduleDoc.lessons = moduleDoc.lessons.filter(
       (l: { toString: () => string }) => l.toString() !== lessonId
     );
-    await module.save();
+    await moduleDoc.save();
 
     await lesson.deleteOne();
 

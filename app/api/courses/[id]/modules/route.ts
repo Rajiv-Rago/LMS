@@ -41,7 +41,7 @@ export async function GET(
       return NextResponse.json({ error: "Course not found" }, { status: 404 });
     }
 
-    let moduleQuery: Record<string, unknown> = { course: id };
+    const moduleQuery: Record<string, unknown> = { course: id };
     if (!isInstructor && !isAdmin) {
       moduleQuery.isPublished = true;
     }
@@ -107,16 +107,16 @@ export async function POST(
     const moduleCount = await Module.countDocuments({ course: id });
     const order = validation.data.order ?? moduleCount;
 
-    const module = await Module.create({
+    const newModule = await Module.create({
       ...validation.data,
       course: id,
       order,
     });
 
-    course.modules.push(module._id);
+    course.modules.push(newModule._id);
     await course.save();
 
-    return NextResponse.json({ module }, { status: 201 });
+    return NextResponse.json({ module: newModule }, { status: 201 });
   } catch (error) {
     captureException(error, { operation: "Create module error" });
     return NextResponse.json(

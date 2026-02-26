@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef, use } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ModelSelector, ModelSelectorValue } from "@/components/ai/ModelSelector";
 import { useUserAIDefaults } from "@/lib/hooks/useUserAIDefaults";
@@ -23,7 +23,6 @@ export default function AITutorPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
-  const router = useRouter();
   const searchParams = useSearchParams();
   const lessonId = searchParams.get("lessonId");
 
@@ -132,7 +131,7 @@ export default function AITutorPage({
           },
         ]);
       }
-    } catch (error) {      setMessages((prev) => [
+    } catch (_error) {      setMessages((prev) => [
         ...prev,
         {
           role: "assistant",

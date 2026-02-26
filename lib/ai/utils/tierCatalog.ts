@@ -1,6 +1,6 @@
 import { AIProviderName, AITier } from "../types";
 import { getApiKey } from "./apiKeys";
-import { getModelsForTier, getModelDisplayName, getProviderDisplayName } from "./modelRegistry";
+import { getModelsForTier, getProviderDisplayName } from "./modelRegistry";
 
 export interface TierCandidate {
   provider: AIProviderName;

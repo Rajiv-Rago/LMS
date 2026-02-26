@@ -9,7 +9,7 @@ import {
 const DEFAULT_MODEL = "llama-3.3-70b-versatile";
 
 export class GroqProvider implements AIProvider {
-  name: "groq" = "groq";
+  name = "groq" as const;
   private client: OpenAI;
   private model: string;
 

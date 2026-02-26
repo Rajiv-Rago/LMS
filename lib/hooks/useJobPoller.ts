@@ -33,8 +33,11 @@ export function useJobPoller({
   // Keep callbacks in refs so the interval closure always sees the latest
   const onCompleteRef = useRef(onComplete);
   const onFailedRef = useRef(onFailed);
-  onCompleteRef.current = onComplete;
-  onFailedRef.current = onFailed;
+
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+    onFailedRef.current = onFailed;
+  }, [onComplete, onFailed]);
 
   const stopPolling = useCallback(() => {
     if (intervalRef.current) {

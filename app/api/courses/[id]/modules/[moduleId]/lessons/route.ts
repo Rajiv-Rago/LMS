@@ -33,16 +33,16 @@ export async function GET(
       return NextResponse.json({ error: "Course not found" }, { status: 404 });
     }
 
-    const module = await Module.findOne({ _id: moduleId, course: id });
+    const moduleDoc = await Module.findOne({ _id: moduleId, course: id });
 
-    if (!module) {
+    if (!moduleDoc) {
       return NextResponse.json({ error: "Module not found" }, { status: 404 });
     }
 
     const isInstructor = user && course.instructor.toString() === user.userId;
     const isAdmin = user?.role === "admin";
 
-    let lessonQuery: Record<string, unknown> = { module: moduleId };
+    const lessonQuery: Record<string, unknown> = { module: moduleId };
     if (!isInstructor && !isAdmin) {
       lessonQuery.isPublished = true;
     }
@@ -93,9 +93,9 @@ export async function POST(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const module = await Module.findOne({ _id: moduleId, course: id });
+    const moduleDoc = await Module.findOne({ _id: moduleId, course: id });
 
-    if (!module) {
+    if (!moduleDoc) {
       return NextResponse.json({ error: "Module not found" }, { status: 404 });
     }
 
@@ -108,8 +108,8 @@ export async function POST(
       order,
     });
 
-    module.lessons.push(lesson._id);
-    await module.save();
+    moduleDoc.lessons.push(lesson._id);
+    await moduleDoc.save();
 
     return NextResponse.json({ lesson }, { status: 201 });
   } catch (error) {

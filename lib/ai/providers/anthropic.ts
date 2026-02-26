@@ -9,7 +9,7 @@ import {
 const DEFAULT_MODEL = "claude-3-haiku-20240307";
 
 export class AnthropicProvider implements AIProvider {
-  name: "anthropic" = "anthropic";
+  name = "anthropic" as const;
   private client: Anthropic;
   private model: string;
 

@@ -93,7 +93,7 @@ describe("POST /api/auth/register", () => {
   });
 
   it("returns 400 for missing email", async () => {
-    const { email, ...noEmail } = validBody;
+    const { email: _email, ...noEmail } = validBody;
     const request = buildRequest("POST", "/api/auth/register", {
       body: noEmail,
     });
@@ -114,7 +114,7 @@ describe("POST /api/auth/register", () => {
   });
 
   it("returns 400 for missing name", async () => {
-    const { name, ...noName } = validBody;
+    const { name: _name, ...noName } = validBody;
     const request = buildRequest("POST", "/api/auth/register", {
       body: noName,
     });
@@ -135,7 +135,7 @@ describe("POST /api/auth/register", () => {
   });
 
   it("defaults role to student when not provided", async () => {
-    const { role, ...noRole } = validBody;
+    const { role: _role, ...noRole } = validBody;
     const request = buildRequest("POST", "/api/auth/register", {
       body: noRole,
     });

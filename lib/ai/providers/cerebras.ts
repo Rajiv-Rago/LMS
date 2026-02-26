@@ -9,7 +9,7 @@ import {
 const DEFAULT_MODEL = "gpt-oss-120b";
 
 export class CerebrasProvider implements AIProvider {
-  name: "cerebras" = "cerebras";
+  name = "cerebras" as const;
   private client: OpenAI;
   private model: string;
 

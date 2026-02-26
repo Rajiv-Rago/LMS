@@ -28,24 +28,24 @@ export async function GET(
       return NextResponse.json({ error: "Course not found" }, { status: 404 });
     }
 
-    const module = await Module.findOne({
+    const moduleDoc = await Module.findOne({
       _id: moduleId,
       course: id,
     }).populate("lessons");
 
-    if (!module) {
+    if (!moduleDoc) {
       return NextResponse.json({ error: "Module not found" }, { status: 404 });
     }
 
     const isInstructor = user && course.instructor.toString() === user.userId;
     const isAdmin = user?.role === "admin";
 
-    if (!module.isPublished && !isInstructor && !isAdmin) {
+    if (!moduleDoc.isPublished && !isInstructor && !isAdmin) {
       return NextResponse.json({ error: "Module not found" }, { status: 404 });
     }
 
     return NextResponse.json({
-      module,
+      module: moduleDoc,
       permissions: {
         canEdit: isInstructor || isAdmin,
       },
@@ -93,20 +93,20 @@ export async function PATCH(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const module = await Module.findOne({ _id: moduleId, course: id });
+    const moduleDoc = await Module.findOne({ _id: moduleId, course: id });
 
-    if (!module) {
+    if (!moduleDoc) {
       return NextResponse.json({ error: "Module not found" }, { status: 404 });
     }
 
     const { title, description, order, isPublished } = validation.data;
-    if (title !== undefined) module.title = title;
-    if (description !== undefined) module.description = description ?? undefined;
-    if (order !== undefined) module.order = order;
-    if (isPublished !== undefined) module.isPublished = isPublished;
-    await module.save();
+    if (title !== undefined) moduleDoc.title = title;
+    if (description !== undefined) moduleDoc.description = description ?? undefined;
+    if (order !== undefined) moduleDoc.order = order;
+    if (isPublished !== undefined) moduleDoc.isPublished = isPublished;
+    await moduleDoc.save();
 
-    return NextResponse.json({ module });
+    return NextResponse.json({ module: moduleDoc });
   } catch (error) {
     captureException(error, { operation: "Update module error" });
     return NextResponse.json(
@@ -140,9 +140,9 @@ export async function DELETE(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const module = await Module.findOne({ _id: moduleId, course: id });
+    const moduleDoc = await Module.findOne({ _id: moduleId, course: id });
 
-    if (!module) {
+    if (!moduleDoc) {
       return NextResponse.json({ error: "Module not found" }, { status: 404 });
     }
 
@@ -152,7 +152,7 @@ export async function DELETE(
         (m: { toString: () => string }) => m.toString() !== moduleId
       );
       await course.save({ session });
-      await module.deleteOne({ session });
+      await moduleDoc.deleteOne({ session });
     });
 
     return NextResponse.json({ message: "Module deleted successfully" });

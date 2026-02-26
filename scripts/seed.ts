@@ -27,7 +27,7 @@ async function main() {
     return;
   }
 
-  const admin = await usersCol.insertOne({
+  await usersCol.insertOne({
     email: "admin@demo.com",
     name: "Demo Admin",
     password: hashedPassword,

@@ -95,14 +95,14 @@ export async function createTestModule(
     isPublished: false,
   };
 
-  const module = await Module.create({ ...defaults, ...overrides });
+  const newModule = await Module.create({ ...defaults, ...overrides });
 
   // Add module to course's modules array
   await Course.findByIdAndUpdate(courseId, {
-    $push: { modules: module._id },
+    $push: { modules: newModule._id },
   });
 
-  return { module };
+  return { module: newModule };
 }
 
 /**

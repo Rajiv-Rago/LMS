@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, use } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ModelSelector, ModelSelectorValue } from "@/components/ai/ModelSelector";
 import { useUserAIDefaults } from "@/lib/hooks/useUserAIDefaults";
@@ -33,7 +32,6 @@ export default function AIGeneratePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
-  const router = useRouter();
   const [modules, setModules] = useState<Module[]>([]);
   const [contents, setContents] = useState<GeneratedContent[]>([]);
   const [loading, setLoading] = useState(true);

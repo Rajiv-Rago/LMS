@@ -9,7 +9,7 @@ import {
 const DEFAULT_MODEL = "gpt-4o-mini";
 
 export class OpenAIProvider implements AIProvider {
-  name: "openai" = "openai";
+  name = "openai" as const;
   private client: OpenAI;
   private model: string;
 

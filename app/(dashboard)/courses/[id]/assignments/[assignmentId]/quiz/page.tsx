@@ -109,7 +109,7 @@ export default function QuizPage({
         setQuizInfo(data.quiz);
         setAttempts(data.attempts || []);
         setBestScore(data.bestScore);
-      } catch (err) {        setError("Failed to load quiz");
+      } catch (_err) {        setError("Failed to load quiz");
       } finally {
         setLoading(false);
       }

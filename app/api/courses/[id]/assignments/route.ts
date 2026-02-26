@@ -73,7 +73,7 @@ export async function GET(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    let assignmentQuery: Record<string, unknown> = { course: id };
+    const assignmentQuery: Record<string, unknown> = { course: id };
     if (!isInstructor && !isAdmin) {
       assignmentQuery.isPublished = true;
     }

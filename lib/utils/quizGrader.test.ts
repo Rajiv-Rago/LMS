@@ -5,18 +5,10 @@ import {
   getRemainingTime,
   shuffleArray,
 } from "./quizGrader";
+import type { IQuizQuestion } from "@/lib/models";
+import type { IQuizAttempt } from "@/lib/models";
 
-// Minimal types matching the interfaces used by quizGrader
-interface MockQuestion {
-  id: string;
-  question: string;
-  options: string[];
-  correctAnswer: number;
-  points: number;
-  explanation?: string;
-}
-
-function makeQuestion(overrides: Partial<MockQuestion> = {}): MockQuestion {
+function makeQuestion(overrides: Partial<IQuizQuestion> = {}): IQuizQuestion {
   return {
     id: overrides.id || "q1",
     question: overrides.question || "What is 1+1?",
@@ -36,7 +28,7 @@ describe("quizGrader", () => {
       ];
       const answers = { q1: 0, q2: 2 };
 
-      const result = gradeQuiz(questions as any, answers);
+      const result = gradeQuiz(questions, answers);
 
       expect(result.score).toBe(30);
       expect(result.totalPoints).toBe(30);
@@ -53,7 +45,7 @@ describe("quizGrader", () => {
       ];
       const answers = { q1: 1, q2: 0 };
 
-      const result = gradeQuiz(questions as any, answers);
+      const result = gradeQuiz(questions, answers);
 
       expect(result.score).toBe(0);
       expect(result.totalPoints).toBe(30);
@@ -70,7 +62,7 @@ describe("quizGrader", () => {
       ];
       const answers = { q1: 1, q2: 1, q3: 2 };
 
-      const result = gradeQuiz(questions as any, answers);
+      const result = gradeQuiz(questions, answers);
 
       expect(result.score).toBe(20);
       expect(result.totalPoints).toBe(30);
@@ -84,7 +76,7 @@ describe("quizGrader", () => {
       ];
       const answers = { q1: 1 }; // q2 not answered
 
-      const result = gradeQuiz(questions as any, answers);
+      const result = gradeQuiz(questions, answers);
 
       expect(result.answers[1].selectedAnswer).toBe(-1);
       expect(result.answers[1].isCorrect).toBe(false);
@@ -107,7 +99,7 @@ describe("quizGrader", () => {
       ];
       const answers = { q1: 0, q2: 0 };
 
-      const result = gradeQuiz(questions as any, answers);
+      const result = gradeQuiz(questions, answers);
 
       expect(result.answers[0].pointsEarned).toBe(5);
       expect(result.answers[1].pointsEarned).toBe(0);
@@ -120,7 +112,7 @@ describe("quizGrader", () => {
         { score: 70 },
         { score: 90 },
         { score: 80 },
-      ] as any;
+      ] as IQuizAttempt[];
 
       expect(getBestScore(attempts)).toBe(90);
     });
@@ -130,7 +122,7 @@ describe("quizGrader", () => {
     });
 
     it("returns the score for a single attempt", () => {
-      expect(getBestScore([{ score: 55 }] as any)).toBe(55);
+      expect(getBestScore([{ score: 55 }] as IQuizAttempt[])).toBe(55);
     });
   });
 

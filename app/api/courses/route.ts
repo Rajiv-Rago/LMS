@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { dbConnect } from "@/lib/db";
 import { Course } from "@/lib/models";
-import { authenticate, JWTPayload } from "@/lib/auth";
+import { authenticate } from "@/lib/auth";
 import { captureException } from "@/lib/logger";
 import * as cache from "@/lib/cache";
 import { parsePagination, paginationMeta } from "@/lib/utils/pagination";

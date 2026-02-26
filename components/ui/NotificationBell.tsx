@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 interface Notification {
@@ -15,30 +15,54 @@ interface Notification {
 
 const POLL_INTERVAL_MS = 30_000;
 
+function timeAgo(dateStr: string, now: number): string {
+  const seconds = Math.floor((now - new Date(dateStr).getTime()) / 1000);
+  if (seconds < 60) return "just now";
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
+}
+
 export function NotificationBell() {
   const router = useRouter();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [open, setOpen] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const fetchNotifications = useCallback(async () => {
-    try {
-      const res = await fetch("/api/notifications?limit=10");
-      if (!res.ok) return;
-      const data = await res.json();
-      setNotifications(data.data);
-      setUnreadCount(data.unreadCount);
-    } catch {
-      // Silently fail — polling is best-effort
+  useEffect(() => {
+    let cancelled = false;
+
+    async function doFetch() {
+      try {
+        const res = await fetch("/api/notifications?limit=10");
+        if (!res.ok || cancelled) return;
+        const data = await res.json();
+        if (!cancelled) {
+          setNotifications(data.data);
+          setUnreadCount(data.unreadCount);
+        }
+      } catch {
+        // Silently fail — polling is best-effort
+      }
     }
+
+    doFetch();
+    const interval = setInterval(doFetch, POLL_INTERVAL_MS);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
   }, []);
 
   useEffect(() => {
-    fetchNotifications();
-    const interval = setInterval(fetchNotifications, POLL_INTERVAL_MS);
-    return () => clearInterval(interval);
-  }, [fetchNotifications]);
+    const timer = setInterval(() => setNow(Date.now()), 60_000);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -90,17 +114,6 @@ export function NotificationBell() {
       // Best effort
     }
   };
-
-  function timeAgo(dateStr: string): string {
-    const seconds = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
-    if (seconds < 60) return "just now";
-    const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return `${minutes}m ago`;
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours}h ago`;
-    const days = Math.floor(hours / 24);
-    return `${days}d ago`;
-  }
 
   return (
     <div ref={dropdownRef} className="relative">
@@ -171,7 +184,7 @@ export function NotificationBell() {
                         {n.message}
                       </p>
                       <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-1">
-                        {timeAgo(n.createdAt)}
+                        {timeAgo(n.createdAt, now)}
                       </p>
                     </div>
                   </div>

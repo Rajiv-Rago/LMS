@@ -18,7 +18,7 @@ afterAll(async () => {
 
 describe("GET /api/auth/me", () => {
   it("returns the current user for a valid token", async () => {
-    const { user, token } = await createTestUser({
+    const { token } = await createTestUser({
       email: "me@example.com",
       name: "Me User",
       role: "student",

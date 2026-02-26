@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import AIUsage, { AIUsageCategory } from "@/lib/models/AIUsage";
 import { dbConnect } from "@/lib/db";
+import { env } from "@/lib/env";
 import type { SubscriptionTier } from "@/lib/auth/jwt";
 
 /**
@@ -46,6 +47,11 @@ export async function checkAIRateLimit(
   tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
   tomorrow.setUTCHours(0, 0, 0, 0);
   const resetAt = tomorrow.toISOString();
+
+  // Rate limiting disabled — everyone gets unlimited access
+  if (!env.AI_RATE_LIMIT_ENABLED) {
+    return { allowed: true, limit: Infinity, used: 0, remaining: Infinity, cost, resetAt };
+  }
 
   // Unlimited tier — skip DB entirely
   if (!isFinite(limit)) {

@@ -33,6 +33,9 @@ const envSchema = z.object({
   QUEUE_ENABLED: z.string().default("false").transform(v => v === "true"),
   REDIS_URL: z.string().optional(),
 
+  // AI rate limiting
+  AI_RATE_LIMIT_ENABLED: z.string().default("true").transform(v => v === "true"),
+
   // Email
   EMAIL_PROVIDER: z.enum(["console", "sendgrid", "ses", "resend"]).default("console"),
   EMAIL_FROM_ADDRESS: z.string().optional(),

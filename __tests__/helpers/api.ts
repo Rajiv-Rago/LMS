@@ -35,7 +35,7 @@ export function buildRequest(
     headers.set("Authorization", `Bearer ${options.token}`);
   }
 
-  const init: RequestInit & { method: string } = {
+  const init: { method: string; headers: Headers; body?: string } = {
     method,
     headers,
   };

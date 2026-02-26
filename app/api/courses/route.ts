@@ -2,15 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { dbConnect } from "@/lib/db";
 import { Course } from "@/lib/models";
-import { authenticate } from "@/lib/auth";
+import { authenticate, requireCsrf } from "@/lib/auth";
 import { captureException } from "@/lib/logger";
 import * as cache from "@/lib/cache";
 import { parsePagination, paginationMeta } from "@/lib/utils/pagination";
+import { httpUrl } from "@/lib/validation/commonSchemas";
 
 const createCourseSchema = z.object({
   title: z.string().min(1).max(200),
   description: z.string().min(1).max(5000),
-  coverImage: z.string().url().optional(),
+  coverImage: httpUrl.optional(),
   isPublished: z.boolean().optional(),
   courseType: z.enum(["standard", "ai-generated"]).optional(),
 });
@@ -20,7 +21,7 @@ export async function GET(request: NextRequest) {
     const user = await authenticate(request);
     const { searchParams } = new URL(request.url);
     const { page, limit, skip } = parsePagination(request, { limit: 10 });
-    const search = searchParams.get("search");
+    const search = searchParams.get("search")?.slice(0, 200) || null;
 
     await dbConnect();
 
@@ -94,6 +95,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const csrfError = requireCsrf(request);
+    if (csrfError) return csrfError;
+
     const user = await authenticate(request);
 
     if (!user) {

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { dbConnect } from "@/lib/db";
 import { Course, Assignment, Submission } from "@/lib/models";
-import { authenticate } from "@/lib/auth";
+import { authenticate, requireCsrf } from "@/lib/auth";
 import { writeFile, mkdir, unlink } from "fs/promises";
 import { join } from "path";
 import { existsSync } from "fs";
@@ -47,6 +47,9 @@ export async function POST(
   { params }: { params: Promise<{ id: string; assignmentId: string }> }
 ) {
   try {
+    const csrfError = requireCsrf(request);
+    if (csrfError) return csrfError;
+
     const { id, assignmentId } = await params;
     const user = await authenticate(request);
 
@@ -206,6 +209,9 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string; assignmentId: string }> }
 ) {
   try {
+    const csrfError = requireCsrf(request);
+    if (csrfError) return csrfError;
+
     const { id, assignmentId } = await params;
     const user = await authenticate(request);
 
@@ -327,6 +333,19 @@ export async function GET(
     const studentId = (isInstructor || isAdmin)
       ? url.searchParams.get("studentId") || user.userId
       : user.userId;
+
+    // Verify the requested student is enrolled in this course
+    if (studentId !== user.userId) {
+      const isStudentEnrolled = course.enrolledStudents.some(
+        (s: { toString: () => string }) => s.toString() === studentId
+      );
+      if (!isStudentEnrolled) {
+        return NextResponse.json(
+          { error: "Student not enrolled in this course" },
+          { status: 403 }
+        );
+      }
+    }
 
     const submission = await Submission.findOne({
       assignment: assignmentId,

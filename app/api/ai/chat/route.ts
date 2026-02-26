@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { dbConnect } from "@/lib/db";
 import { Course, Lesson, AIChatSession } from "@/lib/models";
-import { authenticate } from "@/lib/auth";
+import { authenticate, requireCsrf } from "@/lib/auth";
 import { createAIProvider, resolveProvider } from "@/lib/ai";
 import { AITier, AIProviderName } from "@/lib/ai/types";
 import { getUserAIPreferences } from "@/lib/ai/utils/userPreferences";
@@ -28,6 +28,9 @@ const createChatSchema = z
 
 export async function POST(request: NextRequest) {
   try {
+    const csrfError = requireCsrf(request);
+    if (csrfError) return csrfError;
+
     const user = await authenticate(request);
 
     if (!user) {

@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { dbConnect, withTransaction } from "@/lib/db";
-import { authenticate, clearAuthCookie } from "@/lib/auth";
+import { authenticate, clearAuthCookie, requireCsrf } from "@/lib/auth";
 import {
   User,
   Course,
   Submission,
   AIChatSession,
   Notification,
+  Session,
 } from "@/lib/models";
 import { captureException } from "@/lib/logger";
 
@@ -17,6 +18,9 @@ const deleteAccountSchema = z.object({
 
 export async function DELETE(request: NextRequest) {
   try {
+    const csrfError = requireCsrf(request);
+    if (csrfError) return csrfError;
+
     const user = await authenticate(request);
 
     if (!user) {
@@ -75,6 +79,9 @@ export async function DELETE(request: NextRequest) {
 
       // Delete notifications
       await Notification.deleteMany({ userId: user.userId }, { session });
+
+      // Delete all sessions
+      await Session.deleteMany({ userId: user.userId }, { session });
 
       // Anonymize user record
       userDoc.email = `deleted-${user.userId}@deleted.invalid`;

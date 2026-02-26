@@ -20,7 +20,7 @@ export interface JobStatusResult {
 
 export interface QueueAdapter {
   enqueueJob(options: EnqueueOptions): Promise<string>;
-  getJobStatus(jobId: string): Promise<JobStatusResult | null>;
+  getJobStatus(jobId: string, userId?: string): Promise<JobStatusResult | null>;
 }
 
 let adapter: QueueAdapter | null = null;
@@ -46,7 +46,8 @@ export async function enqueueJob(options: EnqueueOptions): Promise<string> {
 }
 
 export async function getJobStatus(
-  jobId: string
+  jobId: string,
+  userId?: string
 ): Promise<JobStatusResult | null> {
-  return getAdapter().getJobStatus(jobId);
+  return getAdapter().getJobStatus(jobId, userId);
 }

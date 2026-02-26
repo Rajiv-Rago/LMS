@@ -2,12 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { dbConnect } from "@/lib/db";
 import { Course, Submission } from "@/lib/models";
-import { authenticate } from "@/lib/auth";
+import { authenticate, requireCsrf } from "@/lib/auth";
 import { captureException } from "@/lib/logger";
 import { sendNotification } from "@/lib/notifications";
 
 const gradeSubmissionSchema = z.object({
-  grade: z.number().min(0),
+  grade: z.number().min(0).max(1000),
   feedback: z.string().max(5000).optional(),
 });
 
@@ -75,6 +75,9 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string; assignmentId: string; submissionId: string }> }
 ) {
   try {
+    const csrfError = requireCsrf(request);
+    if (csrfError) return csrfError;
+
     const { id, assignmentId, submissionId } = await params;
     const user = await authenticate(request);
 

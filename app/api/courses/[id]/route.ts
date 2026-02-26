@@ -2,14 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { dbConnect } from "@/lib/db";
 import { Course } from "@/lib/models";
-import { authenticate } from "@/lib/auth";
+import { authenticate, requireCsrf } from "@/lib/auth";
 import { captureException } from "@/lib/logger";
 import * as cache from "@/lib/cache";
+import { httpUrl } from "@/lib/validation/commonSchemas";
 
 const updateCourseSchema = z.object({
   title: z.string().min(1).max(200).optional(),
   description: z.string().min(1).max(5000).optional(),
-  coverImage: z.string().url().optional().nullable(),
+  coverImage: httpUrl.optional().nullable(),
   isPublished: z.boolean().optional(),
 });
 
@@ -25,7 +26,7 @@ export async function GET(
 
     const course = await Course.findById(id)
       .populate("instructor", "name email")
-      .populate("modules")
+      .populate("modules", "title description order isPublished lessons")
       .populate("enrolledStudents", "name email");
 
     if (!course) {
@@ -44,8 +45,17 @@ export async function GET(
       return NextResponse.json({ error: "Course not found" }, { status: 404 });
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const courseObj: any = course.toObject();
+
+    // Strip enrolled student details for non-privileged users
+    if (!isInstructor && !isAdmin) {
+      courseObj.enrolledCount = course.enrolledStudents.length;
+      delete courseObj.enrolledStudents;
+    }
+
     return NextResponse.json({
-      course,
+      course: courseObj,
       permissions: {
         canEdit: isInstructor || isAdmin,
         canEnroll: !isInstructor && !isEnrolled && course.isPublished,
@@ -67,6 +77,9 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const csrfError = requireCsrf(request);
+    if (csrfError) return csrfError;
+
     const { id } = await params;
     const user = await authenticate(request);
 
@@ -123,6 +136,9 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const csrfError = requireCsrf(request);
+    if (csrfError) return csrfError;
+
     const { id } = await params;
     const user = await authenticate(request);
 

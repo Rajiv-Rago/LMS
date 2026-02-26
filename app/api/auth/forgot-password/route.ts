@@ -46,10 +46,16 @@ export async function POST(request: NextRequest) {
     const resetToken = crypto.randomBytes(32).toString("hex");
     const hashedToken = await bcrypt.hash(resetToken, 10);
 
-    // Store hashed token and expiry (1 hour)
-    user.resetPasswordToken = hashedToken;
-    user.resetPasswordExpires = new Date(Date.now() + 60 * 60 * 1000);
-    await user.save({ validateBeforeSave: false });
+    // Store hashed token and expiry (1 hour) — atomic update avoids race conditions
+    await User.updateOne(
+      { _id: user._id },
+      {
+        $set: {
+          resetPasswordToken: hashedToken,
+          resetPasswordExpires: new Date(Date.now() + 60 * 60 * 1000),
+        },
+      }
+    );
 
     // Send password reset email
     const resetUrl = `${env.APP_URL}/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}`;

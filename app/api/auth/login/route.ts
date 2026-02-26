@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
         action: attempts >= 5 ? "account.locked" : "login.failure",
         resource: "user",
         resourceId: user._id.toString(),
-        metadata: { email, attempts },
+        metadata: { attempts },
       });
 
       return NextResponse.json(

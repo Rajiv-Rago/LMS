@@ -29,8 +29,10 @@ const MIME_TYPES: Record<string, string> = {
   ".csv": "text/csv",
 };
 
-function sanitizeFilename(name: string): string {
-  return name.replace(/["\n\r]/g, "_");
+function buildContentDisposition(filename: string): string {
+  const ascii = filename.replace(/[^\x20-\x7E]/g, "_");
+  const encoded = encodeURIComponent(filename);
+  return `inline; filename="${ascii}"; filename*=UTF-8''${encoded}`;
 }
 
 export async function GET(
@@ -68,12 +70,12 @@ export async function GET(
 
     const ext = path.extname(resolved).toLowerCase();
     const contentType = MIME_TYPES[ext] || "application/octet-stream";
-    const filename = sanitizeFilename(path.basename(resolved));
+    const filename = path.basename(resolved);
 
     return new NextResponse(new Uint8Array(fileBuffer), {
       headers: {
         "Content-Type": contentType,
-        "Content-Disposition": `inline; filename="${filename}"`,
+        "Content-Disposition": buildContentDisposition(filename),
         "X-Content-Type-Options": "nosniff",
         "Cache-Control": "private, max-age=3600",
       },

@@ -15,13 +15,17 @@ export async function GET(
     }
 
     const { jobId } = await params;
-    const job = await getJobStatus(jobId);
+    const job = await getJobStatus(jobId, user.userId);
 
     if (!job) {
       return NextResponse.json({ error: "Job not found" }, { status: 404 });
     }
 
-    return NextResponse.json({ job });
+    const safeJob = {
+      ...job,
+      error: job.error ? "Job failed — please try again" : undefined,
+    };
+    return NextResponse.json({ job: safeJob });
   } catch (error) {
     captureException(error, { operation: "Get job status error" });
     return NextResponse.json(

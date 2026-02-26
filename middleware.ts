@@ -10,10 +10,15 @@ interface RateLimitEntry {
 
 const rateLimitMap = new Map<string, RateLimitEntry>();
 
+// NOTE: Rate limiting trusts X-Forwarded-For from the reverse proxy.
+// In production, ensure your proxy (nginx, Cloudflare, Vercel) overwrites
+// this header. The in-memory store is per-instance — for horizontal scaling,
+// use an edge rate limiter or move to a shared store (Redis/MongoDB).
 const RATE_LIMIT_CONFIG: Record<string, { maxAttempts: number; windowMs: number }> = {
   "/api/auth/login": { maxAttempts: 10, windowMs: 15 * 60 * 1000 },      // 10 per 15 min
   "/api/auth/register": { maxAttempts: 5, windowMs: 60 * 60 * 1000 },    // 5 per hour
   "/api/auth/forgot-password": { maxAttempts: 5, windowMs: 15 * 60 * 1000 }, // 5 per 15 min
+  "/api/auth/reset-password": { maxAttempts: 5, windowMs: 15 * 60 * 1000 }, // 5 per 15 min
 };
 
 // Clean up stale entries every 5 minutes

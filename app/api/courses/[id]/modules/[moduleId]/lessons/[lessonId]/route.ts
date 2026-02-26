@@ -2,15 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { dbConnect } from "@/lib/db";
 import { Course, Module, Lesson } from "@/lib/models";
-import { authenticate } from "@/lib/auth";
+import { authenticate, requireCsrf } from "@/lib/auth";
 import { captureException } from "@/lib/logger";
+import { httpUrl } from "@/lib/validation/commonSchemas";
 
 const updateLessonSchema = z.object({
   title: z.string().min(1).max(200).optional(),
   contentType: z.enum(["text", "video", "file"]).optional(),
   content: z.string().optional(),
-  videoUrl: z.string().url().optional().nullable(),
-  fileUrl: z.string().url().optional().nullable(),
+  videoUrl: httpUrl.optional().nullable(),
+  fileUrl: httpUrl.optional().nullable(),
   duration: z.number().min(0).optional().nullable(),
   order: z.number().min(0).optional(),
   isPublished: z.boolean().optional(),
@@ -70,6 +71,9 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string; moduleId: string; lessonId: string }> }
 ) {
   try {
+    const csrfError = requireCsrf(request);
+    if (csrfError) return csrfError;
+
     const { id, moduleId, lessonId } = await params;
     const user = await authenticate(request);
 
@@ -132,6 +136,9 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string; moduleId: string; lessonId: string }> }
 ) {
   try {
+    const csrfError = requireCsrf(request);
+    if (csrfError) return csrfError;
+
     const { id, moduleId, lessonId } = await params;
     const user = await authenticate(request);
 

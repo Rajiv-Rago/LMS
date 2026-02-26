@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { dbConnect, withTransaction } from "@/lib/db";
-import { authenticate } from "@/lib/auth";
+import { authenticate, requireCsrf } from "@/lib/auth";
 import {
   Course,
   Module,
@@ -52,6 +52,9 @@ export async function GET(request: NextRequest) {
 // PATCH — restore a soft-deleted course
 export async function PATCH(request: NextRequest) {
   try {
+    const csrfError = requireCsrf(request);
+    if (csrfError) return csrfError;
+
     const user = await authenticate(request);
 
     if (!user || user.role !== "admin") {
@@ -94,6 +97,9 @@ export async function PATCH(request: NextRequest) {
 // DELETE — permanently delete a soft-deleted course (hard purge)
 export async function DELETE(request: NextRequest) {
   try {
+    const csrfError = requireCsrf(request);
+    if (csrfError) return csrfError;
+
     const user = await authenticate(request);
 
     if (!user || user.role !== "admin") {

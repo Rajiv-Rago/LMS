@@ -5,6 +5,7 @@ interface SyncJobResult {
   status: "completed" | "failed";
   result?: Record<string, unknown>;
   error?: string;
+  userId?: string;
   createdAt: Date;
   completedAt: Date;
 }
@@ -35,6 +36,7 @@ export class SyncShim implements QueueAdapter {
       results.set(id, {
         status: "completed",
         result,
+        userId: options.userId,
         createdAt: now,
         completedAt: new Date(),
       });
@@ -44,6 +46,7 @@ export class SyncShim implements QueueAdapter {
       results.set(id, {
         status: "failed",
         error: errorMessage,
+        userId: options.userId,
         createdAt: now,
         completedAt: new Date(),
       });
@@ -53,9 +56,10 @@ export class SyncShim implements QueueAdapter {
     return id;
   }
 
-  async getJobStatus(jobId: string): Promise<JobStatusResult | null> {
+  async getJobStatus(jobId: string, userId?: string): Promise<JobStatusResult | null> {
     const job = results.get(jobId);
     if (!job) return null;
+    if (userId && job.userId && job.userId !== userId) return null;
 
     return {
       id: jobId,

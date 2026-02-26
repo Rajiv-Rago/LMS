@@ -2,15 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { dbConnect } from "@/lib/db";
 import { Course, Assignment, Submission } from "@/lib/models";
-import { authenticate } from "@/lib/auth";
+import { authenticate, requireCsrf } from "@/lib/auth";
 import { captureException } from "@/lib/logger";
 import { sendNotification } from "@/lib/notifications";
 import { parsePagination, paginationMeta } from "@/lib/utils/pagination";
+import { httpUrl } from "@/lib/validation/commonSchemas";
 
 const createSubmissionSchema = z.object({
   content: z.string().max(50000).optional(),
-  fileUrl: z.string().url().optional(),
-  url: z.string().url().optional(),
+  fileUrl: httpUrl.optional(),
+  url: httpUrl.optional(),
   status: z.enum(["draft", "submitted"]).optional(),
 });
 
@@ -71,6 +72,9 @@ export async function POST(
   { params }: { params: Promise<{ id: string; assignmentId: string }> }
 ) {
   try {
+    const csrfError = requireCsrf(request);
+    if (csrfError) return csrfError;
+
     const { id, assignmentId } = await params;
     const user = await authenticate(request);
 

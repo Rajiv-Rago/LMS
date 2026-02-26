@@ -2,15 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { dbConnect } from "@/lib/db";
 import { Course, Module, Lesson } from "@/lib/models";
-import { authenticate } from "@/lib/auth";
+import { authenticate, requireCsrf } from "@/lib/auth";
 import { captureException } from "@/lib/logger";
+import { httpUrl } from "@/lib/validation/commonSchemas";
 
 const createLessonSchema = z.object({
   title: z.string().min(1).max(200),
   contentType: z.enum(["text", "video", "file"]).optional(),
   content: z.string().optional(),
-  videoUrl: z.string().url().optional(),
-  fileUrl: z.string().url().optional(),
+  videoUrl: httpUrl.optional(),
+  fileUrl: httpUrl.optional(),
   duration: z.number().min(0).optional(),
   order: z.number().min(0).optional(),
   isPublished: z.boolean().optional(),
@@ -64,6 +65,9 @@ export async function POST(
   { params }: { params: Promise<{ id: string; moduleId: string }> }
 ) {
   try {
+    const csrfError = requireCsrf(request);
+    if (csrfError) return csrfError;
+
     const { id, moduleId } = await params;
     const user = await authenticate(request);
 

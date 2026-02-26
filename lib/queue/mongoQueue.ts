@@ -15,9 +15,11 @@ export class MongoQueue implements QueueAdapter {
     return job._id.toString();
   }
 
-  async getJobStatus(jobId: string): Promise<JobStatusResult | null> {
+  async getJobStatus(jobId: string, userId?: string): Promise<JobStatusResult | null> {
     await dbConnect();
-    const job = await Job.findById(jobId);
+    const filter: Record<string, unknown> = { _id: jobId };
+    if (userId) filter.userId = userId;
+    const job = await Job.findOne(filter);
     if (!job) return null;
 
     return {

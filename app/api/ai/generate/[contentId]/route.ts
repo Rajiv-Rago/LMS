@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { dbConnect } from "@/lib/db";
 import { Course, AIGeneratedContent } from "@/lib/models";
-import { authenticate } from "@/lib/auth";
+import { authenticate, requireCsrf } from "@/lib/auth";
 import { captureException } from "@/lib/logger";
 
 const approvalSchema = z.object({
@@ -71,6 +71,9 @@ export async function PATCH(
   { params }: { params: Promise<{ contentId: string }> }
 ) {
   try {
+    const csrfError = requireCsrf(request);
+    if (csrfError) return csrfError;
+
     const { contentId } = await params;
     const user = await authenticate(request);
 
@@ -128,6 +131,9 @@ export async function DELETE(
   { params }: { params: Promise<{ contentId: string }> }
 ) {
   try {
+    const csrfError = requireCsrf(request);
+    if (csrfError) return csrfError;
+
     const { contentId } = await params;
     const user = await authenticate(request);
 

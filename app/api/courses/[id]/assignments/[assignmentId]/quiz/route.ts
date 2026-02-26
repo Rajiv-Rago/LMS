@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { dbConnect } from "@/lib/db";
 import { Course, Assignment, Submission } from "@/lib/models";
-import { authenticate } from "@/lib/auth";
+import { authenticate, requireCsrf } from "@/lib/auth";
 import {
   gradeQuiz,
   getBestScore,
@@ -23,6 +23,9 @@ export async function POST(
   { params }: { params: Promise<{ id: string; assignmentId: string }> }
 ) {
   try {
+    const csrfError = requireCsrf(request);
+    if (csrfError) return csrfError;
+
     const { id, assignmentId } = await params;
     const user = await authenticate(request);
 

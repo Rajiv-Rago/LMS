@@ -30,6 +30,9 @@ AI provider keys (at least one required for AI features):
 - `AI_PROVIDER` - Default provider name (defaults to "openai")
 - `AI_MODEL` - Default model override (optional)
 
+YouTube features:
+- `YOUTUBE_API_KEY` - YouTube Data API v3 key (required for YouTube learning path generation)
+
 ## Architecture
 
 ### Route Groups & Auth Flow
@@ -79,19 +82,39 @@ The AI subsystem uses a provider pattern with a common `AIProvider` interface:
 
 Use `createAIProvider(config)` to instantiate a provider. Validation for AI requests uses Zod schemas in `lib/validation/aiSchemas.ts`.
 
+### YouTube System (`lib/youtube/`)
+
+YouTube learning path generation uses a git submodule at `packages/youtube-learning-path/` (from [Rajiv-Rago/Youtube-Learning-Path](https://github.com/Rajiv-Rago/Youtube-Learning-Path)). Only the `src/core/` directory is imported by Kantigo — the submodule's standalone app code is excluded from compilation and linting.
+
+- **Core imports** (`@youtube-core/*`): `searchYouTubeVideos()`, `getVideoDetails()`, `filterAndDedup()`, and related types
+- **`YouTubePathService`** (`lib/youtube/youtubePathService.ts`): Orchestrates YouTube search → LLM curriculum structuring → parsed result
+- **Job handler** (`lib/queue/handlers/youtubeGeneration.ts`): Handles `ai.generate-youtube-path` jobs — creates Course, Modules, Lessons (with `youtubeMetadata`), and Assignments
+- **API route**: `POST /api/courses/youtube/generate` — enqueues a job and returns `{ jobId }` with 202 status
+
+### Branding & Color Scheme
+
+- **Primary**: `indigo-600` / `indigo-500`
+- **AI gradient**: `from-indigo-600 to-violet-600`
+- **YouTube gradient**: `from-red-600 to-indigo-600`
+- **Success**: `emerald-500`
+- **Highlights**: `amber-500`
+- **Neutrals**: Zinc scale
+- **Email hex**: `#4f46e5` (indigo-600)
+
 ### Key Conventions
 
 - **Database connection**: Always use `dbConnect()` from `lib/db.ts` - it caches the connection globally
 - **Models**: Use `mongoose.models.X || mongoose.model()` pattern to prevent recompilation
-- **Path aliases**: `@/*` maps to project root
+- **Path aliases**: `@/*` maps to project root, `@youtube-core/*` maps to `packages/youtube-learning-path/src/core/*`
 - **Roles**: Three roles (`student`, `teacher`, `admin`) checked via `user.role` from JWT payload
-- **Course ownership**: Use helpers from `lib/auth/courseOwnership.ts` (`checkCourseOwnership`, `canModifyAICourse`, `canAccessAICourse`) for authorization checks on courses
+- **Course ownership**: Use helpers from `lib/auth/courseOwnership.ts` (`checkCourseOwnership`, `canModifyOwnedCourse`, `canAccessOwnedCourse`) for authorization checks on courses. A course is "user-owned" if `course.owner` exists (no `courseType` field)
 
 ### Components
 
 Reusable UI components live in `components/` organized by feature:
 - `components/quiz/` - Quiz taking/building (QuestionBuilder, QuestionCard, QuizTimer, QuizResults)
 - `components/project/` - Lab project submissions (FileUploader, FileList, InstructionsViewer)
+- `components/ai/` - AI feature UI (ModelSelector, StatusBadge)
 
 ## Tech Stack
 

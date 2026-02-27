@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Exclude submodule standalone code (only core/ is imported)
+    "packages/**",
   ]),
 ]);
 

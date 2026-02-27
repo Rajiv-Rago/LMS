@@ -52,7 +52,7 @@ export async function checkCourseOwnership(
   };
 }
 
-export async function canModifyAICourse(
+export async function canModifyOwnedCourse(
   courseId: string,
   user: JWTPayload
 ): Promise<{ allowed: boolean; reason?: string; course?: typeof Course.prototype }> {
@@ -62,8 +62,8 @@ export async function canModifyAICourse(
     return { allowed: false, reason: "Course not found" };
   }
 
-  if (ownership.course.courseType !== "ai-generated") {
-    return { allowed: false, reason: "Not an AI-generated course" };
+  if (!ownership.course.owner) {
+    return { allowed: false, reason: "Not a user-owned course" };
   }
 
   if (ownership.isAdmin || ownership.isOwner) {
@@ -73,7 +73,7 @@ export async function canModifyAICourse(
   return { allowed: false, reason: "Not authorized to modify this course" };
 }
 
-export async function canAccessAICourse(
+export async function canAccessOwnedCourse(
   courseId: string,
   user: JWTPayload
 ): Promise<{ allowed: boolean; reason?: string; course?: typeof Course.prototype }> {
@@ -83,8 +83,8 @@ export async function canAccessAICourse(
     return { allowed: false, reason: "Course not found" };
   }
 
-  if (ownership.course.courseType !== "ai-generated") {
-    return { allowed: false, reason: "Not an AI-generated course" };
+  if (!ownership.course.owner) {
+    return { allowed: false, reason: "Not a user-owned course" };
   }
 
   if (ownership.isAdmin || ownership.isOwner) {
@@ -93,3 +93,7 @@ export async function canAccessAICourse(
 
   return { allowed: false, reason: "Not authorized to access this course" };
 }
+
+// Backward-compatible aliases
+export const canModifyAICourse = canModifyOwnedCourse;
+export const canAccessAICourse = canAccessOwnedCourse;

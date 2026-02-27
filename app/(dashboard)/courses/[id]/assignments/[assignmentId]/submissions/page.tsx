@@ -90,7 +90,7 @@ export default function SubmissionsPage({
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
       </div>
     );
   }
@@ -132,7 +132,7 @@ export default function SubmissionsPage({
                 }}
                 className={`w-full text-left p-4 rounded-lg border transition-colors ${
                   selectedSubmission?._id === submission._id
-                    ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+                    ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20"
                     : "border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-zinc-300 dark:hover:border-zinc-700"
                 }`}
               >
@@ -154,7 +154,7 @@ export default function SubmissionsPage({
                       <span
                         className={`px-2 py-1 text-xs rounded ${
                           submission.status === "submitted"
-                            ? "bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300"
+                            ? "bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300"
                             : "bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300"
                         }`}
                       >
@@ -195,7 +195,7 @@ export default function SubmissionsPage({
                     href={selectedSubmission.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-blue-600 hover:underline break-all"
+                    className="text-indigo-600 hover:underline break-all"
                   >
                     {selectedSubmission.url}
                   </a>
@@ -246,7 +246,7 @@ export default function SubmissionsPage({
                   <button
                     onClick={handleGrade}
                     disabled={grading}
-                    className="w-full px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-500 disabled:opacity-50"
+                    className="w-full px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-500 disabled:opacity-50"
                   >
                     {grading ? "Saving..." : "Save Grade"}
                   </button>

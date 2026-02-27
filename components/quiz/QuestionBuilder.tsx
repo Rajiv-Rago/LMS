@@ -176,7 +176,7 @@ export default function QuestionBuilder({
                       <button
                         type="button"
                         onClick={() => setEditingIndex(index)}
-                        className="p-1 text-zinc-400 hover:text-blue-600"
+                        className="p-1 text-zinc-400 hover:text-indigo-600"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -235,7 +235,7 @@ export default function QuestionBuilder({
                   onChange={() =>
                     setNewQuestion({ ...newQuestion, correctAnswer: index })
                   }
-                  className="text-blue-600"
+                  className="text-indigo-600"
                 />
                 <span className="w-6 text-sm text-zinc-500">
                   {String.fromCharCode(65 + index)}.
@@ -268,7 +268,7 @@ export default function QuestionBuilder({
               <button
                 type="button"
                 onClick={addOption}
-                className="mt-1 text-sm text-blue-600 hover:text-blue-500"
+                className="mt-1 text-sm text-indigo-600 hover:text-indigo-500"
               >
                 + Add option
               </button>
@@ -323,7 +323,7 @@ export default function QuestionBuilder({
               !newQuestion.question.trim() ||
               newQuestion.options.some((opt) => !opt.trim())
             }
-            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Add Question
           </button>
@@ -388,7 +388,7 @@ function QuestionEditForm({
               name={`edit-correctAnswer-${question.id}`}
               checked={edited.correctAnswer === index}
               onChange={() => setEdited({ ...edited, correctAnswer: index })}
-              className="text-blue-600"
+              className="text-indigo-600"
             />
             <span className="w-6 text-sm text-zinc-500">
               {String.fromCharCode(65 + index)}.
@@ -420,7 +420,7 @@ function QuestionEditForm({
           <button
             type="button"
             onClick={addOption}
-            className="mt-1 text-sm text-blue-600 hover:text-blue-500"
+            className="mt-1 text-sm text-indigo-600 hover:text-indigo-500"
           >
             + Add option
           </button>
@@ -460,7 +460,7 @@ function QuestionEditForm({
         <button
           type="button"
           onClick={() => onSave(edited)}
-          className="px-3 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-500"
+          className="px-3 py-1.5 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-500"
         >
           Save
         </button>

@@ -72,7 +72,6 @@ async function main() {
     enrolledStudents: [student.insertedId],
     modules: [],
     isPublished: true,
-    courseType: "standard",
     deletedAt: null,
     createdAt: new Date(),
     updatedAt: new Date(),

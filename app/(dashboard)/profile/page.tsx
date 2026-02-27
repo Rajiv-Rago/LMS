@@ -115,8 +115,8 @@ export default function ProfilePage() {
 
       <div className="bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800 p-6">
         <div className="flex items-center gap-4 mb-6">
-          <div className="w-16 h-16 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
-            <span className="text-2xl font-bold text-blue-700 dark:text-blue-200">
+          <div className="w-16 h-16 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center">
+            <span className="text-2xl font-bold text-indigo-700 dark:text-indigo-200">
               {user.name.charAt(0).toUpperCase()}
             </span>
           </div>

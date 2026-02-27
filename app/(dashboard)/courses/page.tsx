@@ -94,16 +94,22 @@ export default function CoursesPage() {
           {user?.role === "teacher" && (
             <Link
               href="/courses/new"
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-500"
+              className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-500"
             >
               Create Course
             </Link>
           )}
           <Link
             href="/courses/new/ai"
-            className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-purple-600 to-blue-600 rounded-md hover:from-purple-500 hover:to-blue-500"
+            className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-violet-600 rounded-md hover:from-violet-500 hover:to-indigo-500"
           >
             {user?.role === "teacher" ? "Create with AI" : "Create AI Course"}
+          </Link>
+          <Link
+            href="/courses/new/youtube"
+            className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-red-600 to-indigo-600 rounded-md hover:from-red-500 hover:to-indigo-500"
+          >
+            Create from YouTube
           </Link>
         </div>
       </div>
@@ -115,7 +121,7 @@ export default function CoursesPage() {
           placeholder="Search courses..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full max-w-md rounded-md border border-zinc-300 dark:border-zinc-700 px-3 py-2 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white placeholder-zinc-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="w-full max-w-md rounded-md border border-zinc-300 dark:border-zinc-700 px-3 py-2 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white placeholder-zinc-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
         />
       </div>
 
@@ -141,7 +147,7 @@ export default function CoursesPage() {
               <Link
                 key={course._id}
                 href={`/courses/${course._id}`}
-                className="block bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800 hover:border-blue-500 dark:hover:border-blue-500 transition-colors overflow-hidden"
+                className="block bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800 hover:border-indigo-500 dark:hover:border-indigo-500 transition-colors overflow-hidden"
               >
                 <div className="p-6">
                   <div className="flex items-start justify-between">

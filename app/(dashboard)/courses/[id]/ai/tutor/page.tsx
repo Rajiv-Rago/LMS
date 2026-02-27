@@ -167,7 +167,7 @@ export default function AITutorPage({
         <div className="p-4 space-y-3">
           <button
             onClick={startNewChat}
-            className="w-full px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-500"
+            className="w-full px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-500"
           >
             New Chat
           </button>
@@ -198,7 +198,7 @@ export default function AITutorPage({
                     onClick={() => loadSession(session._id)}
                     className={`w-full text-left px-3 py-2 text-sm rounded-md truncate ${
                       currentSessionId === session._id
-                        ? "bg-blue-50 dark:bg-blue-900/50 text-blue-700 dark:text-blue-200"
+                        ? "bg-indigo-50 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-200"
                         : "text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800"
                     }`}
                   >
@@ -225,7 +225,7 @@ export default function AITutorPage({
                   I&apos;m here to help you understand the material better.
                 </p>
                 {lessonId && (
-                  <p className="mt-2 text-sm text-blue-600 dark:text-blue-400">
+                  <p className="mt-2 text-sm text-indigo-600 dark:text-indigo-400">
                     Currently focused on the selected lesson.
                   </p>
                 )}
@@ -243,7 +243,7 @@ export default function AITutorPage({
                   <div
                     className={`max-w-[80%] rounded-lg px-4 py-3 ${
                       message.role === "user"
-                        ? "bg-blue-600 text-white"
+                        ? "bg-indigo-600 text-white"
                         : "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white border border-zinc-200 dark:border-zinc-800"
                     }`}
                   >
@@ -275,13 +275,13 @@ export default function AITutorPage({
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Ask a question..."
-              className="flex-1 rounded-md border border-zinc-300 dark:border-zinc-700 px-4 py-2 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white placeholder-zinc-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="flex-1 rounded-md border border-zinc-300 dark:border-zinc-700 px-4 py-2 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white placeholder-zinc-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
               disabled={loading}
             />
             <button
               type="submit"
               disabled={loading || !input.trim()}
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Send
             </button>

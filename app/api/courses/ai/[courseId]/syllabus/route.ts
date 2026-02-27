@@ -52,7 +52,6 @@ export async function GET(
 
     const course = await Course.findOne({
       _id: courseId,
-      courseType: "ai-generated",
       owner: user.userId,
     }).populate({
       path: "modules",
@@ -110,7 +109,6 @@ export async function PATCH(
 
     const course = await Course.findOne({
       _id: courseId,
-      courseType: "ai-generated",
       owner: user.userId,
     });
 
@@ -306,7 +304,6 @@ export async function DELETE(
 
     const course = await Course.findOne({
       _id: courseId,
-      courseType: "ai-generated",
       owner: user.userId,
     });
 

@@ -2,7 +2,7 @@ export { default as User } from "./User";
 export type { IUser } from "./User";
 
 export { default as Course } from "./Course";
-export type { ICourse, CourseType, SyllabusStatus, AIPreferences } from "./Course";
+export type { ICourse, SyllabusStatus, AIPreferences } from "./Course";
 
 export { default as Module } from "./Module";
 export type { IModule, ModuleContentStatus, GenerationConfig } from "./Module";

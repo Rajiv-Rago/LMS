@@ -20,7 +20,6 @@ export async function GET(request: NextRequest) {
     await dbConnect();
 
     const query: Record<string, unknown> = {
-      courseType: "ai-generated",
       owner: user.userId,
     };
 

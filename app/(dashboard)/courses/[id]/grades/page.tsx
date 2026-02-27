@@ -64,7 +64,7 @@ export default function StudentGradesPage({
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
       </div>
     );
   }
@@ -136,7 +136,7 @@ export default function StudentGradesPage({
               <Link
                 key={assignment._id}
                 href={`/courses/${id}/assignments/${assignment._id}`}
-                className="block bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800 p-6 hover:border-blue-500 transition-colors"
+                className="block bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800 p-6 hover:border-indigo-500 transition-colors"
               >
                 <div className="flex items-center justify-between">
                   <div>
@@ -165,7 +165,7 @@ export default function StudentGradesPage({
                         </p>
                       </div>
                     ) : submission ? (
-                      <span className="px-2 py-1 text-sm bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded">
+                      <span className="px-2 py-1 text-sm bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 rounded">
                         {submission.status === "submitted"
                           ? "Submitted"
                           : "Draft"}

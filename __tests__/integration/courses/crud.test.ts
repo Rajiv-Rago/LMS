@@ -60,21 +60,20 @@ describe("Courses CRUD", () => {
       expect(data.error).toContain("Only teachers");
     });
 
-    it("allows a student to create an ai-generated course", async () => {
+    it("rejects course creation from a student", async () => {
       const { token } = await createTestUser({ role: "student" });
 
       const request = buildRequest("POST", "/api/courses", {
         token,
         body: {
-          title: "AI Course",
-          description: "Auto-generated",
-          courseType: "ai-generated",
+          title: "Student Course",
+          description: "Should fail",
         },
       });
       const response = await POST(request);
       const { status } = await parseResponse(response);
 
-      expect(status).toBe(201);
+      expect(status).toBe(403);
     });
 
     it("returns 401 for unauthenticated users", async () => {

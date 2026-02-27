@@ -160,7 +160,7 @@ export function ModelSelector({
               onClick={() => handleTierSelect(t.tier)}
               className={`flex-1 px-3 py-2 text-sm font-medium rounded-md border transition-colors ${
                 isSelected
-                  ? "bg-blue-50 dark:bg-blue-900/50 border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-200"
+                  ? "bg-indigo-50 dark:bg-indigo-900/50 border-indigo-300 dark:border-indigo-700 text-indigo-700 dark:text-indigo-200"
                   : t.available
                   ? "border-zinc-300 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800"
                   : "border-zinc-200 dark:border-zinc-800 text-zinc-400 dark:text-zinc-600 cursor-not-allowed"

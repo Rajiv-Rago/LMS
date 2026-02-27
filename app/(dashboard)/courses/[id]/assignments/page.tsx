@@ -137,7 +137,7 @@ export default function AssignmentsPage({
         {isTeacher && (
           <button
             onClick={() => setShowNew(true)}
-            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-500"
+            className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-500"
           >
             New Assignment
           </button>
@@ -284,8 +284,8 @@ export default function AssignmentsPage({
           </div>
 
           {formData.assignmentType === "quiz" && (
-            <div className="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-              <p className="text-sm text-purple-700 dark:text-purple-300">
+            <div className="p-3 bg-violet-50 dark:bg-violet-900/20 rounded-lg">
+              <p className="text-sm text-violet-700 dark:text-violet-300">
                 After creating, edit the assignment to add quiz questions.
               </p>
             </div>
@@ -302,7 +302,7 @@ export default function AssignmentsPage({
           <div className="flex gap-2">
             <button
               type="submit"
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-500"
+              className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-500"
             >
               Create
             </button>
@@ -345,7 +345,7 @@ export default function AssignmentsPage({
                 <Link
                   key={assignment._id}
                   href={`/courses/${id}/assignments/${assignment._id}`}
-                  className="block bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800 p-6 hover:border-blue-500 transition-colors"
+                  className="block bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800 p-6 hover:border-indigo-500 transition-colors"
                 >
                   <div className="flex items-start justify-between">
                     <div>
@@ -354,7 +354,7 @@ export default function AssignmentsPage({
                           {assignment.title}
                         </h3>
                         {assignmentType === "quiz" && (
-                          <span className="px-2 py-0.5 text-xs bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 rounded">
+                          <span className="px-2 py-0.5 text-xs bg-violet-100 dark:bg-violet-900/50 text-violet-700 dark:text-violet-300 rounded">
                             Quiz
                           </span>
                         )}

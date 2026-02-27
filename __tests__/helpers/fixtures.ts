@@ -60,7 +60,6 @@ export async function createTestCourse(
     title: string;
     description: string;
     isPublished: boolean;
-    courseType: "standard" | "ai-generated";
     owner: string | mongoose.Types.ObjectId;
   }> = {}
 ): Promise<TestCourseResult> {

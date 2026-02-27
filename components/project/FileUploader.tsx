@@ -166,7 +166,7 @@ export default function FileUploader({
           relative border-2 border-dashed rounded-lg p-8 text-center transition-colors
           ${isDisabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"}
           ${isDragging
-            ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+            ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20"
             : "border-zinc-300 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-600"
           }
         `}
@@ -185,7 +185,7 @@ export default function FileUploader({
           <div className="space-y-3">
             <div className="w-12 h-12 mx-auto">
               <svg
-                className="animate-spin text-blue-600"
+                className="animate-spin text-indigo-600"
                 fill="none"
                 viewBox="0 0 24 24"
               >
@@ -209,7 +209,7 @@ export default function FileUploader({
             </p>
             <div className="w-48 mx-auto h-2 bg-zinc-200 dark:bg-zinc-700 rounded-full overflow-hidden">
               <div
-                className="h-full bg-blue-600 transition-all duration-300"
+                className="h-full bg-indigo-600 transition-all duration-300"
                 style={{ width: `${progress}%` }}
               />
             </div>

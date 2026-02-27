@@ -142,7 +142,7 @@ export default function GradebookPage({
                       <div className="flex items-center justify-center gap-1">
                         {assignment.title}
                         {assignment.assignmentType === "quiz" && (
-                          <span className="px-1.5 py-0.5 text-[10px] bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 rounded normal-case">
+                          <span className="px-1.5 py-0.5 text-[10px] bg-violet-100 dark:bg-violet-900/50 text-violet-700 dark:text-violet-300 rounded normal-case">
                             Quiz
                           </span>
                         )}
@@ -192,7 +192,7 @@ export default function GradebookPage({
                             <span
                               className={`text-xs ${
                                 gradeInfo?.status === "submitted"
-                                  ? "text-blue-500"
+                                  ? "text-indigo-500"
                                   : "text-zinc-400"
                               }`}
                             >

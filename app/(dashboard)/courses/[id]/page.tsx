@@ -39,7 +39,7 @@ interface Course {
   instructor: { _id: string; name: string; email: string };
   enrolledStudents: { _id: string; name: string }[];
   isPublished: boolean;
-  courseType?: string;
+  owner?: string;
   syllabusStatus?: string;
 }
 
@@ -78,7 +78,7 @@ export default function CourseDetailPage({
   const [newLessonTitle, setNewLessonTitle] = useState("");
 
   // AI generation state
-  const isAICourse = course?.courseType === "ai-generated";
+  const isAICourse = !!course?.owner;
   const [generatingModules, setGeneratingModules] = useState<Set<string>>(new Set());
   const [generatingLessons, setGeneratingLessons] = useState<Set<string>>(new Set());
   const [previewLessons, setPreviewLessons] = useState<Set<string>>(new Set());
@@ -152,7 +152,7 @@ export default function CourseDetailPage({
       }
 
       // For AI courses, fetch richer lesson data and merge
-      if (courseData.course.courseType === "ai-generated") {
+      if (courseData.course.owner) {
         mods = await fetchAISyllabusData(mods);
 
         // Clear generating state for modules/lessons that finished
@@ -614,7 +614,7 @@ export default function CourseDetailPage({
               <button
                 onClick={handleEnroll}
                 disabled={enrolling}
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-500 disabled:opacity-50"
+                className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-500 disabled:opacity-50"
               >
                 {enrolling ? "Enrolling..." : "Enroll Now"}
               </button>
@@ -691,7 +691,7 @@ export default function CourseDetailPage({
       {/* AI Generation Toolbar */}
       {isAICourse && permissions?.canEdit && (
         <div className="bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800 overflow-hidden">
-          <div className="bg-gradient-to-r from-purple-600 to-blue-600 px-6 py-4">
+          <div className="bg-gradient-to-r from-indigo-600 to-violet-600 px-6 py-4">
             <div className="flex items-center gap-3">
               <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-white/20">
                 <svg
@@ -751,7 +751,7 @@ export default function CourseDetailPage({
                   <button
                     onClick={handleGenerateSelected}
                     disabled={activeCount > 0}
-                    className="px-4 py-2.5 text-sm font-medium text-purple-700 dark:text-purple-300 bg-purple-100 dark:bg-purple-900/50 rounded-md hover:bg-purple-200 dark:hover:bg-purple-900/70 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                    className="px-4 py-2.5 text-sm font-medium text-violet-700 dark:text-violet-300 bg-violet-100 dark:bg-violet-900/50 rounded-md hover:bg-violet-200 dark:hover:bg-violet-900/70 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                   >
                     Generate Selected ({selectedModules.size + selectedLessons.size})
                   </button>
@@ -759,7 +759,7 @@ export default function CourseDetailPage({
                 <button
                   onClick={handleGenerateAll}
                   disabled={allModulesCompletedOrGenerating || activeCount > 0}
-                  className="px-5 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-purple-600 to-blue-600 rounded-md hover:from-purple-500 hover:to-blue-500 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                  className="px-5 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-violet-600 rounded-md hover:from-violet-500 hover:to-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                 >
                   {activeCount > 0
                     ? `Generating... (${activeCount} active)`
@@ -780,7 +780,7 @@ export default function CourseDetailPage({
           {permissions?.canEdit && (
             <button
               onClick={() => setShowNewModule(true)}
-              className="px-3 py-1.5 text-sm font-medium text-blue-600 hover:text-blue-500"
+              className="px-3 py-1.5 text-sm font-medium text-indigo-600 hover:text-indigo-500"
             >
               + Add Module
             </button>
@@ -797,13 +797,13 @@ export default function CourseDetailPage({
               value={newModuleTitle}
               onChange={(e) => setNewModuleTitle(e.target.value)}
               placeholder="Module title"
-              className="w-full rounded-md border border-zinc-300 dark:border-zinc-700 px-3 py-2 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white placeholder-zinc-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="w-full rounded-md border border-zinc-300 dark:border-zinc-700 px-3 py-2 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white placeholder-zinc-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
               autoFocus
             />
             <div className="mt-3 flex gap-2">
               <button
                 type="submit"
-                className="px-3 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-500"
+                className="px-3 py-1.5 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-500"
               >
                 Add Module
               </button>
@@ -865,7 +865,7 @@ export default function CourseDetailPage({
                         <div className="flex gap-2">
                           <button
                             onClick={() => handleSaveModule(mod._id)}
-                            className="px-3 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-500"
+                            className="px-3 py-1.5 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-500"
                           >
                             Save
                           </button>
@@ -887,7 +887,7 @@ export default function CourseDetailPage({
                                 type="checkbox"
                                 checked={selectedModules.has(mod._id)}
                                 onChange={() => toggleModuleSelection(mod._id)}
-                                className="rounded border-zinc-300 dark:border-zinc-600 text-purple-600 focus:ring-purple-500 shrink-0"
+                                className="rounded border-zinc-300 dark:border-zinc-600 text-violet-600 focus:ring-violet-500 shrink-0"
                               />
                             )}
                             <button
@@ -923,7 +923,7 @@ export default function CourseDetailPage({
                               <button
                                 onClick={() => handleGenerateModule(mod._id)}
                                 disabled={activeCount > 0 && !generatingModules.has(mod._id)}
-                                className="px-3 py-1.5 text-xs font-medium text-purple-700 dark:text-purple-300 bg-purple-100 dark:bg-purple-900/50 rounded-md hover:bg-purple-200 dark:hover:bg-purple-900/70 disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="px-3 py-1.5 text-xs font-medium text-violet-700 dark:text-violet-300 bg-violet-100 dark:bg-violet-900/50 rounded-md hover:bg-violet-200 dark:hover:bg-violet-900/70 disabled:opacity-50 disabled:cursor-not-allowed"
                               >
                                 {moduleStatus === "failed" ? "Retry" : "Generate"}
                               </button>
@@ -993,7 +993,7 @@ export default function CourseDetailPage({
                                         type="checkbox"
                                         checked={selectedLessons.has(lesson._id)}
                                         onChange={() => toggleLessonSelection(lesson._id)}
-                                        className="rounded border-zinc-300 dark:border-zinc-600 text-purple-600 focus:ring-purple-500 shrink-0"
+                                        className="rounded border-zinc-300 dark:border-zinc-600 text-violet-600 focus:ring-violet-500 shrink-0"
                                       />
                                     )}
                                     <span className="text-zinc-400 shrink-0">
@@ -1001,7 +1001,7 @@ export default function CourseDetailPage({
                                     </span>
                                     <Link
                                       href={`/courses/${id}/modules/${mod._id}/lessons/${lesson._id}`}
-                                      className="text-sm text-zinc-900 dark:text-white truncate hover:text-blue-600 dark:hover:text-blue-400"
+                                      className="text-sm text-zinc-900 dark:text-white truncate hover:text-indigo-600 dark:hover:text-indigo-400"
                                     >
                                       {lesson.title}
                                     </Link>
@@ -1024,7 +1024,7 @@ export default function CourseDetailPage({
                                     {canRegenerateLesson && !isLessonGenerating && (
                                       <button
                                         onClick={() => handleRegenerateLesson(lesson._id)}
-                                        className="px-2 py-1 text-xs font-medium text-purple-700 dark:text-purple-300 bg-purple-100 dark:bg-purple-900/50 rounded hover:bg-purple-200 dark:hover:bg-purple-900/70 disabled:opacity-50"
+                                        className="px-2 py-1 text-xs font-medium text-violet-700 dark:text-violet-300 bg-violet-100 dark:bg-violet-900/50 rounded hover:bg-violet-200 dark:hover:bg-violet-900/70 disabled:opacity-50"
                                       >
                                         {lessonStatus === "completed" ? "Regenerate" : lessonStatus === "failed" ? "Retry" : "Generate"}
                                       </button>
@@ -1040,7 +1040,7 @@ export default function CourseDetailPage({
                                     {isAICourse && isLessonCompleted && (
                                       <Link
                                         href={`/courses/${id}/modules/${mod._id}/lessons/${lesson._id}`}
-                                        className="px-2 py-1 text-xs text-blue-600 hover:text-blue-500"
+                                        className="px-2 py-1 text-xs text-indigo-600 hover:text-indigo-500"
                                       >
                                         View
                                       </Link>
@@ -1093,7 +1093,7 @@ export default function CourseDetailPage({
                               <div className="mt-2 flex gap-2">
                                 <button
                                   type="submit"
-                                  className="px-3 py-1.5 text-xs font-medium text-white bg-blue-600 rounded-md hover:bg-blue-500"
+                                  className="px-3 py-1.5 text-xs font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-500"
                                 >
                                   Add Lesson
                                 </button>
@@ -1115,7 +1115,7 @@ export default function CourseDetailPage({
                                 setAddingLessonTo(mod._id);
                                 setExpandedModules((prev) => new Set(prev).add(mod._id));
                               }}
-                              className="text-sm font-medium text-blue-600 hover:text-blue-500"
+                              className="text-sm font-medium text-indigo-600 hover:text-indigo-500"
                             >
                               + Add Lesson
                             </button>

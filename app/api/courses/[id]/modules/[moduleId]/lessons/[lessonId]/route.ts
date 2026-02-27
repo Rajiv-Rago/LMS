@@ -52,7 +52,7 @@ export async function GET(
 
     return NextResponse.json({
       lesson,
-      courseType: course.courseType,
+      isOwnedCourse: !!course.owner,
       permissions: {
         canEdit: isInstructor || isAdmin,
       },

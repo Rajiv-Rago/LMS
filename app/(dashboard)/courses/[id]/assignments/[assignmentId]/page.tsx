@@ -157,7 +157,7 @@ export default function AssignmentDetailPage({
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
       </div>
     );
   }
@@ -190,7 +190,7 @@ export default function AssignmentDetailPage({
                 {assignment.title}
               </h1>
               {assignment.assignmentType === "quiz" && (
-                <span className="px-2 py-1 text-xs bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 rounded">
+                <span className="px-2 py-1 text-xs bg-violet-100 dark:bg-violet-900/50 text-violet-700 dark:text-violet-300 rounded">
                   Quiz
                 </span>
               )}
@@ -226,7 +226,7 @@ export default function AssignmentDetailPage({
               </button>
               <Link
                 href={`/courses/${id}/assignments/${assignmentId}/submissions`}
-                className="px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 dark:bg-blue-900/20 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/40"
+                className="px-3 py-1.5 text-sm font-medium text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20 rounded-md hover:bg-indigo-100 dark:hover:bg-indigo-900/40"
               >
                 View Submissions
               </Link>
@@ -277,7 +277,7 @@ export default function AssignmentDetailPage({
 
             <Link
               href={`/courses/${id}/assignments/${assignmentId}/quiz`}
-              className="inline-block px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-md hover:bg-purple-500"
+              className="inline-block px-4 py-2 text-sm font-medium text-white bg-violet-600 rounded-md hover:bg-violet-500"
             >
               {submission?.bestScore !== undefined ? "Retake Quiz" : "Start Quiz"}
             </Link>
@@ -341,8 +341,8 @@ export default function AssignmentDetailPage({
             ) : (
               <div className="space-y-6">
                 {submission?.status === "submitted" && (
-                  <div className="px-4 py-3 bg-blue-50 dark:bg-blue-900/20 rounded-md">
-                    <p className="text-sm text-blue-700 dark:text-blue-300">
+                  <div className="px-4 py-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-md">
+                    <p className="text-sm text-indigo-700 dark:text-indigo-300">
                       Submitted on{" "}
                       {submission.submittedAt
                         ? new Date(submission.submittedAt).toLocaleString()
@@ -391,7 +391,7 @@ export default function AssignmentDetailPage({
                     <button
                       onClick={() => handleSubmit(false)}
                       disabled={submitting}
-                      className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-500 disabled:opacity-50"
+                      className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-500 disabled:opacity-50"
                     >
                       {submitting ? "Submitting..." : "Submit Project"}
                     </button>
@@ -435,8 +435,8 @@ export default function AssignmentDetailPage({
           ) : (
             <div className="space-y-4">
               {submission?.status === "submitted" && (
-                <div className="px-4 py-3 bg-blue-50 dark:bg-blue-900/20 rounded-md">
-                  <p className="text-sm text-blue-700 dark:text-blue-300">
+                <div className="px-4 py-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-md">
+                  <p className="text-sm text-indigo-700 dark:text-indigo-300">
                     Submitted on{" "}
                     {submission.submittedAt
                       ? new Date(submission.submittedAt).toLocaleString()
@@ -494,7 +494,7 @@ export default function AssignmentDetailPage({
                   <button
                     onClick={() => handleSubmit(false)}
                     disabled={submitting}
-                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-500 disabled:opacity-50"
+                    className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-500 disabled:opacity-50"
                   >
                     {submitting ? "Submitting..." : "Submit"}
                   </button>

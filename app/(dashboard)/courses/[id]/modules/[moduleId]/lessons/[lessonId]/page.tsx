@@ -9,6 +9,16 @@ import {
 } from "@/components/ai/ModelSelector";
 import { useUserAIDefaults } from "@/lib/hooks/useUserAIDefaults";
 
+interface YouTubeMetadata {
+  videoId: string;
+  channelName: string;
+  channelId: string;
+  thumbnailUrl: string;
+  viewCount?: number;
+  publishedAt?: string;
+  videoDuration?: string;
+}
+
 interface Lesson {
   _id: string;
   title: string;
@@ -21,6 +31,7 @@ interface Lesson {
   generationStatus?: "skeleton" | "generating" | "completed" | "failed";
   lessonOutline?: string;
   keyTakeaways?: string[];
+  youtubeMetadata?: YouTubeMetadata;
 }
 
 interface Permissions {
@@ -36,7 +47,7 @@ export default function LessonDetailPage({
   const router = useRouter();
   const [lesson, setLesson] = useState<Lesson | null>(null);
   const [permissions, setPermissions] = useState<Permissions | null>(null);
-  const [courseType, setCourseType] = useState<string>("");
+  const [isOwnedCourse, setIsOwnedCourse] = useState(false);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [formData, setFormData] = useState({
@@ -86,7 +97,7 @@ export default function LessonDetailPage({
       const data = await res.json();
       setLesson(data.lesson);
       setPermissions(data.permissions);
-      setCourseType(data.courseType || "");
+      setIsOwnedCourse(!!data.isOwnedCourse);
       setFormData({
         title: data.lesson.title,
         contentType: data.lesson.contentType,
@@ -237,17 +248,16 @@ export default function LessonDetailPage({
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
       </div>
     );
   }
 
   if (!lesson) return null;
 
-  const isAICourse = courseType === "ai-generated";
-  const canGenerate = isAICourse && permissions?.canEdit;
+  const canGenerate = isOwnedCourse && permissions?.canEdit;
   const isSkeleton =
-    lesson.generationStatus === "skeleton" || (!lesson.content && isAICourse);
+    lesson.generationStatus === "skeleton" || (!lesson.content && isOwnedCourse);
   const isCompleted = lesson.generationStatus === "completed";
   const isFailed = lesson.generationStatus === "failed";
 
@@ -366,7 +376,7 @@ export default function LessonDetailPage({
             <div className="flex gap-2">
               <button
                 onClick={handleSave}
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-500"
+                className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-500"
               >
                 Save Changes
               </button>
@@ -422,9 +432,9 @@ export default function LessonDetailPage({
 
             {/* Generating progress banner */}
             {generating && (
-              <div className="mb-4 flex items-center gap-3 rounded-lg bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 px-4 py-3">
-                <div className="animate-spin rounded-full h-4 w-4 border-2 border-purple-600 border-t-transparent"></div>
-                <span className="text-sm font-medium text-purple-700 dark:text-purple-300">
+              <div className="mb-4 flex items-center gap-3 rounded-lg bg-violet-50 dark:bg-violet-900/20 border border-violet-200 dark:border-violet-800 px-4 py-3">
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-violet-600 border-t-transparent"></div>
+                <span className="text-sm font-medium text-violet-700 dark:text-violet-300">
                   Generating content...
                 </span>
               </div>
@@ -473,7 +483,7 @@ export default function LessonDetailPage({
                   <button
                     onClick={() => handleGenerate()}
                     disabled={generating}
-                    className="px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-md hover:bg-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-4 py-2 text-sm font-medium text-white bg-violet-600 rounded-md hover:bg-violet-500 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Generate Content
                   </button>
@@ -486,12 +496,29 @@ export default function LessonDetailPage({
               <>
                 {/* Video */}
                 {lesson.contentType === "video" && lesson.videoUrl && (
-                  <div className="mb-6 aspect-video bg-black rounded-lg overflow-hidden">
-                    <iframe
-                      src={lesson.videoUrl.replace("watch?v=", "embed/")}
-                      className="w-full h-full"
-                      allowFullScreen
-                    />
+                  <div className="mb-6">
+                    <div className="aspect-video bg-black rounded-lg overflow-hidden">
+                      <iframe
+                        src={lesson.videoUrl.replace("watch?v=", "embed/")}
+                        className="w-full h-full"
+                        allowFullScreen
+                      />
+                    </div>
+                    {lesson.youtubeMetadata && (
+                      <div className="mt-3 flex items-center gap-4 text-sm text-zinc-500 dark:text-zinc-400">
+                        <span className="font-medium text-zinc-700 dark:text-zinc-300">
+                          {lesson.youtubeMetadata.channelName}
+                        </span>
+                        {lesson.youtubeMetadata.viewCount != null && (
+                          <span>
+                            {lesson.youtubeMetadata.viewCount.toLocaleString()} views
+                          </span>
+                        )}
+                        {lesson.youtubeMetadata.videoDuration && (
+                          <span>{lesson.youtubeMetadata.videoDuration}</span>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -502,7 +529,7 @@ export default function LessonDetailPage({
                       href={lesson.fileUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 dark:bg-blue-900/20 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/40"
+                      className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20 rounded-md hover:bg-indigo-100 dark:hover:bg-indigo-900/40"
                     >
                       Download File
                     </a>
@@ -520,15 +547,15 @@ export default function LessonDetailPage({
 
                 {/* Key Takeaways */}
                 {lesson.keyTakeaways && lesson.keyTakeaways.length > 0 && (
-                  <div className="mt-6 bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
-                    <h3 className="text-sm font-medium text-blue-900 dark:text-blue-200 mb-2">
+                  <div className="mt-6 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-4">
+                    <h3 className="text-sm font-medium text-indigo-900 dark:text-indigo-200 mb-2">
                       Key Takeaways
                     </h3>
                     <ul className="space-y-1">
                       {lesson.keyTakeaways.map((t, i) => (
                         <li
                           key={i}
-                          className="text-sm text-blue-800 dark:text-blue-300"
+                          className="text-sm text-indigo-800 dark:text-indigo-300"
                         >
                           &bull; {t}
                         </li>
@@ -578,7 +605,7 @@ export default function LessonDetailPage({
                           <button
                             onClick={() => handleGenerate(feedback)}
                             disabled={!feedback.trim() || generating}
-                            className="px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-md hover:bg-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="px-4 py-2 text-sm font-medium text-white bg-violet-600 rounded-md hover:bg-violet-500 disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             Regenerate with Feedback
                           </button>
@@ -602,7 +629,7 @@ export default function LessonDetailPage({
               <div className="mt-8 pt-6 border-t border-zinc-200 dark:border-zinc-800">
                 <Link
                   href={`/courses/${id}/ai/tutor?lessonId=${lessonId}`}
-                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-500"
+                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-500"
                 >
                   Ask AI Tutor about this lesson
                 </Link>

@@ -45,7 +45,10 @@ const envSchema = z.object({
 
   // App
   APP_URL: z.string().default("http://localhost:3000"),
-  APP_NAME: z.string().default("LMS"),
+  APP_NAME: z.string().default("Kantigo"),
+
+  // YouTube
+  YOUTUBE_API_KEY: z.string().optional(),
 
   // Optional test DB
   MONGODB_URI_TEST: z.string().optional(),

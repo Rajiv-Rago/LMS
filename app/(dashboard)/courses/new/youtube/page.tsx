@@ -6,23 +6,25 @@ import Link from "next/link";
 import { ModelSelector, ModelSelectorValue } from "@/components/ai/ModelSelector";
 import { useUserAIDefaults } from "@/lib/hooks/useUserAIDefaults";
 
-type TargetLevel = "beginner" | "intermediate" | "advanced";
+type SkillLevel = "complete_beginner" | "some_basics" | "intermediate" | "advanced";
+type PathVariant = "fast_track" | "standard" | "deep_dive";
 type GenerationPhase = "idle" | "submitting" | "generating" | "complete";
 
 const phaseMessages: Record<GenerationPhase, string> = {
   idle: "",
   submitting: "Submitting request...",
-  generating: "Generating course content...",
+  generating: "Searching YouTube & building your path...",
   complete: "Complete!",
 };
 
-export default function NewAICoursePage() {
+export default function NewYouTubeCoursePage() {
   const router = useRouter();
   const [formData, setFormData] = useState({
     topic: "",
-    targetLevel: "beginner" as TargetLevel,
-    estimatedDuration: "",
-    additionalContext: "",
+    skillLevel: "complete_beginner" as SkillLevel,
+    teachingStyle: "",
+    videoLengthPreference: "any" as "short" | "medium" | "long" | "any",
+    pathVariant: "standard" as PathVariant,
   });
   const userDefaults = useUserAIDefaults();
   const [modelValue, setModelValue] = useState<ModelSelectorValue>({
@@ -47,7 +49,6 @@ export default function NewAICoursePage() {
     }
   }, []);
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => stopPolling();
   }, [stopPolling]);
@@ -92,12 +93,13 @@ export default function NewAICoursePage() {
     try {
       const payload: Record<string, string> = {
         topic: formData.topic,
-        targetLevel: formData.targetLevel,
-        estimatedDuration: formData.estimatedDuration,
+        skillLevel: formData.skillLevel,
+        pathVariant: formData.pathVariant,
+        videoLengthPreference: formData.videoLengthPreference,
       };
 
-      if (formData.additionalContext) {
-        payload.additionalContext = formData.additionalContext;
+      if (formData.teachingStyle) {
+        payload.teachingStyle = formData.teachingStyle;
       }
       if (modelValue.tier) {
         payload.tier = modelValue.tier;
@@ -109,7 +111,7 @@ export default function NewAICoursePage() {
         payload.model = modelValue.model;
       }
 
-      const res = await fetch("/api/courses/ai/syllabus", {
+      const res = await fetch("/api/courses/youtube/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json", "X-Requested-With": "XMLHttpRequest" },
         body: JSON.stringify(payload),
@@ -118,27 +120,25 @@ export default function NewAICoursePage() {
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.error || "Failed to generate course");
+        throw new Error(data.error || "Failed to generate path");
       }
 
       if (data.jobId) {
-        // Async mode: poll for job completion
         pollJobStatus(data.jobId);
       } else if (data.course) {
-        // Sync mode (SyncShim completed inline)
         setPhase("complete");
         setTimeout(() => router.push(`/courses/${data.course._id}`), 500);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to generate course");
+      setError(err instanceof Error ? err.message : "Failed to generate path");
       setPhase("idle");
     }
   };
 
   const getProgress = () => {
     switch (phase) {
-      case "submitting": return 15;
-      case "generating": return 55;
+      case "submitting": return 10;
+      case "generating": return 50;
       case "complete": return 100;
       default: return 0;
     }
@@ -157,7 +157,7 @@ export default function NewAICoursePage() {
 
       <div className="bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800 overflow-hidden">
         {/* Header with gradient */}
-        <div className="bg-gradient-to-r from-indigo-600 to-violet-600 px-6 py-5">
+        <div className="bg-gradient-to-r from-red-600 to-indigo-600 px-6 py-5">
           <div className="flex items-center gap-3">
             <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-white/20">
               <svg
@@ -170,14 +170,20 @@ export default function NewAICoursePage() {
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth={2}
-                  d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
+                  d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
+                />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                 />
               </svg>
             </div>
             <div>
-              <h1 className="text-xl font-bold text-white">Create Course with AI</h1>
+              <h1 className="text-xl font-bold text-white">Create from YouTube</h1>
               <p className="text-sm text-white/80">
-                Describe your topic and we&apos;ll generate a complete course
+                We&apos;ll find the best tutorials and organize them into a real learning path
               </p>
             </div>
           </div>
@@ -205,29 +211,30 @@ export default function NewAICoursePage() {
                 disabled={isGenerating}
                 value={formData.topic}
                 onChange={(e) => setFormData({ ...formData, topic: e.target.value })}
-                className="mt-1 block w-full rounded-md border border-zinc-300 dark:border-zinc-700 px-3 py-2 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white placeholder-zinc-400 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                placeholder="e.g., Python programming for beginners, Machine learning fundamentals"
+                className="mt-1 block w-full rounded-md border border-zinc-300 dark:border-zinc-700 px-3 py-2 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white placeholder-zinc-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                placeholder="e.g., Docker for beginners, React hooks, System design"
               />
             </div>
 
             <div>
               <label
-                htmlFor="targetLevel"
+                htmlFor="skillLevel"
                 className="block text-sm font-medium text-zinc-700 dark:text-zinc-300"
               >
-                Experience Level
+                Your current level
               </label>
               <select
-                id="targetLevel"
+                id="skillLevel"
                 required
                 disabled={isGenerating}
-                value={formData.targetLevel}
+                value={formData.skillLevel}
                 onChange={(e) =>
-                  setFormData({ ...formData, targetLevel: e.target.value as TargetLevel })
+                  setFormData({ ...formData, skillLevel: e.target.value as SkillLevel })
                 }
-                className="mt-1 block w-full rounded-md border border-zinc-300 dark:border-zinc-700 px-3 py-2 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="mt-1 block w-full rounded-md border border-zinc-300 dark:border-zinc-700 px-3 py-2 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <option value="beginner">Beginner</option>
+                <option value="complete_beginner">Complete beginner</option>
+                <option value="some_basics">Know some basics</option>
                 <option value="intermediate">Intermediate</option>
                 <option value="advanced">Advanced</option>
               </select>
@@ -235,43 +242,68 @@ export default function NewAICoursePage() {
 
             <div>
               <label
-                htmlFor="estimatedDuration"
+                htmlFor="pathVariant"
                 className="block text-sm font-medium text-zinc-700 dark:text-zinc-300"
               >
-                Estimated Course Length
+                Path style
+              </label>
+              <select
+                id="pathVariant"
+                disabled={isGenerating}
+                value={formData.pathVariant}
+                onChange={(e) =>
+                  setFormData({ ...formData, pathVariant: e.target.value as PathVariant })
+                }
+                className="mt-1 block w-full rounded-md border border-zinc-300 dark:border-zinc-700 px-3 py-2 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <option value="fast_track">Fast track — just the essentials</option>
+                <option value="standard">Standard — solid coverage</option>
+                <option value="deep_dive">Deep dive — comprehensive</option>
+              </select>
+            </div>
+
+            <div>
+              <label
+                htmlFor="teachingStyle"
+                className="block text-sm font-medium text-zinc-700 dark:text-zinc-300"
+              >
+                Preferred teaching style (optional)
               </label>
               <input
-                id="estimatedDuration"
+                id="teachingStyle"
                 type="text"
-                required
                 disabled={isGenerating}
-                value={formData.estimatedDuration}
-                onChange={(e) =>
-                  setFormData({ ...formData, estimatedDuration: e.target.value })
-                }
-                className="mt-1 block w-full rounded-md border border-zinc-300 dark:border-zinc-700 px-3 py-2 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white placeholder-zinc-400 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                placeholder="e.g., 4 weeks, 20 hours, 10 lessons"
+                value={formData.teachingStyle}
+                onChange={(e) => setFormData({ ...formData, teachingStyle: e.target.value })}
+                className="mt-1 block w-full rounded-md border border-zinc-300 dark:border-zinc-700 px-3 py-2 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white placeholder-zinc-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                placeholder="e.g., project-based, code-along, visual/animated"
               />
             </div>
 
             <div>
               <label
-                htmlFor="additionalContext"
+                htmlFor="videoLength"
                 className="block text-sm font-medium text-zinc-700 dark:text-zinc-300"
               >
-                Additional Details (optional)
+                Video length preference
               </label>
-              <textarea
-                id="additionalContext"
-                rows={3}
+              <select
+                id="videoLength"
                 disabled={isGenerating}
-                value={formData.additionalContext}
+                value={formData.videoLengthPreference}
                 onChange={(e) =>
-                  setFormData({ ...formData, additionalContext: e.target.value })
+                  setFormData({
+                    ...formData,
+                    videoLengthPreference: e.target.value as "short" | "medium" | "long" | "any",
+                  })
                 }
-                className="mt-1 block w-full rounded-md border border-zinc-300 dark:border-zinc-700 px-3 py-2 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white placeholder-zinc-400 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                placeholder="Any specific topics to cover, learning goals, or prerequisites..."
-              />
+                className="mt-1 block w-full rounded-md border border-zinc-300 dark:border-zinc-700 px-3 py-2 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <option value="any">Any length</option>
+                <option value="short">Short (under 15 min)</option>
+                <option value="medium">Medium (15-45 min)</option>
+                <option value="long">Long (45+ min, full courses)</option>
+              </select>
             </div>
 
             <ModelSelector
@@ -282,21 +314,21 @@ export default function NewAICoursePage() {
 
             {/* Progress Indicator */}
             {isGenerating && (
-              <div className="rounded-md bg-violet-50 dark:bg-violet-900/20 p-4 space-y-3">
+              <div className="rounded-md bg-indigo-50 dark:bg-indigo-900/20 p-4 space-y-3">
                 <div className="flex items-center gap-3">
-                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-violet-600 border-t-transparent"></div>
-                  <span className="text-sm font-medium text-violet-700 dark:text-violet-300">
+                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-indigo-600 border-t-transparent"></div>
+                  <span className="text-sm font-medium text-indigo-700 dark:text-indigo-300">
                     {phaseMessages[phase]}
                   </span>
                 </div>
-                <div className="w-full bg-violet-200 dark:bg-violet-800 rounded-full h-2">
+                <div className="w-full bg-indigo-200 dark:bg-indigo-800 rounded-full h-2">
                   <div
-                    className="bg-gradient-to-r from-indigo-600 to-violet-600 h-2 rounded-full transition-all duration-500"
+                    className="bg-gradient-to-r from-red-600 to-indigo-600 h-2 rounded-full transition-all duration-500"
                     style={{ width: `${getProgress()}%` }}
                   ></div>
                 </div>
-                <p className="text-xs text-violet-600 dark:text-violet-400">
-                  This may take 15-30 seconds
+                <p className="text-xs text-indigo-600 dark:text-indigo-400">
+                  This may take 30-60 seconds (searching YouTube + building curriculum)
                 </p>
               </div>
             )}
@@ -311,9 +343,9 @@ export default function NewAICoursePage() {
               <button
                 type="submit"
                 disabled={isGenerating}
-                className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-violet-600 rounded-md hover:from-violet-500 hover:to-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-red-600 to-indigo-600 rounded-md hover:from-red-500 hover:to-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isGenerating ? "Generating..." : "Generate Course"}
+                {isGenerating ? "Generating..." : "Build Learning Path"}
               </button>
             </div>
           </form>

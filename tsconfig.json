@@ -25,6 +25,9 @@
     "paths": {
       "@/*": [
         "./*"
+      ],
+      "@youtube-core/*": [
+        "./packages/youtube-learning-path/src/core/*"
       ]
     }
   },
@@ -40,6 +43,11 @@
   ],
   "exclude": [
     "node_modules",
+    "packages/*/node_modules",
+    "packages/*/src/app",
+    "packages/*/src/components",
+    "packages/*/src/context",
+    "packages/*/src/lib",
     "jest.setup.ts",
     "**/*.test.ts",
     "**/*.test.tsx"

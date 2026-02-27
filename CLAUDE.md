@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-LMS (Learning Management System) - A full-stack web application for course management with AI-powered content generation. Teachers create courses with modules/lessons/assignments; students enroll, submit work, and take quizzes. AI features allow automated syllabus and lesson content generation via multiple LLM providers.
+Kantigo (kantigo.dev) — A fun, curious, inviting learning platform that turns any topic into a structured path. Full-stack web application with AI-powered content generation and curated YouTube courses. Teachers create courses with modules/lessons/assignments; students enroll, submit work, and take quizzes. AI features allow automated syllabus and lesson content generation via multiple LLM providers, plus YouTube-based learning path generation.
 
 ## Commands
 
@@ -55,15 +55,15 @@ For routes requiring auth, use the `requireAuth` or `requireRole` HOF wrappers f
 
 ```
 User (student | teacher | admin)
-└── Course (standard | ai-generated)
+└── Course
     ├── Module
-    │   └── Lesson (text | video | quiz | assignment)
-    ├── Assignment (standard_quiz | lab_project)
+    │   └── Lesson (text | video | file) — video lessons may have youtubeMetadata
+    ├── Assignment (standard | quiz | project)
     │   └── Submission
     └── AIChatSession (AI tutor conversations)
 ```
 
-Courses have an `instructor` (teacher who created it) and optionally an `owner` (for AI-generated courses, the student who owns it). The `enrolledStudents` array tracks enrollment.
+Courses are flexible containers — a single course can mix manually-created content, AI-generated lessons, and YouTube video lessons. Courses have an `instructor` (teacher who created it) and optionally an `owner` (for user-owned courses, e.g. self-generated learning paths). The `enrolledStudents` array tracks enrollment. There is no `courseType` field — the content type distinction lives at the lesson level.
 
 ### AI System (`lib/ai/`)
 

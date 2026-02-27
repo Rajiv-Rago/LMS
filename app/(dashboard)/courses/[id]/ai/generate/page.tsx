@@ -154,7 +154,7 @@ export default function AIGeneratePage({
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
       </div>
     );
   }
@@ -261,7 +261,7 @@ export default function AIGeneratePage({
             <button
               type="submit"
               disabled={generating}
-              className="w-full px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-500 disabled:opacity-50"
+              className="w-full px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-500 disabled:opacity-50"
             >
               {generating ? "Generating..." : "Generate"}
             </button>
@@ -285,7 +285,7 @@ export default function AIGeneratePage({
                       onClick={() => setSelectedContent(content)}
                       className={`w-full text-left p-3 rounded-md ${
                         selectedContent?._id === content._id
-                          ? "bg-blue-50 dark:bg-blue-900/50 border border-blue-200 dark:border-blue-800"
+                          ? "bg-indigo-50 dark:bg-indigo-900/50 border border-indigo-200 dark:border-indigo-800"
                           : "hover:bg-zinc-50 dark:hover:bg-zinc-800"
                       }`}
                     >

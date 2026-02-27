@@ -209,7 +209,7 @@ export default function InstructionsViewer({
             href={linkMatch[2]}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-blue-600 hover:text-blue-500 underline"
+            className="text-indigo-600 hover:text-indigo-500 underline"
           >
             {linkMatch[1]}
           </a>

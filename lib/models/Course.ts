@@ -1,7 +1,6 @@
 import mongoose, { Document, Model } from "mongoose";
 import { AIProviderName } from "@/lib/ai/types";
 
-export type CourseType = "standard" | "ai-generated";
 export type SyllabusStatus = "draft" | "generating" | "completed" | "failed";
 
 export interface AIPreferences {
@@ -18,11 +17,16 @@ export interface ICourse extends Document {
   modules: mongoose.Types.ObjectId[];
   coverImage?: string;
   isPublished: boolean;
-  courseType: CourseType;
   owner?: mongoose.Types.ObjectId;
   syllabusStatus?: SyllabusStatus;
   syllabusPrompt?: string;
   aiPreferences?: AIPreferences;
+  youtubeMetadata?: {
+    skillLevel: string;
+    teachingStyle?: string;
+    pathVariant?: string;
+    generatedAt: Date;
+  };
   deletedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
@@ -67,14 +71,6 @@ const courseSchema = new mongoose.Schema<ICourse, CourseModel>(
       type: Boolean,
       default: false,
     },
-    courseType: {
-      type: String,
-      enum: {
-        values: ["standard", "ai-generated"],
-        message: "Course type must be standard or ai-generated",
-      },
-      default: "standard",
-    },
     owner: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -99,6 +95,12 @@ const courseSchema = new mongoose.Schema<ICourse, CourseModel>(
         type: String,
       },
     },
+    youtubeMetadata: {
+      skillLevel: { type: String },
+      teachingStyle: { type: String },
+      pathVariant: { type: String },
+      generatedAt: { type: Date },
+    },
     deletedAt: {
       type: Date,
       default: null,
@@ -122,7 +124,7 @@ courseSchema.index({ instructor: 1 });
 courseSchema.index({ enrolledStudents: 1 });
 courseSchema.index({ isPublished: 1 });
 courseSchema.index({ title: "text", description: "text" });
-courseSchema.index({ courseType: 1, owner: 1 });
+courseSchema.index({ owner: 1 });
 
 const Course =
   (mongoose.models.Course as CourseModel) ||

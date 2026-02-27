@@ -94,7 +94,7 @@ function ConfirmDialogModal({
             className={`px-4 py-2 text-sm font-medium text-white rounded-md transition-colors ${
               destructive
                 ? "bg-red-600 hover:bg-red-500"
-                : "bg-blue-600 hover:bg-blue-500"
+                : "bg-indigo-600 hover:bg-indigo-500"
             }`}
           >
             {confirmLabel}

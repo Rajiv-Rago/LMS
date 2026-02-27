@@ -65,7 +65,7 @@ export default function QuestionCard({
             }
           } else if (isSelected) {
             optionClasses +=
-              "border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300";
+              "border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300";
           } else {
             optionClasses +=
               "border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600 text-zinc-700 dark:text-zinc-300";
@@ -88,7 +88,7 @@ export default function QuestionCard({
                 <span
                   className={`flex-shrink-0 w-6 h-6 rounded-full border flex items-center justify-center text-sm font-medium ${
                     isSelected && !showResults
-                      ? "border-blue-500 bg-blue-500 text-white"
+                      ? "border-indigo-500 bg-indigo-500 text-white"
                       : isCorrectOption
                         ? "border-green-500 bg-green-500 text-white"
                         : isWrongSelection

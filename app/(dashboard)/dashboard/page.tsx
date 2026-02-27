@@ -128,13 +128,13 @@ export default function DashboardPage() {
             <div className="flex gap-2">
               <Link
                 href="/courses/new"
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-500"
+                className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-500"
               >
                 Create Course
               </Link>
               <Link
                 href="/courses/new/ai"
-                className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-purple-600 to-blue-600 rounded-md hover:from-purple-500 hover:to-blue-500"
+                className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-violet-600 rounded-md hover:from-violet-500 hover:to-indigo-500"
               >
                 Create with AI
               </Link>
@@ -144,13 +144,13 @@ export default function DashboardPage() {
             <div className="flex gap-2">
               <Link
                 href="/courses/new/ai"
-                className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-purple-600 to-blue-600 rounded-md hover:from-purple-500 hover:to-blue-500"
+                className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-violet-600 rounded-md hover:from-violet-500 hover:to-indigo-500"
               >
                 Create AI Course
               </Link>
               <Link
                 href="/courses"
-                className="text-sm font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400"
+                className="text-sm font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400"
               >
                 Browse Courses
               </Link>
@@ -170,13 +170,13 @@ export default function DashboardPage() {
                 <>
                   <Link
                     href="/courses/new"
-                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-500"
+                    className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-500"
                   >
                     Create your first course
                   </Link>
                   <Link
                     href="/courses/new/ai"
-                    className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-purple-600 to-blue-600 rounded-md hover:from-purple-500 hover:to-blue-500"
+                    className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-violet-600 rounded-md hover:from-violet-500 hover:to-indigo-500"
                   >
                     Or try AI-powered creation
                   </Link>
@@ -185,13 +185,13 @@ export default function DashboardPage() {
                 <>
                   <Link
                     href="/courses/new/ai"
-                    className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-purple-600 to-blue-600 rounded-md hover:from-purple-500 hover:to-blue-500"
+                    className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-violet-600 rounded-md hover:from-violet-500 hover:to-indigo-500"
                   >
                     Create a personalized AI course
                   </Link>
                   <Link
                     href="/courses"
-                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-500"
+                    className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-500"
                   >
                     Browse available courses
                   </Link>
@@ -205,7 +205,7 @@ export default function DashboardPage() {
               <Link
                 key={course._id}
                 href={`/courses/${course._id}`}
-                className="block bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800 p-6 hover:border-blue-500 dark:hover:border-blue-500 transition-colors"
+                className="block bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800 p-6 hover:border-indigo-500 dark:hover:border-indigo-500 transition-colors"
               >
                 <h3 className="font-semibold text-zinc-900 dark:text-white truncate">
                   {course.title}

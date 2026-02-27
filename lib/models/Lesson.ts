@@ -25,6 +25,15 @@ export interface ILesson extends Document {
   lessonOutline?: string;
   generationConfig?: LessonGenerationConfig;
   keyTakeaways?: string[];
+  youtubeMetadata?: {
+    videoId: string;
+    channelName: string;
+    channelId: string;
+    thumbnailUrl: string;
+    viewCount?: number;
+    publishedAt?: Date;
+    videoDuration?: string;
+  };
   createdAt: Date;
   updatedAt: Date;
 }
@@ -102,6 +111,15 @@ const lessonSchema = new mongoose.Schema<ILesson, LessonModel>(
       type: String,
       maxlength: [500, "Key takeaway cannot exceed 500 characters"],
     }],
+    youtubeMetadata: {
+      videoId: { type: String },
+      channelName: { type: String },
+      channelId: { type: String },
+      thumbnailUrl: { type: String },
+      viewCount: { type: Number },
+      publishedAt: { type: Date },
+      videoDuration: { type: String },
+    },
   },
   {
     timestamps: true,

@@ -81,7 +81,7 @@ export default function DashboardLayout({
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-zinc-50 dark:bg-zinc-950" aria-busy="true">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
       </div>
     );
   }
@@ -102,7 +102,7 @@ export default function DashboardLayout({
       {/* Skip to content */}
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:z-[200] focus:top-2 focus:left-2 focus:px-4 focus:py-2 focus:bg-blue-600 focus:text-white focus:rounded-md focus:text-sm focus:font-medium"
+        className="sr-only focus:not-sr-only focus:absolute focus:z-[200] focus:top-2 focus:left-2 focus:px-4 focus:py-2 focus:bg-indigo-600 focus:text-white focus:rounded-md focus:text-sm focus:font-medium"
       >
         Skip to content
       </a>
@@ -119,7 +119,7 @@ export default function DashboardLayout({
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
           </svg>
         </button>
-        <span className="font-semibold text-zinc-900 dark:text-white">LMS</span>
+        <span className="font-semibold text-zinc-900 dark:text-white">Kantigo</span>
         <div className="w-6" />
       </header>
 
@@ -133,7 +133,7 @@ export default function DashboardLayout({
         <div className="flex flex-col h-full">
           <div className="flex items-center justify-between h-16 px-4 border-b border-zinc-200 dark:border-zinc-800">
             <Link href="/dashboard" className="text-xl font-bold text-zinc-900 dark:text-white">
-              LMS
+              Kantigo
             </Link>
             <div className="flex items-center gap-1">
               <NotificationBell />
@@ -175,7 +175,7 @@ export default function DashboardLayout({
                   aria-current={isActive ? "page" : undefined}
                   className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
                     isActive
-                      ? "bg-blue-50 dark:bg-blue-900/50 text-blue-700 dark:text-blue-200"
+                      ? "bg-indigo-50 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-200"
                       : "text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800"
                   }`}
                 >
@@ -187,8 +187,8 @@ export default function DashboardLayout({
 
           <div className="p-4 border-t border-zinc-200 dark:border-zinc-800">
             <div className="flex items-center mb-3">
-              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
-                <span className="text-sm font-medium text-blue-700 dark:text-blue-200">
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center">
+                <span className="text-sm font-medium text-indigo-700 dark:text-indigo-200">
                   {user?.name?.charAt(0).toUpperCase()}
                 </span>
               </div>

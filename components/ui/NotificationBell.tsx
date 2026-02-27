@@ -149,7 +149,7 @@ export function NotificationBell() {
             {unreadCount > 0 && (
               <button
                 onClick={handleMarkAllRead}
-                className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline"
               >
                 Mark all read
               </button>
@@ -169,12 +169,12 @@ export function NotificationBell() {
                   key={n.id}
                   onClick={() => handleNotificationClick(n)}
                   className={`w-full text-left px-4 py-3 border-b last:border-b-0 border-zinc-100 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors ${
-                    !n.read ? "bg-blue-50/50 dark:bg-blue-900/10" : ""
+                    !n.read ? "bg-indigo-50/50 dark:bg-indigo-900/10" : ""
                   }`}
                 >
                   <div className="flex items-start gap-2">
                     {!n.read && (
-                      <span className="flex-shrink-0 mt-1.5 h-2 w-2 rounded-full bg-blue-500" />
+                      <span className="flex-shrink-0 mt-1.5 h-2 w-2 rounded-full bg-indigo-500" />
                     )}
                     <div className={`flex-1 min-w-0 ${n.read ? "ml-4" : ""}`}>
                       <p className="text-sm font-medium text-zinc-900 dark:text-white truncate">

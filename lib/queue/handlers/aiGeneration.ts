@@ -80,7 +80,6 @@ registerHandler(
       title: syllabus.courseTitle,
       description: syllabus.courseDescription,
       instructor: userId,
-      courseType: "ai-generated",
       owner: userId,
       syllabusStatus: "completed",
       syllabusPrompt: `Topic: ${topic}\nLevel: ${targetLevel}\nDuration: ${estimatedDuration}${additionalContext ? `\nContext: ${additionalContext}` : ""}`,
@@ -178,7 +177,6 @@ registerHandler(
 
     const course = await Course.findOne({
       _id: courseId,
-      courseType: "ai-generated",
       owner: userId,
     });
 
@@ -353,7 +351,6 @@ registerHandler(
 
     const course = await Course.findOne({
       _id: courseId,
-      courseType: "ai-generated",
       owner: userId,
     });
 

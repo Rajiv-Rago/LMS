@@ -48,7 +48,6 @@ export async function POST(
 
     const course = await Course.findOne({
       _id: courseId,
-      courseType: "ai-generated",
       owner: user.userId,
     });
 

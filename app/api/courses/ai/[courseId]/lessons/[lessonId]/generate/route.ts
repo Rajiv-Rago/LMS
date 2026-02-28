@@ -103,20 +103,6 @@ export async function POST(
         course.aiPreferences?.defaultProvider ||
         process.env.AI_PROVIDER ||
         "openai";
-      // DEBUG: temporary logging to diagnose Vercel env var issue
-      console.error("[DEBUG] resolveProvider returned null", {
-        requestedProvider,
-        reqProvider,
-        reqTier,
-        coursePrefs: course.aiPreferences,
-        envAIProvider: process.env.AI_PROVIDER,
-        groqKeyLength: process.env.GROQ_API_KEY?.length ?? 0,
-        openaiKeyLength: process.env.OPENAI_API_KEY?.length ?? 0,
-        anthropicKeyLength: process.env.ANTHROPIC_API_KEY?.length ?? 0,
-        availableKeys: ["GROQ_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY", "GEMINI_API_KEY", "CEREBRAS_API_KEY"]
-          .filter(k => !!process.env[k])
-          .join(", "),
-      });
       return NextResponse.json(
         { error: `API key not configured for provider: ${requestedProvider}` },
         { status: 500 }

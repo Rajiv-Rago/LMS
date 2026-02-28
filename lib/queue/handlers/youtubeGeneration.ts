@@ -7,6 +7,7 @@ import { YouTubePathService } from "@/lib/youtube";
 import type { YouTubePathFormData } from "@/lib/youtube";
 import { logAIGeneration } from "@/lib/utils/aiGenerationLogger";
 import { sendNotification } from "@/lib/notifications";
+import { captureException } from "@/lib/logger";
 import { env } from "@/lib/env";
 import { registerHandler } from "./index";
 
@@ -52,9 +53,11 @@ registerHandler(
     });
 
     if (!resolved) {
-      throw new Error(
-        `API key not configured for provider: ${provider || process.env.AI_PROVIDER || "openai"}`
-      );
+      captureException(new Error(`Provider not configured: ${provider || process.env.AI_PROVIDER || "openai"}`), {
+        operation: "resolve-provider",
+        jobType: "ai.generate-youtube-path",
+      });
+      throw new Error("AI service is temporarily unavailable");
     }
 
     await dbConnect();

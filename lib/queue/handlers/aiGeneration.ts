@@ -56,9 +56,11 @@ registerHandler(
     });
 
     if (!resolved) {
-      throw new Error(
-        `API key not configured for provider: ${provider || process.env.AI_PROVIDER || "openai"}`
-      );
+      captureException(new Error(`Provider not configured: ${provider || process.env.AI_PROVIDER || "openai"}`), {
+        operation: "resolve-provider",
+        jobType: "ai.generate-syllabus",
+      });
+      throw new Error("AI service is temporarily unavailable");
     }
 
     await dbConnect();
@@ -195,7 +197,13 @@ registerHandler(
       userPreferences,
     });
 
-    if (!resolved) throw new Error("API key not configured");
+    if (!resolved) {
+      captureException(new Error(`Provider not configured: ${provider || "default"}`), {
+        operation: "resolve-provider",
+        jobType: "ai.generate-module-content",
+      });
+      throw new Error("AI service is temporarily unavailable");
+    }
 
     const courseModule = await Module.findOne({
       _id: moduleId,
@@ -378,7 +386,13 @@ registerHandler(
       userPreferences,
     });
 
-    if (!resolved) throw new Error("API key not configured");
+    if (!resolved) {
+      captureException(new Error(`Provider not configured: ${provider || "default"}`), {
+        operation: "resolve-provider",
+        jobType: "ai.generate-lesson-content",
+      });
+      throw new Error("AI service is temporarily unavailable");
+    }
 
     const lessonService = new LessonContentGeneratorService({
       provider: resolved.provider,

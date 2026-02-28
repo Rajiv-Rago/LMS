@@ -56,10 +56,13 @@ export async function POST(request: NextRequest) {
     });
 
     if (!resolved) {
-      const selectedProvider = provider || process.env.AI_PROVIDER || "openai";
+      const requestedProvider = provider || process.env.AI_PROVIDER || "openai";
+      captureException(new Error(`Provider not configured: ${requestedProvider}`), {
+        operation: "resolve-provider",
+      });
       return NextResponse.json(
-        { error: `API key not configured for provider: ${selectedProvider}` },
-        { status: 500 }
+        { error: "AI service is temporarily unavailable. Please try again later." },
+        { status: 503 }
       );
     }
 
@@ -74,11 +77,8 @@ export async function POST(request: NextRequest) {
     return jsonResponse;
   } catch (error) {
     captureException(error, { operation: "Generate YouTube path error" });
-
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
-
     return NextResponse.json(
-      { error: `Failed to generate YouTube path: ${errorMessage}` },
+      { error: "Something went wrong. Please try again later." },
       { status: 500 }
     );
   }

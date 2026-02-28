@@ -103,9 +103,12 @@ export async function POST(
         course.aiPreferences?.defaultProvider ||
         process.env.AI_PROVIDER ||
         "openai";
+      captureException(new Error(`Provider not configured: ${requestedProvider}`), {
+        operation: "resolve-provider",
+      });
       return NextResponse.json(
-        { error: `API key not configured for provider: ${requestedProvider}` },
-        { status: 500 }
+        { error: "AI service is temporarily unavailable. Please try again later." },
+        { status: 503 }
       );
     }
 
@@ -128,9 +131,7 @@ export async function POST(
   } catch (error) {
     captureException(error, { operation: "Generate lesson content error" });
     return NextResponse.json(
-      {
-        error: `Failed to generate content: ${error instanceof Error ? error.message : "Unknown error"}`,
-      },
+      { error: "Something went wrong. Please try again later." },
       { status: 500 }
     );
   }

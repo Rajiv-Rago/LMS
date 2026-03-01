@@ -10,6 +10,7 @@ import {
 import { useUserAIDefaults } from "@/lib/hooks/useUserAIDefaults";
 import MarkdownContent from "@/components/ui/MarkdownContent";
 import YouTubeVideoPicker from "@/components/lesson/YouTubeVideoPicker";
+import ContentGenerationSkeleton from "@/components/lesson/ContentGenerationSkeleton";
 
 interface YouTubeMetadata {
   videoId: string;
@@ -469,15 +470,8 @@ export default function LessonDetailPage({
               )}
             </div>
 
-            {/* Generating progress banner */}
-            {generating && (
-              <div className="mb-4 flex items-center gap-3 rounded-lg bg-violet-50 dark:bg-violet-900/20 border border-violet-200 dark:border-violet-800 px-4 py-3">
-                <div className="animate-spin rounded-full h-4 w-4 border-2 border-violet-600 border-t-transparent"></div>
-                <span className="text-sm font-medium text-violet-700 dark:text-violet-300">
-                  Generating content...
-                </span>
-              </div>
-            )}
+            {/* Generating skeleton */}
+            {generating && <ContentGenerationSkeleton />}
 
             {/* Generation error */}
             {genError && (
@@ -531,7 +525,7 @@ export default function LessonDetailPage({
             )}
 
             {/* Content display (for completed or content-having lessons) */}
-            {!isSkeleton && (
+            {!isSkeleton && !generating && (
               <>
                 {/* Video */}
                 {lesson.contentType === "video" && lesson.videoUrl && (

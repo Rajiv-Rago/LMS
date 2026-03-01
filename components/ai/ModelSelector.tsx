@@ -156,14 +156,12 @@ export function ModelSelector({
             <button
               key={t.tier}
               type="button"
-              disabled={disabled || !t.available}
+              disabled={disabled}
               onClick={() => handleTierSelect(t.tier)}
               className={`flex-1 px-3 py-2 text-sm font-medium rounded-md border transition-colors ${
                 isSelected
                   ? "bg-indigo-50 dark:bg-indigo-900/50 border-indigo-300 dark:border-indigo-700 text-indigo-700 dark:text-indigo-200"
-                  : t.available
-                  ? "border-zinc-300 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800"
-                  : "border-zinc-200 dark:border-zinc-800 text-zinc-400 dark:text-zinc-600 cursor-not-allowed"
+                  : "border-zinc-300 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800"
               } disabled:opacity-50 disabled:cursor-not-allowed`}
               title={t.description}
             >
@@ -174,10 +172,11 @@ export function ModelSelector({
       </div>
 
       {/* Resolved model info — display names */}
-      {value.tier && !showAdvanced && resolvedInfo?.resolvedDisplayName && (
+      {value.tier && !showAdvanced && (
         <p className="mt-1.5 text-xs text-zinc-500 dark:text-zinc-400">
-          Using {resolvedInfo.resolvedDisplayName} via{" "}
-          {resolvedInfo.resolvedProviderDisplayName}
+          {resolvedInfo?.resolvedDisplayName
+            ? `Using ${resolvedInfo.resolvedDisplayName} via ${resolvedInfo.resolvedProviderDisplayName}`
+            : "Using your default model"}
         </p>
       )}
 

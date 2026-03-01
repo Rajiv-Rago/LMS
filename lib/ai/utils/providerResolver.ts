@@ -63,17 +63,18 @@ export function resolveProvider(
     };
   }
 
-  // 2. Request tier
+  // 2. Request tier (fall through if no candidate has a key)
   if (options.requestTier) {
     const resolved = resolveTier(options.requestTier);
-    if (!resolved) return null;
-    return {
-      provider: resolved.provider,
-      model: resolved.model,
-      apiKey: resolved.apiKey,
-      displayName: resolved.displayName,
-      providerDisplayName: resolved.providerDisplayName,
-    };
+    if (resolved) {
+      return {
+        provider: resolved.provider,
+        model: resolved.model,
+        apiKey: resolved.apiKey,
+        displayName: resolved.displayName,
+        providerDisplayName: resolved.providerDisplayName,
+      };
+    }
   }
 
   // 3. Course preferences

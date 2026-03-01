@@ -24,12 +24,14 @@ function resolve(): AxiomLog | null {
 
   try {
     /* eslint-disable @typescript-eslint/no-require-imports */
-    const { Axiom } = require("@axiomhq/js");
+    const { AxiomWithoutBatching } = require("@axiomhq/js");
     const { Logger, AxiomJSTransport } = require("@axiomhq/logging");
     const { nextJsFormatters } = require("@axiomhq/nextjs");
     /* eslint-enable @typescript-eslint/no-require-imports */
 
-    const axiom = new Axiom({ token });
+    // AxiomWithoutBatching sends each ingest immediately — no batch timer
+    // that could be killed when Vercel terminates the serverless function.
+    const axiom = new AxiomWithoutBatching({ token });
     const transport = new AxiomJSTransport({ axiom, dataset });
     _logger = new Logger({
       transports: [transport],

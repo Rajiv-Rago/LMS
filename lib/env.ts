@@ -50,6 +50,10 @@ const envSchema = z.object({
   // YouTube
   YOUTUBE_API_KEY: z.string().optional(),
 
+  // Axiom logging
+  NEXT_PUBLIC_AXIOM_DATASET: z.string().optional(),
+  NEXT_PUBLIC_AXIOM_TOKEN: z.string().optional(),
+
   // Optional test DB
   MONGODB_URI_TEST: z.string().optional(),
 });

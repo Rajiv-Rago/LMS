@@ -1,3 +1,5 @@
+import { axiomLogger, flushAxiom } from "./axiom";
+
 type LogLevel = "info" | "warn" | "error";
 
 interface LogEntry {
@@ -47,8 +49,8 @@ function log(level: LogLevel, message: string, context?: Record<string, unknown>
     ...(context && { context }),
   };
 
+  // Console output (always — for Vercel real-time logs + local dev)
   const output = serialize(entry);
-
   switch (level) {
     case "error":
       console.error(output);
@@ -58,6 +60,11 @@ function log(level: LogLevel, message: string, context?: Record<string, unknown>
       break;
     default:
       console.log(output);
+  }
+
+  // Axiom transport (when configured)
+  if (axiomLogger) {
+    axiomLogger[level](message, context as Record<string, unknown>);
   }
 }
 
@@ -76,8 +83,8 @@ export const logger = {
 /**
  * Contract 6: Error Tracking Interface
  *
- * Phase 1: Wrapper around logger.error (no external service).
- * Phase 2: Integrate Sentry or similar when ready for production.
+ * Structured error logging to console + Axiom.
+ * Falls back to console-only when Axiom is not configured.
  */
 export function captureException(
   error: Error | unknown,
@@ -89,3 +96,9 @@ export function captureException(
     ...context,
   });
 }
+
+/**
+ * Flush Axiom logs. Call before serverless functions terminate
+ * to ensure buffered logs are sent.
+ */
+export { flushAxiom };

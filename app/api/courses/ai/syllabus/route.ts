@@ -15,6 +15,7 @@ const createSyllabusSchema = z
     targetLevel: z.enum(["beginner", "intermediate", "advanced"]),
     estimatedDuration: z.string().min(1).max(100),
     additionalContext: z.string().max(2000).optional(),
+    includeVideos: z.boolean().optional(),
     tier: aiTierSchema.optional(),
     provider: aiProviderSchema.optional(),
     model: z.string().max(256).optional(),
@@ -50,7 +51,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { topic, targetLevel, estimatedDuration, additionalContext, tier, provider, model } =
+    const { topic, targetLevel, estimatedDuration, additionalContext, includeVideos, tier, provider, model } =
       validation.data;
 
     // Fail fast: verify provider is configured before enqueueing
@@ -76,7 +77,7 @@ export async function POST(request: NextRequest) {
 
     const jobId = await enqueueJob({
       type: "ai.generate-syllabus",
-      data: { topic, targetLevel, estimatedDuration, additionalContext, tier, provider, model },
+      data: { topic, targetLevel, estimatedDuration, additionalContext, includeVideos, tier, provider, model },
       userId: user.userId,
     });
 

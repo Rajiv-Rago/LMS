@@ -13,24 +13,24 @@ export interface ModelInfo {
  */
 export const MODEL_REGISTRY: ModelInfo[] = [
   // OpenAI
-  { id: "gpt-4.1-nano-2025-04-14", displayName: "GPT 4.1 Nano", provider: "openai", tiers: ["fast"] },
+  { id: "gpt-4.1-nano-2025-04-14", displayName: "GPT 4.1 Nano", provider: "openai", tiers: ["concise"] },
   { id: "gpt-4.1-mini-2025-04-14", displayName: "GPT 4.1 Mini", provider: "openai", tiers: ["balanced"] },
-  { id: "gpt-4.1-2025-04-14", displayName: "GPT 4.1", provider: "openai", tiers: ["powerful"] },
+  { id: "gpt-4.1-2025-04-14", displayName: "GPT 4.1", provider: "openai", tiers: ["thorough"] },
 
   // Anthropic
-  { id: "claude-haiku-4-5-20251001", displayName: "Claude 3.5 Haiku", provider: "anthropic", tiers: ["fast"] },
+  { id: "claude-haiku-4-5-20251001", displayName: "Claude 3.5 Haiku", provider: "anthropic", tiers: ["concise"] },
   { id: "claude-sonnet-4-20250514", displayName: "Claude Sonnet 4", provider: "anthropic", tiers: ["balanced"] },
-  { id: "claude-opus-4-20250514", displayName: "Claude Opus 4", provider: "anthropic", tiers: ["powerful"] },
+  { id: "claude-opus-4-20250514", displayName: "Claude Opus 4", provider: "anthropic", tiers: ["thorough"] },
 
   // Gemini
-  { id: "gemini-2.0-flash", displayName: "Gemini 2.0 Flash", provider: "gemini", tiers: ["fast"] },
-  { id: "gemini-2.5-pro", displayName: "Gemini 2.5 Pro", provider: "gemini", tiers: ["balanced", "powerful"] },
+  { id: "gemini-2.0-flash", displayName: "Gemini 2.0 Flash", provider: "gemini", tiers: ["concise"] },
+  { id: "gemini-2.5-pro", displayName: "Gemini 2.5 Pro", provider: "gemini", tiers: ["balanced", "thorough"] },
 
   // Groq
-  { id: "llama-3.3-70b-versatile", displayName: "Llama 3.3 70B", provider: "groq", tiers: ["fast"] },
+  { id: "llama-3.3-70b-versatile", displayName: "Llama 3.3 70B", provider: "groq", tiers: ["concise"] },
 
   // Cerebras
-  { id: "llama-3.3-70b", displayName: "Llama 3.3 70B", provider: "cerebras", tiers: ["fast"] },
+  { id: "llama-3.3-70b", displayName: "Llama 3.3 70B", provider: "cerebras", tiers: ["concise"] },
 ];
 
 const modelById = new Map<string, ModelInfo>();

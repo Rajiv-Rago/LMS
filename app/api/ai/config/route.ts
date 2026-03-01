@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
 
     const configuredProviders = getConfiguredProviders();
 
-    const tierDetails = (["fast", "balanced", "powerful"] as AITier[]).map(
+    const tierDetails = (["concise", "balanced", "thorough"] as AITier[]).map(
       (tier) => {
         const resolved = resolveTier(tier);
         return {

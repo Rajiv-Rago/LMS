@@ -10,12 +10,15 @@ export interface SyllabusRequest {
   targetLevel: TargetLevel;
   estimatedDuration: string;
   additionalContext?: string;
+  includeVideos?: boolean;
 }
 
 export interface GeneratedLesson {
   title: string;
   outline: string;
   order: number;
+  contentType?: "text" | "video";
+  videoSearchQuery?: string;
 }
 
 export interface GeneratedModule {
@@ -70,6 +73,27 @@ Guidelines:
 - Module descriptions should summarize the key themes covered
 - Lesson outlines should be specific enough to guide future content generation`;
 
+const VIDEO_SYSTEM_PROMPT_ADDENDUM = `
+
+ADDITIONAL INSTRUCTIONS FOR HYBRID COURSES (text + YouTube video):
+Each lesson must include a "contentType" field: either "text" or "video".
+For video lessons, also include a "videoSearchQuery" field with a specific YouTube search term.
+
+Decision guide:
+- Use "video" for: demonstrations, visual tutorials, coding walkthroughs, tool overviews, real-world examples
+- Use "text" for: theory, step-by-step guides, reference material, detailed explanations, exercises
+- Aim for approximately 30-50% video lessons
+- The videoSearchQuery should be specific enough to find a relevant tutorial (e.g. "React useEffect hook tutorial for beginners" not just "React")
+
+Updated lesson structure:
+{
+  "title": "string",
+  "outline": "string",
+  "order": number,
+  "contentType": "text" | "video",
+  "videoSearchQuery": "string (only for video lessons)"
+}`;
+
 export class SyllabusGeneratorService {
   private provider: AIProvider;
 
@@ -86,9 +110,12 @@ export class SyllabusGeneratorService {
     usage?: { promptTokens: number; completionTokens: number; totalTokens: number };
   }> {
     const userPrompt = this.buildUserPrompt(request);
+    const systemPrompt = request.includeVideos
+      ? SYLLABUS_SYSTEM_PROMPT + VIDEO_SYSTEM_PROMPT_ADDENDUM
+      : SYLLABUS_SYSTEM_PROMPT;
 
     const response = await this.provider.generateText(userPrompt, {
-      systemPrompt: SYLLABUS_SYSTEM_PROMPT,
+      systemPrompt,
       maxTokens: 4096,
       temperature: 0.7,
     });

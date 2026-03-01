@@ -11,7 +11,7 @@ interface User {
   email: string;
   role: "student" | "teacher" | "admin";
   aiPreferences?: {
-    defaultTier?: "fast" | "balanced" | "powerful";
+    defaultTier?: "concise" | "balanced" | "thorough";
     defaultProvider?: string;
     defaultModel?: string;
   };

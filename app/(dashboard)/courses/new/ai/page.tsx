@@ -23,6 +23,7 @@ export default function NewAICoursePage() {
     targetLevel: "beginner" as TargetLevel,
     estimatedDuration: "",
     additionalContext: "",
+    includeVideos: false,
   });
   const userDefaults = useUserAIDefaults();
   const [modelValue, setModelValue] = useState<ModelSelectorValue>({
@@ -90,7 +91,7 @@ export default function NewAICoursePage() {
     setPhase("submitting");
 
     try {
-      const payload: Record<string, string> = {
+      const payload: Record<string, string | boolean> = {
         topic: formData.topic,
         targetLevel: formData.targetLevel,
         estimatedDuration: formData.estimatedDuration,
@@ -98,6 +99,9 @@ export default function NewAICoursePage() {
 
       if (formData.additionalContext) {
         payload.additionalContext = formData.additionalContext;
+      }
+      if (formData.includeVideos) {
+        payload.includeVideos = true;
       }
       if (modelValue.tier) {
         payload.tier = modelValue.tier;
@@ -272,6 +276,27 @@ export default function NewAICoursePage() {
                 className="mt-1 block w-full rounded-md border border-zinc-300 dark:border-zinc-700 px-3 py-2 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white placeholder-zinc-400 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 placeholder="Any specific topics to cover, learning goals, or prerequisites..."
               />
+            </div>
+
+            <div className="flex items-start gap-3">
+              <input
+                id="includeVideos"
+                type="checkbox"
+                disabled={isGenerating}
+                checked={formData.includeVideos}
+                onChange={(e) =>
+                  setFormData({ ...formData, includeVideos: e.target.checked })
+                }
+                className="mt-1 h-4 w-4 rounded border-zinc-300 dark:border-zinc-600 text-indigo-600 focus:ring-indigo-500"
+              />
+              <label htmlFor="includeVideos" className="text-sm">
+                <span className="font-medium text-zinc-700 dark:text-zinc-300">
+                  Include YouTube videos
+                </span>
+                <p className="text-zinc-500 dark:text-zinc-400">
+                  Mix AI-written text lessons with curated YouTube videos for a richer learning experience
+                </p>
+              </label>
             </div>
 
             <ModelSelector

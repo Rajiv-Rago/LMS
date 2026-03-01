@@ -18,6 +18,7 @@ interface Course {
   instructor: { _id: string; name: string; email: string };
   enrolledStudents: string[];
   isPublished: boolean;
+  owner?: string;
 }
 
 export default function CoursesPage() {
@@ -105,12 +106,6 @@ export default function CoursesPage() {
           >
             {user?.role === "teacher" ? "Create with AI" : "Create AI Course"}
           </Link>
-          <Link
-            href="/courses/new/youtube"
-            className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-red-600 to-indigo-600 rounded-md hover:from-red-500 hover:to-indigo-500"
-          >
-            Create from YouTube
-          </Link>
         </div>
       </div>
 
@@ -154,7 +149,7 @@ export default function CoursesPage() {
                     <h3 className="font-semibold text-zinc-900 dark:text-white truncate flex-1">
                       {course.title}
                     </h3>
-                    {!course.isPublished && isOwner && (
+                    {!course.isPublished && isOwner && !course.owner && (
                       <span className="ml-2 px-2 py-1 text-xs bg-yellow-100 dark:bg-yellow-900/50 text-yellow-700 dark:text-yellow-300 rounded">
                         Draft
                       </span>

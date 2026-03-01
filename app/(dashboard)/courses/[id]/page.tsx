@@ -9,6 +9,7 @@ import { StatusBadge } from "@/components/ai/StatusBadge";
 import { ModelSelector, ModelSelectorValue } from "@/components/ai/ModelSelector";
 import { useUserAIDefaults } from "@/lib/hooks/useUserAIDefaults";
 import { useJobPoller, JobResult } from "@/lib/hooks/useJobPoller";
+import ShareDialog from "@/components/course/ShareDialog";
 
 interface Lesson {
   _id: string;
@@ -64,6 +65,7 @@ export default function CourseDetailPage({
   const [loading, setLoading] = useState(true);
   const [enrolling, setEnrolling] = useState(false);
   const [showNewModule, setShowNewModule] = useState(false);
+  const [showShareDialog, setShowShareDialog] = useState(false);
   const [newModuleTitle, setNewModuleTitle] = useState("");
 
   // Expandable modules
@@ -642,6 +644,15 @@ export default function CourseDetailPage({
                 </Link>
               </>
             )}
+
+            {(permissions?.canEdit || course.owner) && (
+              <button
+                onClick={() => setShowShareDialog(true)}
+                className="px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800 rounded-md hover:bg-zinc-200 dark:hover:bg-zinc-700"
+              >
+                Share
+              </button>
+            )}
           </div>
         </div>
 
@@ -1130,6 +1141,12 @@ export default function CourseDetailPage({
           </div>
         )}
       </div>
+
+      <ShareDialog
+        courseId={id}
+        open={showShareDialog}
+        onClose={() => setShowShareDialog(false)}
+      />
     </div>
   );
 }

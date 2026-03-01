@@ -13,7 +13,7 @@ export interface IUser extends Document {
   failedLoginAttempts: number;
   lockUntil?: Date;
   aiPreferences?: {
-    defaultTier?: "fast" | "balanced" | "powerful";
+    defaultTier?: "concise" | "balanced" | "thorough";
     defaultProvider?: "openai" | "anthropic" | "groq" | "cerebras" | "gemini";
     defaultModel?: string;
   };
@@ -88,7 +88,7 @@ const userSchema = new mongoose.Schema<IUser, UserModel, IUserMethods>(
     aiPreferences: {
       defaultTier: {
         type: String,
-        enum: ["fast", "balanced", "powerful"],
+        enum: ["concise", "balanced", "thorough"],
       },
       defaultProvider: {
         type: String,

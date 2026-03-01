@@ -19,9 +19,9 @@ export interface TierMetadata {
  * when building the candidate list from the registry.
  */
 const TIER_PROVIDER_ORDER: Record<AITier, AIProviderName[]> = {
-  fast: ["groq", "cerebras", "gemini", "openai", "anthropic"],
+  concise: ["groq", "cerebras", "gemini", "openai", "anthropic"],
   balanced: ["openai", "anthropic", "gemini"],
-  powerful: ["anthropic", "openai", "gemini"],
+  thorough: ["anthropic", "openai", "gemini"],
 };
 
 /**
@@ -48,23 +48,23 @@ function buildTierCandidates(tier: AITier): TierCandidate[] {
 }
 
 export const TIER_CATALOG: Record<AITier, TierCandidate[]> = {
-  fast: buildTierCandidates("fast"),
+  concise: buildTierCandidates("concise"),
   balanced: buildTierCandidates("balanced"),
-  powerful: buildTierCandidates("powerful"),
+  thorough: buildTierCandidates("thorough"),
 };
 
 export const TIER_METADATA: Record<AITier, TierMetadata> = {
-  fast: {
-    label: "Fast",
-    description: "Quick responses, good for simple tasks",
+  concise: {
+    label: "Concise",
+    description: "Focused, to-the-point content",
   },
   balanced: {
     label: "Balanced",
-    description: "Best mix of speed and quality",
+    description: "Good depth and detail",
   },
-  powerful: {
-    label: "Powerful",
-    description: "Highest quality, slower responses",
+  thorough: {
+    label: "Thorough",
+    description: "Comprehensive, in-depth content",
   },
 };
 
@@ -103,7 +103,7 @@ export function resolveTier(tier: AITier): ResolvedTier | null {
  * Returns which tiers have at least one configured provider.
  */
 export function getAvailableTiers(): AITier[] {
-  const tiers: AITier[] = ["fast", "balanced", "powerful"];
+  const tiers: AITier[] = ["concise", "balanced", "thorough"];
   return tiers.filter((tier) => resolveTier(tier) !== null);
 }
 

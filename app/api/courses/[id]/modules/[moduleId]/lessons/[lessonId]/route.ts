@@ -6,6 +6,19 @@ import { authenticate, requireCsrf } from "@/lib/auth";
 import { captureException } from "@/lib/logger";
 import { httpUrl } from "@/lib/validation/commonSchemas";
 
+const youtubeMetadataSchema = z
+  .object({
+    videoId: z.string(),
+    channelName: z.string(),
+    channelId: z.string(),
+    thumbnailUrl: z.string(),
+    viewCount: z.number().optional(),
+    publishedAt: z.string().optional(),
+    videoDuration: z.string().optional(),
+  })
+  .optional()
+  .nullable();
+
 const updateLessonSchema = z.object({
   title: z.string().min(1).max(200).optional(),
   contentType: z.enum(["text", "video", "file"]).optional(),
@@ -16,6 +29,7 @@ const updateLessonSchema = z.object({
   order: z.number().min(0).optional(),
   isPublished: z.boolean().optional(),
   aiContext: z.string().max(10000).optional().nullable(),
+  youtubeMetadata: youtubeMetadataSchema,
 });
 
 export async function GET(
@@ -109,7 +123,7 @@ export async function PATCH(
       return NextResponse.json({ error: "Lesson not found" }, { status: 404 });
     }
 
-    const { title, contentType, content, videoUrl, fileUrl, duration, order, isPublished, aiContext } = validation.data;
+    const { title, contentType, content, videoUrl, fileUrl, duration, order, isPublished, aiContext, youtubeMetadata } = validation.data;
     if (title !== undefined) lesson.title = title;
     if (contentType !== undefined) lesson.contentType = contentType;
     if (content !== undefined) lesson.content = content;
@@ -119,6 +133,28 @@ export async function PATCH(
     if (order !== undefined) lesson.order = order;
     if (isPublished !== undefined) lesson.isPublished = isPublished;
     if (aiContext !== undefined) lesson.aiContext = aiContext ?? undefined;
+    if (youtubeMetadata !== undefined) {
+      if (youtubeMetadata) {
+        lesson.youtubeMetadata = {
+          ...youtubeMetadata,
+          publishedAt: youtubeMetadata.publishedAt
+            ? new Date(youtubeMetadata.publishedAt)
+            : undefined,
+        };
+      } else {
+        lesson.youtubeMetadata = undefined;
+      }
+    }
+
+    // Handle type conversion: video→text resets generation status
+    if (contentType === "text" && !content) {
+      lesson.generationStatus = "skeleton";
+    }
+    // Handle type conversion: text→video marks as completed
+    if (contentType === "video" && youtubeMetadata) {
+      lesson.generationStatus = "completed";
+    }
+
     await lesson.save();
 
     return NextResponse.json({ lesson });

@@ -39,9 +39,14 @@ export async function GET(
       course.enrolledStudents.some(
         (s: { _id: { toString: () => string } }) => s._id.toString() === user.userId
       );
+    const isSharedWith =
+      user &&
+      course.sharedWith?.some(
+        (s: { toString: () => string }) => s.toString() === user.userId
+      );
     const isAdmin = user?.role === "admin";
 
-    if (!course.isPublished && !isInstructor && !isEnrolled && !isAdmin) {
+    if (!course.isPublished && !isInstructor && !isEnrolled && !isSharedWith && !isAdmin) {
       return NextResponse.json({ error: "Course not found" }, { status: 404 });
     }
 

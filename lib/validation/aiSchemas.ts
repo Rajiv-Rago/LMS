@@ -14,7 +14,7 @@ export const aiProviderSchema = z.enum([
 /**
  * Schema for AI tier names.
  */
-export const aiTierSchema = z.enum(["fast", "balanced", "powerful"]);
+export const aiTierSchema = z.enum(["concise", "balanced", "thorough"]);
 
 /**
  * Schema for content generation requests (module or lesson).

@@ -39,7 +39,7 @@ export interface AIProviderConfig {
   model?: string;
 }
 
-export type AITier = "fast" | "balanced" | "powerful";
+export type AITier = "concise" | "balanced" | "thorough";
 
 export interface UserAIPreferences {
   defaultTier?: AITier;

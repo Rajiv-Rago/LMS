@@ -8,6 +8,8 @@ import {
   type ModelSelectorValue,
 } from "@/components/ai/ModelSelector";
 import { useUserAIDefaults } from "@/lib/hooks/useUserAIDefaults";
+import MarkdownContent from "@/components/ui/MarkdownContent";
+import YouTubeVideoPicker from "@/components/lesson/YouTubeVideoPicker";
 
 interface YouTubeMetadata {
   videoId: string;
@@ -67,6 +69,8 @@ export default function LessonDetailPage({
     tier: "balanced",
   });
   const [showFeedback, setShowFeedback] = useState(false);
+  const [showVideoPicker, setShowVideoPicker] = useState(false);
+  const [swapping, setSwapping] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const { value: defaultModelValue, loading: defaultsLoading } =
@@ -117,25 +121,29 @@ export default function LessonDetailPage({
     fetchLesson();
   }, [fetchLesson]);
 
+  const patchLesson = async (body: Record<string, unknown>) => {
+    const res = await fetch(
+      `/api/courses/${id}/modules/${moduleId}/lessons/${lessonId}`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Requested-With": "XMLHttpRequest",
+        },
+        body: JSON.stringify(body),
+      }
+    );
+    if (res.ok) {
+      const data = await res.json();
+      setLesson(data.lesson);
+    }
+    return res;
+  };
+
   const handleSave = async () => {
     try {
-      const res = await fetch(
-        `/api/courses/${id}/modules/${moduleId}/lessons/${lessonId}`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Requested-With": "XMLHttpRequest",
-          },
-          body: JSON.stringify(formData),
-        }
-      );
-
-      if (res.ok) {
-        const data = await res.json();
-        setLesson(data.lesson);
-        setEditing(false);
-      }
+      const res = await patchLesson(formData);
+      if (res.ok) setEditing(false);
     } catch {
       /* ignore */
     }
@@ -143,22 +151,7 @@ export default function LessonDetailPage({
 
   const handlePublish = async () => {
     try {
-      const res = await fetch(
-        `/api/courses/${id}/modules/${moduleId}/lessons/${lessonId}`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Requested-With": "XMLHttpRequest",
-          },
-          body: JSON.stringify({ isPublished: !lesson?.isPublished }),
-        }
-      );
-
-      if (res.ok) {
-        const data = await res.json();
-        setLesson(data.lesson);
-      }
+      await patchLesson({ isPublished: !lesson?.isPublished });
     } catch {
       /* ignore */
     }
@@ -242,6 +235,52 @@ export default function LessonDetailPage({
     } catch {
       setGenError("Failed to start generation");
       setGenerating(false);
+    }
+  };
+
+  const handleSelectVideo = async (video: {
+    videoId: string;
+    title: string;
+    channelName: string;
+    channelId: string;
+    thumbnailUrl: string;
+    duration: string;
+  }) => {
+    setSwapping(true);
+    try {
+      await patchLesson({
+        contentType: "video",
+        videoUrl: `https://www.youtube.com/embed/${video.videoId}`,
+        content: video.title,
+        youtubeMetadata: {
+          videoId: video.videoId,
+          channelName: video.channelName,
+          channelId: video.channelId,
+          thumbnailUrl: video.thumbnailUrl,
+          videoDuration: video.duration,
+        },
+      });
+      setShowVideoPicker(false);
+    } catch {
+      /* ignore */
+    } finally {
+      setSwapping(false);
+    }
+  };
+
+  const handleConvertToText = async () => {
+    setSwapping(true);
+    try {
+      await patchLesson({
+        contentType: "text",
+        videoUrl: null,
+        content: "",
+        youtubeMetadata: null,
+      });
+    } catch {
+      /* ignore */
+    } finally {
+      setSwapping(false);
     }
   };
 
@@ -538,11 +577,10 @@ export default function LessonDetailPage({
 
                 {/* Content */}
                 {lesson.content && (
-                  <div
-                    className={`prose dark:prose-invert max-w-none ${generating ? "opacity-50" : ""}`}
-                  >
-                    <div className="whitespace-pre-wrap">{lesson.content}</div>
-                  </div>
+                  <MarkdownContent
+                    content={lesson.content}
+                    className={generating ? "opacity-50" : ""}
+                  />
                 )}
 
                 {/* Key Takeaways */}
@@ -622,6 +660,41 @@ export default function LessonDetailPage({
                   </div>
                 )}
               </>
+            )}
+
+            {/* Lesson type swap actions */}
+            {permissions?.canEdit && isOwnedCourse && !generating && !showVideoPicker && (
+              <div className="mt-6 flex gap-2">
+                {lesson.contentType === "text" && (
+                  <button
+                    onClick={() => setShowVideoPicker(true)}
+                    disabled={swapping}
+                    className="px-3 py-1.5 text-sm font-medium text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-900/20 rounded-md hover:bg-red-100 dark:hover:bg-red-900/40 disabled:opacity-50"
+                  >
+                    Replace with YouTube video
+                  </button>
+                )}
+                {lesson.contentType === "video" && (
+                  <button
+                    onClick={handleConvertToText}
+                    disabled={swapping}
+                    className="px-3 py-1.5 text-sm font-medium text-violet-700 dark:text-violet-300 bg-violet-50 dark:bg-violet-900/20 rounded-md hover:bg-violet-100 dark:hover:bg-violet-900/40 disabled:opacity-50"
+                  >
+                    {swapping ? "Converting..." : "Replace with AI text"}
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* YouTube video picker */}
+            {showVideoPicker && (
+              <div className="mt-4 p-4 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/50">
+                <YouTubeVideoPicker
+                  defaultQuery={lesson.title}
+                  onSelect={handleSelectVideo}
+                  onCancel={() => setShowVideoPicker(false)}
+                />
+              </div>
             )}
 
             {/* AI Tutor Link */}

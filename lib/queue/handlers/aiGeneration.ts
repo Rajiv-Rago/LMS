@@ -14,6 +14,11 @@ import { recalculateModuleStatus } from "@/lib/utils/moduleStatusUpdater";
 import { markModuleCompletedIfReady } from "@/lib/utils/moduleStatusUpdater";
 import { sendNotification } from "@/lib/notifications";
 import { captureException } from "@/lib/logger";
+import { env } from "@/lib/env";
+import {
+  searchYouTubeVideos,
+  filterAndDedup,
+} from "@youtube-core/youtubeSearch";
 import { registerHandler } from "./index";
 
 const MAX_SUMMARY_LENGTH = 2000;
@@ -28,6 +33,7 @@ registerHandler(
       targetLevel,
       estimatedDuration,
       additionalContext,
+      includeVideos,
       tier,
       provider,
       model,
@@ -37,6 +43,7 @@ registerHandler(
       targetLevel: string;
       estimatedDuration: string;
       additionalContext?: string;
+      includeVideos?: boolean;
       tier?: string;
       provider?: string;
       model?: string;
@@ -76,6 +83,7 @@ registerHandler(
       targetLevel: targetLevel as TargetLevel,
       estimatedDuration,
       additionalContext,
+      includeVideos,
     });
 
     const course = await Course.create({
@@ -89,7 +97,7 @@ registerHandler(
         defaultProvider: resolved.provider,
         defaultModel: resolved.model,
       },
-      isPublished: false,
+      isPublished: true,
     });
 
     const modulePromises = syllabus.modules.map(
@@ -100,20 +108,27 @@ registerHandler(
           course: course._id,
           order: moduleData.order ?? moduleIndex,
           contentStatus: "skeleton",
-          isPublished: false,
+          isPublished: true,
         });
 
         const lessonPromises = moduleData.lessons.map(
           async (lessonData, lessonIndex) => {
+            const isVideoLesson =
+              includeVideos &&
+              lessonData.contentType === "video" &&
+              lessonData.videoSearchQuery;
+
             return Lesson.create({
               title: lessonData.title,
               module: courseModule._id,
-              contentType: "text",
+              contentType: isVideoLesson ? "video" : "text",
               content: "",
               order: lessonData.order ?? lessonIndex,
               generationStatus: "skeleton",
-              lessonOutline: lessonData.outline,
-              isPublished: false,
+              lessonOutline: isVideoLesson
+                ? lessonData.videoSearchQuery
+                : lessonData.outline,
+              isPublished: true,
             });
           }
         );
@@ -128,6 +143,60 @@ registerHandler(
     const modules = await Promise.all(modulePromises);
     course.modules = modules.map((m) => m._id);
     await course.save();
+
+    // Fill video lessons with YouTube data if applicable
+    if (includeVideos && env.YOUTUBE_API_KEY) {
+      const videoLessons = await Lesson.find({
+        module: { $in: modules.map((m) => m._id) },
+        contentType: "video",
+        generationStatus: "skeleton",
+      });
+
+      const fillVideoLesson = async (lesson: InstanceType<typeof Lesson>) => {
+        try {
+          const query = lesson.lessonOutline || lesson.title;
+          const rawResults = await searchYouTubeVideos(env.YOUTUBE_API_KEY!, {
+            topic: query,
+            maxResults: 5,
+          });
+
+          const filtered = filterAndDedup(rawResults);
+
+          if (filtered.length === 0) {
+            lesson.contentType = "text";
+            lesson.generationStatus = "skeleton";
+            await lesson.save();
+            return;
+          }
+
+          const best = filtered[0];
+          lesson.videoUrl = `https://www.youtube.com/embed/${best.videoId}`;
+          lesson.youtubeMetadata = {
+            videoId: best.videoId,
+            channelName: best.channelName,
+            channelId: best.channelId,
+            thumbnailUrl: best.thumbnailUrl,
+            viewCount: best.viewCount,
+            publishedAt: best.publishedAt
+              ? new Date(best.publishedAt)
+              : undefined,
+            videoDuration: best.duration,
+          };
+          lesson.content = best.title;
+          lesson.generationStatus = "completed";
+          await lesson.save();
+        } catch (videoError) {
+          captureException(videoError, {
+            operation: `Error fetching YouTube video for lesson ${lesson._id}`,
+          });
+          lesson.contentType = "text";
+          lesson.generationStatus = "skeleton";
+          await lesson.save();
+        }
+      };
+
+      await Promise.allSettled(videoLessons.map(fillVideoLesson));
+    }
 
     await logAIGeneration({
       user: userId,
@@ -256,6 +325,7 @@ registerHandler(
               lessonOutline: lesson.lessonOutline || "",
               previousLessonsSummary: summaryForPrompt || undefined,
               targetLevel,
+              tier: (tier as AITier) || undefined,
             });
 
           lesson.content = content.content;
@@ -438,6 +508,7 @@ registerHandler(
         targetLevel,
         feedback: feedback || undefined,
         previousContent: feedback ? lesson.content : undefined,
+        tier: (tier as AITier) || undefined,
       });
 
       lesson.content = content.content;

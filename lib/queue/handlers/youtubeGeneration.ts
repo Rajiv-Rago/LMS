@@ -97,7 +97,7 @@ registerHandler(
         pathVariant,
         generatedAt: new Date(),
       },
-      isPublished: false,
+      isPublished: true,
     });
 
     // Create Modules, Lessons, and Assignments
@@ -110,7 +110,7 @@ registerHandler(
         course: course._id,
         order: modData.order,
         contentStatus: "completed",
-        isPublished: false,
+        isPublished: true,
       });
 
       const lessonIds = [];
@@ -125,7 +125,7 @@ registerHandler(
           videoUrl: `https://www.youtube.com/embed/${video.videoId}`,
           duration: video.durationSeconds,
           order: i,
-          isPublished: false,
+          isPublished: true,
           generationStatus: "completed",
           keyTakeaways: video.keyTakeaways,
           youtubeMetadata: {
@@ -155,7 +155,7 @@ registerHandler(
           points: 100,
           submissionType: "text",
           assignmentType: "project",
-          isPublished: false,
+          isPublished: true,
         });
       }
 

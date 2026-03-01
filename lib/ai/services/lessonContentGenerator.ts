@@ -1,4 +1,4 @@
-import { AIProvider, AIProviderName } from "../types";
+import { AIProvider, AIProviderName, AITier } from "../types";
 import { createAIProvider } from "../index";
 import { parseAIJsonResponse } from "../utils/jsonParser";
 import { TargetLevel } from "../utils/promptUtils";
@@ -13,6 +13,7 @@ export interface LessonContentRequest {
   targetLevel: TargetLevel;
   feedback?: string;
   previousContent?: string;
+  tier?: AITier;
 }
 
 export interface GeneratedLessonContent {
@@ -41,9 +42,9 @@ Guidelines for the content:
 - Use markdown formatting for structure (headings, lists, code blocks where appropriate)
 - Include practical examples where relevant
 - Break complex concepts into digestible sections
-- The content should be comprehensive but not overwhelming (aim for 800-1500 words)
 - If code examples are relevant, include them with proper formatting
 - Build upon previously covered material when provided
+- Follow the content depth instructions provided in the user prompt
 
 Guidelines for key takeaways:
 - Summarize the most important concepts
@@ -81,6 +82,31 @@ export class LessonContentGeneratorService {
     };
   }
 
+  private getTierInstructions(tier?: AITier): string {
+    switch (tier) {
+      case "concise":
+        return `\n\nContent Depth: CONCISE
+- Aim for 400-800 words
+- Cover essential concepts only — no tangents
+- Prefer bullet points and short paragraphs
+- Include at most one code example if relevant
+- Get to the point quickly`;
+      case "thorough":
+        return `\n\nContent Depth: THOROUGH
+- Aim for 1500-2500 words
+- Cover theory and underlying principles, not just how-to
+- Include multiple code examples showing variations and edge cases
+- Add real-world applications and use cases
+- Explain common pitfalls and misconceptions
+- Provide deeper context for why things work the way they do`;
+      default:
+        return `\n\nContent Depth: BALANCED
+- Aim for 800-1500 words
+- Include practical examples where relevant
+- Break complex concepts into digestible sections`;
+    }
+  }
+
   private buildUserPrompt(request: LessonContentRequest): string {
     let prompt = `Create lesson content for the following:
 
@@ -92,6 +118,8 @@ Lesson Title: ${request.lessonTitle}
 Lesson Outline: ${request.lessonOutline}
 
 Target Level: ${request.targetLevel}`;
+
+    prompt += this.getTierInstructions(request.tier);
 
     if (request.previousLessonsSummary) {
       prompt += `\n\nContext from previous lessons:\n${request.previousLessonsSummary}`;

@@ -33,7 +33,11 @@ export async function GET(request: NextRequest) {
           query = { enrolledStudents: user.userId };
         } else {
           query = {
-            $or: [{ instructor: user.userId }, { enrolledStudents: user.userId }],
+            $or: [
+              { instructor: user.userId },
+              { enrolledStudents: user.userId },
+              { sharedWith: user.userId },
+            ],
           };
         }
       } else if (user.role === "student") {
@@ -42,6 +46,7 @@ export async function GET(request: NextRequest) {
             { enrolledStudents: user.userId },
             { isPublished: true, owner: { $exists: false } },
             { owner: user.userId },
+            { sharedWith: user.userId },
           ],
         };
       } else if (user.role === "admin") {

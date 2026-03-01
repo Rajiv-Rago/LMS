@@ -18,6 +18,7 @@ export interface ICourse extends Document {
   coverImage?: string;
   isPublished: boolean;
   owner?: mongoose.Types.ObjectId;
+  sharedWith: mongoose.Types.ObjectId[];
   syllabusStatus?: SyllabusStatus;
   syllabusPrompt?: string;
   aiPreferences?: AIPreferences;
@@ -75,6 +76,12 @@ const courseSchema = new mongoose.Schema<ICourse, CourseModel>(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
     },
+    sharedWith: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
     syllabusStatus: {
       type: String,
       enum: {
@@ -125,6 +132,7 @@ courseSchema.index({ enrolledStudents: 1 });
 courseSchema.index({ isPublished: 1 });
 courseSchema.index({ title: "text", description: "text" });
 courseSchema.index({ owner: 1 });
+courseSchema.index({ sharedWith: 1 });
 
 const Course =
   (mongoose.models.Course as CourseModel) ||

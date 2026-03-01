@@ -1,4 +1,4 @@
-import { axiomLogger, flushAxiom } from "./axiom";
+import { getAxiomLogger, flushAxiom } from "./axiom";
 
 type LogLevel = "info" | "warn" | "error";
 
@@ -63,8 +63,9 @@ function log(level: LogLevel, message: string, context?: Record<string, unknown>
   }
 
   // Axiom transport (when configured)
-  if (axiomLogger) {
-    axiomLogger[level](message, context as Record<string, unknown>);
+  const axiom = getAxiomLogger();
+  if (axiom) {
+    axiom[level](message, context as Record<string, unknown>);
   }
 }
 

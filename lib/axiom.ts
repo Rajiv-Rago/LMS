@@ -18,6 +18,8 @@ function resolve(): AxiomLog | null {
 
   if (typeof window !== "undefined") return null;
 
+  // Read process.env directly (not lib/env.ts) to avoid pulling Zod validation
+  // into the logger import chain, which is loaded very early and from client code.
   const token = process.env.NEXT_PUBLIC_AXIOM_TOKEN;
   const dataset = process.env.NEXT_PUBLIC_AXIOM_DATASET;
   if (!token || !dataset) return null;

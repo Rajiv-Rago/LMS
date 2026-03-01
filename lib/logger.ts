@@ -65,7 +65,7 @@ function log(level: LogLevel, message: string, context?: Record<string, unknown>
   // Axiom transport (when configured)
   const axiom = getAxiomLogger();
   if (axiom) {
-    axiom[level](message, context as Record<string, unknown>);
+    axiom[level](message, context);
   }
 }
 

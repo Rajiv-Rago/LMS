@@ -92,6 +92,20 @@ describe("providerResolver", () => {
       expect(result).toBeNull();
     });
 
+    it("falls through to env vars when request tier has no configured provider", () => {
+      // Only groq key set — balanced tier only tries openai/anthropic/gemini
+      process.env.GROQ_API_KEY = "gsk-test";
+      process.env.AI_PROVIDER = "groq";
+
+      const result = resolveProvider({
+        requestTier: "balanced",
+      });
+
+      expect(result).not.toBeNull();
+      expect(result!.provider).toBe("groq");
+      expect(result!.apiKey).toBe("gsk-test");
+    });
+
     it("returns null when request provider has no API key", () => {
       process.env.OPENAI_API_KEY = "sk-test";
 

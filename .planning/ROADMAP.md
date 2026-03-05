@@ -31,11 +31,11 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. Auth pages (login, register, forgot password, reset password) render correctly in dark mode
   4. Markdown lesson content and code blocks are readable in dark mode
   5. A first-time visitor sees the app in their OS-preferred theme, and can override it manually
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 01-01: TBD
-- [ ] 01-02: TBD
+- [ ] 01-01-PLAN.md — Fix CSS dark mode, create three-way useTheme hook and ThemeToggle component
+- [ ] 01-02-PLAN.md — Wire ThemeToggle into dashboard and auth layouts, visual verification
 
 ### Phase 2: Role Simplification & Course Generation
 **Goal**: Any authenticated user can generate a hybrid AI+YouTube course from the dashboard without needing a teacher role
@@ -117,7 +117,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Dark Mode | 0/2 | Not started | - |
+| 1. Dark Mode | 0/2 | Planned | - |
 | 2. Role Simplification & Course Generation | 0/3 | Not started | - |
 | 3. Stabilization & Bug Fixes | 0/1 | Not started | - |
 | 4. Public Catalog & Sharing | 0/2 | Not started | - |

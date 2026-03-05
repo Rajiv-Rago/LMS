@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Completed 01-01-PLAN.md
-last_updated: "2026-03-05T17:51:32.283Z"
-last_activity: 2026-03-05 -- Executed plan 01-01 (CSS dark mode foundation)
+status: completed
+stopped_at: Completed 01-02-PLAN.md -- Phase 1 (Dark Mode) complete
+last_updated: "2026-03-05T18:00:32.010Z"
+last_activity: 2026-03-05 -- Executed plan 01-02 (Layout integration and visual verification)
 progress:
   total_phases: 6
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 2
-  completed_plans: 1
-  percent: 8
+  completed_plans: 2
+  percent: 100
 ---
 
 # Project State
@@ -21,35 +21,36 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-06)
 
 **Core value:** Anyone can turn a topic into a structured, high-quality learning path in seconds -- and it gets better every time someone uses it.
-**Current focus:** Phase 1: Dark Mode
+**Current focus:** Phase 1: Dark Mode (Complete) -- Ready for Phase 2
 
 ## Current Position
 
-Phase: 1 of 6 (Dark Mode)
-Plan: 1 of 2 in current phase
-Status: Executing
-Last activity: 2026-03-05 -- Executed plan 01-01 (CSS dark mode foundation)
+Phase: 1 of 6 (Dark Mode) -- COMPLETE
+Plan: 2 of 2 in current phase
+Status: Phase Complete
+Last activity: 2026-03-05 -- Executed plan 01-02 (Layout integration and visual verification)
 
-Progress: [█░░░░░░░░░] 8%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 1
+- Total plans completed: 2
 - Average duration: 5 min
-- Total execution time: 0.08 hours
+- Total execution time: 0.17 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 01-dark-mode | 1/2 | 5 min | 5 min |
+| 01-dark-mode | 2/2 | 10 min | 5 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (5 min)
-- Trend: Starting
+- Last 5 plans: 01-01 (5 min), 01-02 (5 min)
+- Trend: Consistent
 
 *Updated after each plan completion*
+| Phase 01-dark-mode P02 | 5min | 3 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -64,6 +65,8 @@ Recent decisions affecting current work:
 - [Roadmap]: Merged ROLE, CGEN, and DASH requirements into a single phase (Phase 2) -- they form one coherent capability: "a learner can create a course from the dashboard."
 - [Roadmap]: Component decomposition is not a standalone phase -- it happens within Phase 3 (bug fixes) and subsequent phases as needed, since it has no user-facing requirements.
 - [Roadmap]: BUGS-01 gets its own phase (Phase 3) between role simplification and public catalog to stabilize before opening the platform to unauthenticated users.
+- [Phase 01-02]: Removed useDarkMode hook entirely -- ThemeToggle handles all state internally via useTheme
+- [Phase 01-02]: Auth layout uses fixed positioning for toggle to stay visible regardless of scroll
 
 ### Pending Todos
 
@@ -77,6 +80,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-05T17:49:44Z
-Stopped at: Completed 01-01-PLAN.md
-Resume file: .planning/phases/01-dark-mode/01-01-SUMMARY.md
+Last session: 2026-03-05T18:00:30.692Z
+Stopped at: Completed 01-02-PLAN.md -- Phase 1 (Dark Mode) complete
+Resume file: None

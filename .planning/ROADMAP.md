@@ -12,7 +12,7 @@ This milestone transforms Kantigo from a functional but rough prototype into a p
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Dark Mode** - Fix broken dark/light toggle and ensure consistent theming across all pages
+- [x] **Phase 1: Dark Mode** - Fix broken dark/light toggle and ensure consistent theming across all pages
 - [ ] **Phase 2: Role Simplification & Course Generation** - Any authenticated user can generate hybrid courses from the dashboard
 - [ ] **Phase 3: Stabilization & Bug Fixes** - Audit and fix broken functionality across core flows
 - [ ] **Phase 4: Public Catalog & Sharing** - Browsable course catalog and shareable enrollment links for unauthenticated users
@@ -35,7 +35,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 Plans:
 - [x] 01-01-PLAN.md — Fix CSS dark mode, create three-way useTheme hook and ThemeToggle component
-- [ ] 01-02-PLAN.md — Wire ThemeToggle into dashboard and auth layouts, visual verification
+- [x] 01-02-PLAN.md — Wire ThemeToggle into dashboard and auth layouts, visual verification
 
 ### Phase 2: Role Simplification & Course Generation
 **Goal**: Any authenticated user can generate a hybrid AI+YouTube course from the dashboard without needing a teacher role

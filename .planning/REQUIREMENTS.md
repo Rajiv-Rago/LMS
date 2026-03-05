@@ -10,9 +10,9 @@ Requirements for this milestone. Each maps to roadmap phases.
 ### Dark Mode
 
 - [x] **DARK-01**: Dark/light mode toggle in sidebar visibly changes the app's color scheme
-- [ ] **DARK-02**: Dark mode applies consistently across all dashboard pages (courses, lessons, profile, settings)
-- [ ] **DARK-03**: Dark mode applies to auth pages (login, register, forgot password, reset password)
-- [ ] **DARK-04**: Markdown/prose content renders correctly in dark mode (inverted colors, readable code blocks)
+- [x] **DARK-02**: Dark mode applies consistently across all dashboard pages (courses, lessons, profile, settings)
+- [x] **DARK-03**: Dark mode applies to auth pages (login, register, forgot password, reset password)
+- [x] **DARK-04**: Markdown/prose content renders correctly in dark mode (inverted colors, readable code blocks)
 - [x] **DARK-05**: Theme transitions are smooth (no jarring instant color swap)
 - [x] **DARK-06**: System theme preference is respected on first visit, with manual override
 
@@ -102,9 +102,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | DARK-01 | Phase 1: Dark Mode | Complete |
-| DARK-02 | Phase 1: Dark Mode | Pending |
-| DARK-03 | Phase 1: Dark Mode | Pending |
-| DARK-04 | Phase 1: Dark Mode | Pending |
+| DARK-02 | Phase 1: Dark Mode | Complete |
+| DARK-03 | Phase 1: Dark Mode | Complete |
+| DARK-04 | Phase 1: Dark Mode | Complete |
 | DARK-05 | Phase 1: Dark Mode | Complete |
 | DARK-06 | Phase 1: Dark Mode | Complete |
 | ROLE-01 | Phase 2: Role Simplification & Course Generation | Pending |

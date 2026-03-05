@@ -1,7 +1,7 @@
 # Requirements: Kantigo UX Polish
 
 **Defined:** 2026-03-06
-**Core Value:** Anyone can turn a topic into a structured, high-quality learning path in seconds — and it gets better every time someone uses it.
+**Core Value:** Anyone can turn a topic into a structured, high-quality learning path in seconds --- and it gets better every time someone uses it.
 
 ## v1 Requirements
 
@@ -19,7 +19,7 @@ Requirements for this milestone. Each maps to roadmap phases.
 ### Role Simplification
 
 - [ ] **ROLE-01**: Any authenticated user can generate courses (no teacher role required)
-- [ ] **ROLE-02**: Registration page has no role selection — all users are learners
+- [ ] **ROLE-02**: Registration page has no role selection --- all users are learners
 - [ ] **ROLE-03**: Teacher-specific UI elements (labels, conditionals) are removed from student-facing pages
 - [ ] **ROLE-04**: Admin retains ability to manually create and edit courses
 - [ ] **ROLE-05**: API routes use ownership-based authorization instead of role-based checks
@@ -54,7 +54,7 @@ Requirements for this milestone. Each maps to roadmap phases.
 ### Visual Polish
 
 - [ ] **VISL-01**: Loading states use consistent skeleton screens across all pages
-- [ ] **VISL-02**: Responsive design works on mobile — no content overflow or broken layouts
+- [ ] **VISL-02**: Responsive design works on mobile --- no content overflow or broken layouts
 - [ ] **VISL-03**: Consistent spacing and typography across dashboard pages
 
 ### Bug Fixes
@@ -67,7 +67,7 @@ Deferred to future release. Tracked but not in current roadmap.
 
 ### Feedback Enhancements
 
-- **FDBK-06**: Section-level feedback — learner can flag specific paragraphs for regeneration
+- **FDBK-06**: Section-level feedback --- learner can flag specific paragraphs for regeneration
 - **FDBK-07**: Feedback history visible per lesson (what was changed and why)
 
 ### Discovery
@@ -86,7 +86,7 @@ Deferred to future release. Tracked but not in current roadmap.
 | Feature | Reason |
 |---------|--------|
 | Teacher role and manual course creation UI | Simplified to AI-only for learners; admin retains manual creation |
-| Separate YouTube-only course generation | Courses are hybrid — AI decides format per lesson; no separate YouTube flow |
+| Separate YouTube-only course generation | Courses are hybrid --- AI decides format per lesson; no separate YouTube flow |
 | Component library migration (shadcn/ui, Radix) | Creates mid-project inconsistency; existing components work |
 | Full theme customization (accent colors, fonts) | Users want to learn, not design |
 | Real-time collaboration | Self-paced learning platform |
@@ -101,42 +101,42 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DARK-01 | — | Pending |
-| DARK-02 | — | Pending |
-| DARK-03 | — | Pending |
-| DARK-04 | — | Pending |
-| DARK-05 | — | Pending |
-| DARK-06 | — | Pending |
-| ROLE-01 | — | Pending |
-| ROLE-02 | — | Pending |
-| ROLE-03 | — | Pending |
-| ROLE-04 | — | Pending |
-| ROLE-05 | — | Pending |
-| CGEN-01 | — | Pending |
-| CGEN-02 | — | Pending |
-| CGEN-03 | — | Pending |
-| DASH-01 | — | Pending |
-| DASH-02 | — | Pending |
-| DASH-03 | — | Pending |
-| CATL-01 | — | Pending |
-| CATL-02 | — | Pending |
-| CATL-03 | — | Pending |
-| CATL-04 | — | Pending |
-| FDBK-01 | — | Pending |
-| FDBK-02 | — | Pending |
-| FDBK-03 | — | Pending |
-| FDBK-04 | — | Pending |
-| FDBK-05 | — | Pending |
-| VISL-01 | — | Pending |
-| VISL-02 | — | Pending |
-| VISL-03 | — | Pending |
-| BUGS-01 | — | Pending |
+| DARK-01 | Phase 1: Dark Mode | Pending |
+| DARK-02 | Phase 1: Dark Mode | Pending |
+| DARK-03 | Phase 1: Dark Mode | Pending |
+| DARK-04 | Phase 1: Dark Mode | Pending |
+| DARK-05 | Phase 1: Dark Mode | Pending |
+| DARK-06 | Phase 1: Dark Mode | Pending |
+| ROLE-01 | Phase 2: Role Simplification & Course Generation | Pending |
+| ROLE-02 | Phase 2: Role Simplification & Course Generation | Pending |
+| ROLE-03 | Phase 2: Role Simplification & Course Generation | Pending |
+| ROLE-04 | Phase 2: Role Simplification & Course Generation | Pending |
+| ROLE-05 | Phase 2: Role Simplification & Course Generation | Pending |
+| CGEN-01 | Phase 2: Role Simplification & Course Generation | Pending |
+| CGEN-02 | Phase 2: Role Simplification & Course Generation | Pending |
+| CGEN-03 | Phase 2: Role Simplification & Course Generation | Pending |
+| DASH-01 | Phase 2: Role Simplification & Course Generation | Pending |
+| DASH-02 | Phase 2: Role Simplification & Course Generation | Pending |
+| DASH-03 | Phase 2: Role Simplification & Course Generation | Pending |
+| BUGS-01 | Phase 3: Stabilization & Bug Fixes | Pending |
+| CATL-01 | Phase 4: Public Catalog & Sharing | Pending |
+| CATL-02 | Phase 4: Public Catalog & Sharing | Pending |
+| CATL-03 | Phase 4: Public Catalog & Sharing | Pending |
+| CATL-04 | Phase 4: Public Catalog & Sharing | Pending |
+| FDBK-01 | Phase 5: Inline Feedback | Pending |
+| FDBK-02 | Phase 5: Inline Feedback | Pending |
+| FDBK-03 | Phase 5: Inline Feedback | Pending |
+| FDBK-04 | Phase 5: Inline Feedback | Pending |
+| FDBK-05 | Phase 5: Inline Feedback | Pending |
+| VISL-01 | Phase 6: Visual Polish | Pending |
+| VISL-02 | Phase 6: Visual Polish | Pending |
+| VISL-03 | Phase 6: Visual Polish | Pending |
 
 **Coverage:**
 - v1 requirements: 30 total
-- Mapped to phases: 0
-- Unmapped: 30
+- Mapped to phases: 30
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-06*
-*Last updated: 2026-03-06 after initial definition*
+*Last updated: 2026-03-06 after roadmap creation*

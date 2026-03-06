@@ -19,7 +19,6 @@ describe("POST /api/auth/register", () => {
     email: "new@example.com",
     name: "New User",
     password: "Password123!",
-    role: "student",
   };
 
   it("registers a new user successfully", async () => {
@@ -50,9 +49,9 @@ describe("POST /api/auth/register", () => {
     expect(tokenCookie).toBeDefined();
   });
 
-  it("registers a teacher when role is teacher", async () => {
+  it("ignores role field in registration body", async () => {
     const request = buildRequest("POST", "/api/auth/register", {
-      body: { ...validBody, role: "teacher" },
+      body: { ...validBody, email: "teacher-attempt@example.com", role: "teacher" },
     });
     const response = await POST(request);
     const { status, data } = await parseResponse<{
@@ -60,7 +59,7 @@ describe("POST /api/auth/register", () => {
     }>(response);
 
     expect(status).toBe(201);
-    expect(data.user.role).toBe("teacher");
+    expect(data.user.role).toBe("student");
   });
 
   it("returns 409 for duplicate email", async () => {
@@ -134,10 +133,9 @@ describe("POST /api/auth/register", () => {
     expect(status).toBe(400);
   });
 
-  it("defaults role to student when not provided", async () => {
-    const { role: _role, ...noRole } = validBody;
+  it("always assigns student role", async () => {
     const request = buildRequest("POST", "/api/auth/register", {
-      body: noRole,
+      body: { ...validBody, email: "always-student@example.com" },
     });
     const response = await POST(request);
     const { status, data } = await parseResponse<{

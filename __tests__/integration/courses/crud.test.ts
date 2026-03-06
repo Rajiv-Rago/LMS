@@ -22,8 +22,8 @@ afterAll(async () => {
 
 describe("Courses CRUD", () => {
   describe("POST /api/courses", () => {
-    it("allows a teacher to create a standard course", async () => {
-      const { token } = await createTestUser({ role: "teacher" });
+    it("allows an admin to create a course", async () => {
+      const { token } = await createTestUser({ role: "admin" });
 
       const request = buildRequest("POST", "/api/courses", {
         token,
@@ -43,7 +43,7 @@ describe("Courses CRUD", () => {
       expect(data.course.isPublished).toBe(false);
     });
 
-    it("prevents a student from creating a standard course", async () => {
+    it("prevents a non-admin from creating a course", async () => {
       const { token } = await createTestUser({ role: "student" });
 
       const request = buildRequest("POST", "/api/courses", {
@@ -57,17 +57,17 @@ describe("Courses CRUD", () => {
       const { status, data } = await parseResponse<{ error: string }>(response);
 
       expect(status).toBe(403);
-      expect(data.error).toContain("Only teachers");
+      expect(data.error).toContain("Only admins");
     });
 
-    it("rejects course creation from a student", async () => {
-      const { token } = await createTestUser({ role: "student" });
+    it("prevents a teacher from creating a course", async () => {
+      const { token } = await createTestUser({ role: "teacher" });
 
       const request = buildRequest("POST", "/api/courses", {
         token,
         body: {
-          title: "Student Course",
-          description: "Should fail",
+          title: "Teacher Course",
+          description: "Should fail -- only admin can create",
         },
       });
       const response = await POST(request);
@@ -90,7 +90,7 @@ describe("Courses CRUD", () => {
     });
 
     it("returns 400 for missing title", async () => {
-      const { token } = await createTestUser({ role: "teacher" });
+      const { token } = await createTestUser({ role: "admin" });
 
       const request = buildRequest("POST", "/api/courses", {
         token,

@@ -61,7 +61,7 @@ export async function GET(
       return NextResponse.json({ error: "Course not found" }, { status: 404 });
     }
 
-    const isInstructor = user && course.instructor.toString() === user.userId;
+    const isInstructor = user && (course.instructor.toString() === user.userId || course.owner?.toString() === user.userId);
     const isEnrolled =
       user &&
       course.enrolledStudents.some(
@@ -135,7 +135,11 @@ export async function POST(
       return NextResponse.json({ error: "Course not found" }, { status: 404 });
     }
 
-    if (course.instructor.toString() !== user.userId && user.role !== "admin") {
+    const isAuthorized =
+      course.instructor.toString() === user.userId ||
+      course.owner?.toString() === user.userId ||
+      user.role === "admin";
+    if (!isAuthorized) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

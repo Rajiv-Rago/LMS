@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: in-progress
-stopped_at: Completed 03-06-PLAN.md
-last_updated: "2026-03-06T16:24:00.000Z"
+status: executing
+stopped_at: Completed 03-05-PLAN.md
+last_updated: "2026-03-06T16:26:26.746Z"
 last_activity: 2026-03-07 -- Executed plan 03-06 (AI Generation Handler Tests)
 progress:
   total_phases: 6
   completed_phases: 2
   total_plans: 11
-  completed_plans: 9
-  percent: 82
+  completed_plans: 10
+  percent: 91
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-03-06)
 ## Current Position
 
 Phase: 3 of 6 (Stabilization & Bug Fixes)
-Plan: 6 of 6 in current phase -- COMPLETE
+Plan: 5 of 6 in current phase -- COMPLETE
 Status: In Progress
-Last activity: 2026-03-07 -- Executed plan 03-06 (AI Generation Handler Tests)
+Last activity: 2026-03-07 -- Executed plan 03-05 (User Soft-Delete Fix and Critical Coverage Gaps)
 
-Progress: [████████░░] 82%
+Progress: [█████████░] 91%
 
 ## Performance Metrics
 
@@ -59,6 +59,7 @@ Progress: [████████░░] 82%
 | Phase 03-stabilization P02 | 9min | 2 tasks | 20 files |
 | Phase 03-stabilization P03 | 5min | 2 tasks | 7 files |
 | Phase 03-stabilization P06 | 6min | 2 tasks | 2 files |
+| Phase 03 P05 | 9 | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -93,6 +94,8 @@ Recent decisions affecting current work:
 - [03-03]: Old POST /quiz returns 410 Gone instead of being removed, for cached frontend safety
 - [03-06]: Mocked env module at module level to control YOUTUBE_API_KEY availability for video tests
 - [03-06]: Single test file covers all 3 handlers with shared mock infrastructure; combined Tasks 1+2 into one commit
+- [Phase 03-05]: User soft-delete uses identical pre(/^find/) pattern as Course model with includeSoftDeleted option
+- [Phase 03-05]: Account deletion anonymized password changed from DELETED (7 chars) to DELETED_ACCOUNT to pass min-length validation
 
 ### Pending Todos
 
@@ -106,6 +109,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-06T16:24:00Z
-Stopped at: Completed 03-06-PLAN.md
-Resume file: .planning/phases/03-stabilization-bug-fixes/03-06-SUMMARY.md
+Last session: 2026-03-06T16:26:07.108Z
+Stopped at: Completed 03-05-PLAN.md
+Resume file: None

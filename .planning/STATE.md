@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: completed
-stopped_at: Phase 3 context gathered
-last_updated: "2026-03-06T05:20:42.906Z"
-last_activity: 2026-03-06 -- Executed plan 02-03 (Dashboard & teacher-free UI)
+status: in-progress
+stopped_at: Completed 03-01-PLAN.md
+last_updated: "2026-03-06T16:00:00.000Z"
+last_activity: 2026-03-06 -- Executed plan 03-01 (Foundational Utilities)
 progress:
   total_phases: 6
   completed_phases: 2
-  total_plans: 5
-  completed_plans: 5
-  percent: 100
+  total_plans: 11
+  completed_plans: 6
+  percent: 55
 ---
 
 # Project State
@@ -21,23 +21,23 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-06)
 
 **Core value:** Anyone can turn a topic into a structured, high-quality learning path in seconds -- and it gets better every time someone uses it.
-**Current focus:** Phase 2: Role Simplification & Course Generation -- COMPLETE
+**Current focus:** Phase 3: Stabilization & Bug Fixes -- IN PROGRESS
 
 ## Current Position
 
-Phase: 2 of 6 (Role Simplification & Course Generation)
-Plan: 3 of 3 in current phase -- COMPLETE
-Status: Phase Complete
-Last activity: 2026-03-06 -- Executed plan 02-03 (Dashboard & teacher-free UI)
+Phase: 3 of 6 (Stabilization & Bug Fixes)
+Plan: 1 of 6 in current phase -- COMPLETE
+Status: In Progress
+Last activity: 2026-03-06 -- Executed plan 03-01 (Foundational Utilities)
 
-Progress: [██████████] 100%
+Progress: [██████░░░░] 55%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 5
+- Total plans completed: 6
 - Average duration: 6 min
-- Total execution time: 0.52 hours
+- Total execution time: 0.57 hours
 
 **By Phase:**
 
@@ -45,15 +45,17 @@ Progress: [██████████] 100%
 |-------|-------|-------|----------|
 | 01-dark-mode | 2/2 | 10 min | 5 min |
 | 02-role-simplification | 3/3 | 21 min | 7 min |
+| 03-stabilization-bug-fixes | 1/6 | 3 min | 3 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (5 min), 01-02 (5 min), 02-01 (6 min), 02-02 (3 min), 02-03 (12 min)
+- Last 5 plans: 01-02 (5 min), 02-01 (6 min), 02-02 (3 min), 02-03 (12 min), 03-01 (3 min)
 - Trend: Consistent
 
 *Updated after each plan completion*
 | Phase 02-role-simplification P01 | 6min | 2 tasks | 15 files |
 | Phase 02-role-simplification P02 | 3min | 1 task | 2 files |
 | Phase 02-role-simplification P03 | 12min | 4 tasks | 13 files |
+| Phase 03-stabilization P01 | 3min | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -78,6 +80,9 @@ Recent decisions affecting current work:
 - [02-03]: Dashboard uses showWelcome prop for conditional welcome message and topic chips when user has no courses
 - [02-03]: Assignments page uses ownership check (instructor/owner match) instead of role check for edit permissions
 - [02-03]: Course creation pages (/courses/new, /courses/new/ai) gated to admin-only with redirect to dashboard
+- [03-01]: Enrollment.isEnrolled queries Enrollment collection, not course.enrolledStudents array -- new source of truth
+- [03-01]: getCoursePermissions takes pre-fetched ICourse to avoid redundant DB lookups
+- [03-01]: CoursePermissions adds isSharedWith and derived canEdit/canView flags beyond CourseOwnershipResult
 
 ### Pending Todos
 
@@ -91,6 +96,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-06T05:20:42.902Z
-Stopped at: Phase 3 context gathered
-Resume file: .planning/phases/03-stabilization-bug-fixes/03-CONTEXT.md
+Last session: 2026-03-06T16:00:00.000Z
+Stopped at: Completed 03-01-PLAN.md
+Resume file: .planning/phases/03-stabilization-bug-fixes/03-01-SUMMARY.md

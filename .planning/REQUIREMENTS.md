@@ -59,7 +59,7 @@ Requirements for this milestone. Each maps to roadmap phases.
 
 ### Bug Fixes
 
-- [ ] **BUGS-01**: Identify and fix broken functionality across core flows (auth, courses, lessons, quizzes, AI generation)
+- [x] **BUGS-01**: Identify and fix broken functionality across core flows (auth, courses, lessons, quizzes, AI generation)
 
 ## v2 Requirements
 
@@ -118,7 +118,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DASH-01 | Phase 2: Role Simplification & Course Generation | Complete |
 | DASH-02 | Phase 2: Role Simplification & Course Generation | Complete |
 | DASH-03 | Phase 2: Role Simplification & Course Generation | Complete |
-| BUGS-01 | Phase 3: Stabilization & Bug Fixes | Pending |
+| BUGS-01 | Phase 3: Stabilization & Bug Fixes | Complete |
 | CATL-01 | Phase 4: Public Catalog & Sharing | Pending |
 | CATL-02 | Phase 4: Public Catalog & Sharing | Pending |
 | CATL-03 | Phase 4: Public Catalog & Sharing | Pending |

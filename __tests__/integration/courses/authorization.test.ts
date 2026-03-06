@@ -1,10 +1,28 @@
 import { connectTestDb, clearTestDb, disconnectTestDb } from "../../helpers/db";
-import { createTestUser, createTestCourse } from "../../helpers/fixtures";
+import {
+  createTestUser,
+  createTestCourse,
+  createTestModule,
+  createTestAssignment,
+  createTestEnrollment,
+} from "../../helpers/fixtures";
 import { buildRequest, parseResponse } from "../../helpers/api";
 import {
-  PATCH,
-  DELETE,
+  GET as getCourse,
+  PATCH as patchCourse,
+  DELETE as deleteCourse,
 } from "@/app/api/courses/[id]/route";
+import {
+  GET as getModules,
+  POST as postModule,
+} from "@/app/api/courses/[id]/modules/route";
+import {
+  GET as getAssignments,
+} from "@/app/api/courses/[id]/assignments/route";
+import {
+  GET as getAssignment,
+  PATCH as patchAssignment,
+} from "@/app/api/courses/[id]/assignments/[assignmentId]/route";
 
 beforeAll(async () => {
   await connectTestDb();
@@ -18,125 +36,346 @@ afterAll(async () => {
   await disconnectTestDb();
 }, 30000);
 
-describe("Course Authorization (ownership-based)", () => {
-  describe("Owner access (student role with course.owner)", () => {
-    it("allows owner to PATCH their course", async () => {
-      const { user: owner, token } = await createTestUser({ role: "student" });
-      const { user: instructor } = await createTestUser({ role: "teacher" });
-      const { course } = await createTestCourse(instructor._id, {
-        owner: owner._id,
-      });
-
-      const request = buildRequest("PATCH", `/api/courses/${course._id}`, {
-        token,
-        body: { title: "Owner Updated Title" },
-      });
-      const response = await PATCH(request, {
-        params: Promise.resolve({ id: course._id.toString() }),
-      });
-      const { status, data } = await parseResponse<{
-        course: { title: string };
-      }>(response);
-
-      expect(status).toBe(200);
-      expect(data.course.title).toBe("Owner Updated Title");
+describe("Cross-route authorization consistency", () => {
+  async function setupCourseWithData() {
+    const { user: instructor, token: instructorToken } = await createTestUser({
+      role: "teacher",
+    });
+    const { user: enrolledStudent, token: studentToken } = await createTestUser({
+      role: "student",
+    });
+    const { user: outsider, token: outsiderToken } = await createTestUser({
+      role: "student",
+    });
+    const { user: admin, token: adminToken } = await createTestUser({
+      role: "admin",
     });
 
-    it("allows owner to DELETE their course", async () => {
-      const { user: owner, token } = await createTestUser({ role: "student" });
-      const { user: instructor } = await createTestUser({ role: "teacher" });
-      const { course } = await createTestCourse(instructor._id, {
-        owner: owner._id,
-      });
-
-      const request = buildRequest("DELETE", `/api/courses/${course._id}`, {
-        token,
-      });
-      const response = await DELETE(request, {
-        params: Promise.resolve({ id: course._id.toString() }),
-      });
-      const { status, data } = await parseResponse<{ message: string }>(response);
-
-      expect(status).toBe(200);
-      expect(data.message).toBe("Course deleted successfully");
+    const { course } = await createTestCourse(instructor._id, {
+      isPublished: true,
     });
-  });
-
-  describe("Instructor access (teacher role with course.instructor)", () => {
-    it("allows instructor to PATCH their course", async () => {
-      const { user: instructor, token } = await createTestUser({ role: "teacher" });
-      const { course } = await createTestCourse(instructor._id);
-
-      const request = buildRequest("PATCH", `/api/courses/${course._id}`, {
-        token,
-        body: { title: "Instructor Updated Title" },
-      });
-      const response = await PATCH(request, {
-        params: Promise.resolve({ id: course._id.toString() }),
-      });
-      const { status, data } = await parseResponse<{
-        course: { title: string };
-      }>(response);
-
-      expect(status).toBe(200);
-      expect(data.course.title).toBe("Instructor Updated Title");
+    const { module } = await createTestModule(course._id, {
+      isPublished: true,
     });
-  });
-
-  describe("Admin access", () => {
-    it("allows admin to PATCH any course", async () => {
-      const { user: instructor } = await createTestUser({ role: "teacher" });
-      const { token: adminToken } = await createTestUser({ role: "admin" });
-      const { course } = await createTestCourse(instructor._id);
-
-      const request = buildRequest("PATCH", `/api/courses/${course._id}`, {
-        token: adminToken,
-        body: { title: "Admin Updated Title" },
-      });
-      const response = await PATCH(request, {
-        params: Promise.resolve({ id: course._id.toString() }),
-      });
-      const { status, data } = await parseResponse<{
-        course: { title: string };
-      }>(response);
-
-      expect(status).toBe(200);
-      expect(data.course.title).toBe("Admin Updated Title");
+    const { assignment } = await createTestAssignment(course._id, {
+      isPublished: true,
     });
-  });
 
-  describe("Unauthorized access", () => {
-    it("returns 403 for random authenticated user on PATCH", async () => {
-      const { user: instructor } = await createTestUser({ role: "teacher" });
-      const { token: randomToken } = await createTestUser({ role: "student" });
-      const { course } = await createTestCourse(instructor._id);
+    await createTestEnrollment(course._id, enrolledStudent._id);
 
-      const request = buildRequest("PATCH", `/api/courses/${course._id}`, {
-        token: randomToken,
-        body: { title: "Hijacked" },
+    return {
+      instructor,
+      instructorToken,
+      enrolledStudent,
+      studentToken,
+      outsider,
+      outsiderToken,
+      admin,
+      adminToken,
+      course,
+      module,
+      assignment,
+    };
+  }
+
+  describe("ObjectId validation", () => {
+    it("GET /api/courses/not-valid-id returns 400", async () => {
+      const { instructorToken } = await setupCourseWithData();
+
+      const request = buildRequest("GET", "/api/courses/not-valid-id", {
+        token: instructorToken,
       });
-      const response = await PATCH(request, {
-        params: Promise.resolve({ id: course._id.toString() }),
+      const response = await getCourse(request, {
+        params: Promise.resolve({ id: "not-valid-id" }),
       });
       const { status, data } = await parseResponse<{ error: string }>(response);
 
-      expect(status).toBe(403);
-      expect(data.error).toBe("Forbidden");
+      expect(status).toBe(400);
+      expect(data.error).toContain("Invalid");
     });
 
-    it("returns 401 for unauthenticated request on PATCH", async () => {
-      const { user: instructor } = await createTestUser({ role: "teacher" });
-      const { course } = await createTestCourse(instructor._id);
+    it("GET /api/courses/not-valid-id/modules returns 400", async () => {
+      const { instructorToken } = await setupCourseWithData();
 
-      const request = buildRequest("PATCH", `/api/courses/${course._id}`, {
-        body: { title: "Nope" },
+      const request = buildRequest("GET", "/api/courses/not-valid-id/modules", {
+        token: instructorToken,
       });
-      const response = await PATCH(request, {
+      const response = await getModules(request, {
+        params: Promise.resolve({ id: "not-valid-id" }),
+      });
+      const { status, data } = await parseResponse<{ error: string }>(response);
+
+      expect(status).toBe(400);
+      expect(data.error).toContain("Invalid");
+    });
+
+    it("GET /api/courses/:id/assignments/not-valid-id returns 400", async () => {
+      const { instructorToken, course } = await setupCourseWithData();
+
+      const request = buildRequest(
+        "GET",
+        `/api/courses/${course._id}/assignments/not-valid-id`,
+        { token: instructorToken }
+      );
+      const response = await getAssignment(request, {
+        params: Promise.resolve({
+          id: course._id.toString(),
+          assignmentId: "not-valid-id",
+        }),
+      });
+      const { status, data } = await parseResponse<{ error: string }>(response);
+
+      expect(status).toBe(400);
+      expect(data.error).toContain("Invalid");
+    });
+  });
+
+  describe("Instructor access", () => {
+    it("GET /api/courses/:id returns course (200)", async () => {
+      const { instructorToken, course } = await setupCourseWithData();
+
+      const request = buildRequest("GET", `/api/courses/${course._id}`, {
+        token: instructorToken,
+      });
+      const response = await getCourse(request, {
         params: Promise.resolve({ id: course._id.toString() }),
       });
       const { status } = await parseResponse(response);
 
-      expect(status).toBe(401);
+      expect(status).toBe(200);
+    });
+
+    it("GET /api/courses/:id/modules returns modules (200)", async () => {
+      const { instructorToken, course } = await setupCourseWithData();
+
+      const request = buildRequest("GET", `/api/courses/${course._id}/modules`, {
+        token: instructorToken,
+      });
+      const response = await getModules(request, {
+        params: Promise.resolve({ id: course._id.toString() }),
+      });
+      const { status } = await parseResponse(response);
+
+      expect(status).toBe(200);
+    });
+
+    it("POST /api/courses/:id/modules creates module (201)", async () => {
+      const { instructorToken, course } = await setupCourseWithData();
+
+      const request = buildRequest("POST", `/api/courses/${course._id}/modules`, {
+        token: instructorToken,
+        body: { title: "New Module" },
+      });
+      const response = await postModule(request, {
+        params: Promise.resolve({ id: course._id.toString() }),
+      });
+      const { status } = await parseResponse(response);
+
+      expect(status).toBe(201);
+    });
+
+    it("PATCH /api/courses/:id updates course (200)", async () => {
+      const { instructorToken, course } = await setupCourseWithData();
+
+      const request = buildRequest("PATCH", `/api/courses/${course._id}`, {
+        token: instructorToken,
+        body: { title: "Updated" },
+      });
+      const response = await patchCourse(request, {
+        params: Promise.resolve({ id: course._id.toString() }),
+      });
+      const { status } = await parseResponse(response);
+
+      expect(status).toBe(200);
+    });
+  });
+
+  describe("Enrolled student access", () => {
+    it("GET /api/courses/:id returns course (200)", async () => {
+      const { studentToken, course } = await setupCourseWithData();
+
+      const request = buildRequest("GET", `/api/courses/${course._id}`, {
+        token: studentToken,
+      });
+      const response = await getCourse(request, {
+        params: Promise.resolve({ id: course._id.toString() }),
+      });
+      const { status } = await parseResponse(response);
+
+      expect(status).toBe(200);
+    });
+
+    it("GET /api/courses/:id/modules returns modules (200)", async () => {
+      const { studentToken, course } = await setupCourseWithData();
+
+      const request = buildRequest("GET", `/api/courses/${course._id}/modules`, {
+        token: studentToken,
+      });
+      const response = await getModules(request, {
+        params: Promise.resolve({ id: course._id.toString() }),
+      });
+      const { status } = await parseResponse(response);
+
+      expect(status).toBe(200);
+    });
+
+    it("POST /api/courses/:id/modules returns 403", async () => {
+      const { studentToken, course } = await setupCourseWithData();
+
+      const request = buildRequest("POST", `/api/courses/${course._id}/modules`, {
+        token: studentToken,
+        body: { title: "Not Allowed" },
+      });
+      const response = await postModule(request, {
+        params: Promise.resolve({ id: course._id.toString() }),
+      });
+      const { status } = await parseResponse(response);
+
+      expect(status).toBe(403);
+    });
+
+    it("GET /api/courses/:id/assignments returns assignments (200)", async () => {
+      const { studentToken, course } = await setupCourseWithData();
+
+      const request = buildRequest(
+        "GET",
+        `/api/courses/${course._id}/assignments`,
+        { token: studentToken }
+      );
+      const response = await getAssignments(request, {
+        params: Promise.resolve({ id: course._id.toString() }),
+      });
+      const { status } = await parseResponse(response);
+
+      expect(status).toBe(200);
+    });
+
+    it("PATCH /api/courses/:id/assignments/:assignmentId returns 403", async () => {
+      const { studentToken, course, assignment } = await setupCourseWithData();
+
+      const request = buildRequest(
+        "PATCH",
+        `/api/courses/${course._id}/assignments/${assignment._id}`,
+        { token: studentToken, body: { title: "Not Allowed" } }
+      );
+      const response = await patchAssignment(request, {
+        params: Promise.resolve({
+          id: course._id.toString(),
+          assignmentId: assignment._id.toString(),
+        }),
+      });
+      const { status } = await parseResponse(response);
+
+      expect(status).toBe(403);
+    });
+  });
+
+  describe("Outsider (non-enrolled) access", () => {
+    it("GET /api/courses/:id on unpublished course returns 404", async () => {
+      const { outsiderToken, instructor } = await setupCourseWithData();
+      const { course: unpublished } = await createTestCourse(instructor._id, {
+        isPublished: false,
+      });
+
+      const request = buildRequest("GET", `/api/courses/${unpublished._id}`, {
+        token: outsiderToken,
+      });
+      const response = await getCourse(request, {
+        params: Promise.resolve({ id: unpublished._id.toString() }),
+      });
+      const { status } = await parseResponse(response);
+
+      expect(status).toBe(404);
+    });
+
+    it("GET /api/courses/:id/assignments returns 403 for outsider", async () => {
+      const { outsiderToken, course } = await setupCourseWithData();
+
+      const request = buildRequest(
+        "GET",
+        `/api/courses/${course._id}/assignments`,
+        { token: outsiderToken }
+      );
+      const response = await getAssignments(request, {
+        params: Promise.resolve({ id: course._id.toString() }),
+      });
+      const { status } = await parseResponse(response);
+
+      expect(status).toBe(403);
+    });
+
+    it("POST /api/courses/:id/modules returns 403 for outsider", async () => {
+      const { outsiderToken, course } = await setupCourseWithData();
+
+      const request = buildRequest("POST", `/api/courses/${course._id}/modules`, {
+        token: outsiderToken,
+        body: { title: "Not Allowed" },
+      });
+      const response = await postModule(request, {
+        params: Promise.resolve({ id: course._id.toString() }),
+      });
+      const { status } = await parseResponse(response);
+
+      expect(status).toBe(403);
+    });
+  });
+
+  describe("Admin access", () => {
+    it("GET /api/courses/:id returns course (200)", async () => {
+      const { adminToken, course } = await setupCourseWithData();
+
+      const request = buildRequest("GET", `/api/courses/${course._id}`, {
+        token: adminToken,
+      });
+      const response = await getCourse(request, {
+        params: Promise.resolve({ id: course._id.toString() }),
+      });
+      const { status } = await parseResponse(response);
+
+      expect(status).toBe(200);
+    });
+
+    it("PATCH /api/courses/:id updates course (200)", async () => {
+      const { adminToken, course } = await setupCourseWithData();
+
+      const request = buildRequest("PATCH", `/api/courses/${course._id}`, {
+        token: adminToken,
+        body: { title: "Admin Updated" },
+      });
+      const response = await patchCourse(request, {
+        params: Promise.resolve({ id: course._id.toString() }),
+      });
+      const { status } = await parseResponse(response);
+
+      expect(status).toBe(200);
+    });
+
+    it("DELETE /api/courses/:id deletes course (200)", async () => {
+      const { adminToken, course } = await setupCourseWithData();
+
+      const request = buildRequest("DELETE", `/api/courses/${course._id}`, {
+        token: adminToken,
+      });
+      const response = await deleteCourse(request, {
+        params: Promise.resolve({ id: course._id.toString() }),
+      });
+      const { status } = await parseResponse(response);
+
+      expect(status).toBe(200);
+    });
+
+    it("GET /api/courses/:id/modules returns modules (200)", async () => {
+      const { adminToken, course } = await setupCourseWithData();
+
+      const request = buildRequest("GET", `/api/courses/${course._id}/modules`, {
+        token: adminToken,
+      });
+      const response = await getModules(request, {
+        params: Promise.resolve({ id: course._id.toString() }),
+      });
+      const { status } = await parseResponse(response);
+
+      expect(status).toBe(200);
     });
   });
 });

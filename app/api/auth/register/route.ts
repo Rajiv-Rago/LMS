@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { email, name, password, role } = validation.data;
+    const { email, name, password } = validation.data;
 
     await dbConnect();
 
@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
       email,
       name,
       password,
-      role,
+      role: "student",
     });
 
     const token = signToken(user);

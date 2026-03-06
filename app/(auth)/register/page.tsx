@@ -11,7 +11,6 @@ export default function RegisterPage() {
     email: "",
     password: "",
     confirmPassword: "",
-    role: "student" as "student" | "teacher",
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -40,7 +39,6 @@ export default function RegisterPage() {
           name: formData.name,
           email: formData.email,
           password: formData.password,
-          role: formData.role,
         }),
       });
 
@@ -126,30 +124,6 @@ export default function RegisterPage() {
               className="mt-1 block w-full rounded-md border border-zinc-300 dark:border-zinc-700 px-3 py-2 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white placeholder-zinc-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
               placeholder="you@example.com"
             />
-          </div>
-
-          <div>
-            <label
-              htmlFor="role"
-              className="block text-sm font-medium text-zinc-700 dark:text-zinc-300"
-            >
-              I am a
-            </label>
-            <select
-              id="role"
-              name="role"
-              value={formData.role}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  role: e.target.value as "student" | "teacher",
-                })
-              }
-              className="mt-1 block w-full rounded-md border border-zinc-300 dark:border-zinc-700 px-3 py-2 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-            >
-              <option value="student">Student</option>
-              <option value="teacher">Teacher</option>
-            </select>
           </div>
 
           <div>

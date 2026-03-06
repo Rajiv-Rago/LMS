@@ -27,7 +27,9 @@ export async function GET(request: NextRequest) {
     let query: Record<string, unknown> = {};
 
     if (user) {
-      if (user.role === "teacher") {
+      if (user.role === "admin") {
+        // Admin sees all courses
+      } else {
         const enrolled = searchParams.get("enrolled") === "true";
         if (enrolled) {
           query = { enrolledStudents: user.userId };
@@ -35,22 +37,13 @@ export async function GET(request: NextRequest) {
           query = {
             $or: [
               { instructor: user.userId },
+              { owner: user.userId },
               { enrolledStudents: user.userId },
               { sharedWith: user.userId },
+              { isPublished: true, owner: { $exists: false } },
             ],
           };
         }
-      } else if (user.role === "student") {
-        query = {
-          $or: [
-            { enrolledStudents: user.userId },
-            { isPublished: true, owner: { $exists: false } },
-            { owner: user.userId },
-            { sharedWith: user.userId },
-          ],
-        };
-      } else if (user.role === "admin") {
-        // Admin sees all courses
       }
     } else {
       query = { isPublished: true };
@@ -118,9 +111,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (user.role !== "teacher" && user.role !== "admin") {
+    if (user.role !== "admin") {
       return NextResponse.json(
-        { error: "Only teachers can create courses" },
+        { error: "Only admins can create courses" },
         { status: 403 }
       );
     }

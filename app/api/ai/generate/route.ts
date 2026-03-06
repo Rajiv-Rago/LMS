@@ -48,13 +48,6 @@ export async function POST(request: NextRequest) {
     const rateCheck = await enforceAIRateLimit(user.userId, subTier, "credits");
     if (rateCheck.blocked) return rateCheck.response;
 
-    if (user.role !== "teacher" && user.role !== "admin") {
-      return NextResponse.json(
-        { error: "Only teachers can generate content" },
-        { status: 403 }
-      );
-    }
-
     const body = await request.json();
     const validation = generateSchema.safeParse(body);
 
@@ -75,7 +68,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Course not found" }, { status: 404 });
     }
 
-    if (course.instructor.toString() !== user.userId && user.role !== "admin") {
+    const isAuthorized =
+      course.instructor.toString() === user.userId ||
+      course.owner?.toString() === user.userId ||
+      user.role === "admin";
+    if (!isAuthorized) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -190,7 +187,9 @@ export async function GET(request: NextRequest) {
         );
       }
 
-      const isInstructor = course.instructor.toString() === user.userId;
+      const isInstructor =
+        course.instructor.toString() === user.userId ||
+        course.owner?.toString() === user.userId;
       const isEnrolled = course.enrolledStudents.some(
         (s: { toString: () => string }) => s.toString() === user.userId
       );
@@ -204,11 +203,18 @@ export async function GET(request: NextRequest) {
       if (!isInstructor && user.role !== "admin") {
         query.approvalStatus = "approved";
       }
-    } else if (user.role === "teacher") {
-      const courses = await Course.find({ instructor: user.userId });
-      query.course = { $in: courses.map((c) => c._id) };
-    } else if (user.role !== "admin") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    } else {
+      const courses = await Course.find({
+        $or: [
+          { instructor: user.userId },
+          { owner: user.userId },
+        ],
+      });
+      if (courses.length > 0) {
+        query.course = { $in: courses.map((c) => c._id) };
+      } else if (user.role !== "admin") {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
     }
 
     if (status) {

@@ -50,9 +50,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 02-01-PLAN.md — Remove teacher role gates from registration and API routes, replace with ownership-based authorization
-- [ ] 02-02-PLAN.md — Create unified course generation endpoint (POST /api/courses/generate) with 5-course limit
-- [ ] 02-03-PLAN.md — Rebuild dashboard with inline generation input, two-section layout, and remove teacher UI conditionals
+- [x] 02-01-PLAN.md — Remove teacher role gates from registration and API routes, replace with ownership-based authorization
+- [x] 02-02-PLAN.md — Create unified course generation endpoint (POST /api/courses/generate) with 5-course limit
+- [x] 02-03-PLAN.md — Rebuild dashboard with inline generation input, two-section layout, and remove teacher UI conditionals
 
 ### Phase 3: Stabilization & Bug Fixes
 **Goal**: Core platform flows work reliably with no broken functionality
@@ -62,10 +62,14 @@ Plans:
   1. Auth flow (register, login, logout, session persistence) works without errors
   2. Course generation, enrollment, and lesson progression complete successfully end-to-end
   3. Quiz taking (start, answer, submit, view results) works for all question types
-**Plans**: TBD
+**Plans**: 5 plans
 
 Plans:
-- [ ] 03-01: TBD
+- [ ] 03-01-PLAN.md — Create shared utilities: validateObjectId, getCoursePermissions, Enrollment model, test fixtures
+- [ ] 03-02-PLAN.md — Migrate all enrollment logic from Course.enrolledStudents array to Enrollment collection
+- [ ] 03-03-PLAN.md — Split quiz POST route into /quiz/start and /quiz/submit with comprehensive tests
+- [ ] 03-04-PLAN.md — Apply getCoursePermissions and validateObjectId across all course routes
+- [ ] 03-05-PLAN.md — Fix User soft-delete, add auth session tests, queue worker tests, account deletion tests
 
 ### Phase 4: Public Catalog & Sharing
 **Goal**: Anyone on the internet can discover courses, preview them, and enroll via a shareable link
@@ -119,7 +123,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 |-------|----------------|--------|-----------|
 | 1. Dark Mode | 2/2 | Complete | 2026-03-05 |
 | 2. Role Simplification & Course Generation | 3/3 | Complete   | 2026-03-06 |
-| 3. Stabilization & Bug Fixes | 0/1 | Not started | - |
+| 3. Stabilization & Bug Fixes | 0/5 | Not started | - |
 | 4. Public Catalog & Sharing | 0/2 | Not started | - |
 | 5. Inline Feedback | 0/2 | Not started | - |
 | 6. Visual Polish | 0/1 | Not started | - |

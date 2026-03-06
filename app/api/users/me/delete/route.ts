@@ -83,7 +83,7 @@ export async function DELETE(request: NextRequest) {
       // Anonymize user record
       userDoc.email = `deleted-${user.userId}@deleted.invalid`;
       userDoc.name = "Deleted User";
-      userDoc.password = "DELETED";
+      userDoc.password = "DELETED_ACCOUNT";
       userDoc.deletedAt = new Date();
       userDoc.failedLoginAttempts = 0;
       userDoc.lockUntil = undefined;

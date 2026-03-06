@@ -126,6 +126,14 @@ userSchema.methods.isLocked = function (): boolean {
   return !!(this.lockUntil && this.lockUntil > new Date());
 };
 
+userSchema.pre(/^find/, function (this: mongoose.Query<unknown, IUser>, next) {
+  if (!this.getOptions().includeSoftDeleted) {
+    this.where({ deletedAt: null });
+  }
+  next();
+});
+
+userSchema.index({ deletedAt: 1 });
 userSchema.index({ role: 1 });
 
 const User =

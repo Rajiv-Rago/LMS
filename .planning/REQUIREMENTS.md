@@ -18,11 +18,11 @@ Requirements for this milestone. Each maps to roadmap phases.
 
 ### Role Simplification
 
-- [ ] **ROLE-01**: Any authenticated user can generate courses (no teacher role required)
-- [ ] **ROLE-02**: Registration page has no role selection --- all users are learners
+- [x] **ROLE-01**: Any authenticated user can generate courses (no teacher role required)
+- [x] **ROLE-02**: Registration page has no role selection --- all users are learners
 - [ ] **ROLE-03**: Teacher-specific UI elements (labels, conditionals) are removed from student-facing pages
-- [ ] **ROLE-04**: Admin retains ability to manually create and edit courses
-- [ ] **ROLE-05**: API routes use ownership-based authorization instead of role-based checks
+- [x] **ROLE-04**: Admin retains ability to manually create and edit courses
+- [x] **ROLE-05**: API routes use ownership-based authorization instead of role-based checks
 
 ### Course Generation
 
@@ -107,11 +107,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DARK-04 | Phase 1: Dark Mode | Complete |
 | DARK-05 | Phase 1: Dark Mode | Complete |
 | DARK-06 | Phase 1: Dark Mode | Complete |
-| ROLE-01 | Phase 2: Role Simplification & Course Generation | Pending |
-| ROLE-02 | Phase 2: Role Simplification & Course Generation | Pending |
+| ROLE-01 | Phase 2: Role Simplification & Course Generation | Complete |
+| ROLE-02 | Phase 2: Role Simplification & Course Generation | Complete |
 | ROLE-03 | Phase 2: Role Simplification & Course Generation | Pending |
-| ROLE-04 | Phase 2: Role Simplification & Course Generation | Pending |
-| ROLE-05 | Phase 2: Role Simplification & Course Generation | Pending |
+| ROLE-04 | Phase 2: Role Simplification & Course Generation | Complete |
+| ROLE-05 | Phase 2: Role Simplification & Course Generation | Complete |
 | CGEN-01 | Phase 2: Role Simplification & Course Generation | Pending |
 | CGEN-02 | Phase 2: Role Simplification & Course Generation | Pending |
 | CGEN-03 | Phase 2: Role Simplification & Course Generation | Pending |

@@ -3,6 +3,7 @@ import User, { IUser } from "@/lib/models/User";
 import Course, { ICourse } from "@/lib/models/Course";
 import Module, { IModule } from "@/lib/models/Module";
 import Assignment, { IAssignment } from "@/lib/models/Assignment";
+import Enrollment, { IEnrollment } from "@/lib/models/Enrollment";
 import { signToken } from "@/lib/auth/jwt";
 
 interface TestUserResult {
@@ -20,6 +21,10 @@ interface TestModuleResult {
 
 interface TestAssignmentResult {
   assignment: IAssignment;
+}
+
+interface TestEnrollmentResult {
+  enrollment: IEnrollment;
 }
 
 let userCounter = 0;
@@ -128,6 +133,98 @@ export async function createTestAssignment(
     submissionType: "text" as const,
     assignmentType: "standard" as const,
     isPublished: false,
+  };
+
+  const assignment = await Assignment.create({ ...defaults, ...overrides });
+  return { assignment };
+}
+
+/**
+ * Create a test enrollment linking a student to a course.
+ */
+export async function createTestEnrollment(
+  courseId: string | mongoose.Types.ObjectId,
+  studentId: string | mongoose.Types.ObjectId,
+  overrides: Partial<{
+    enrolledAt: Date;
+  }> = {}
+): Promise<TestEnrollmentResult> {
+  const enrollment = await Enrollment.create({
+    course: courseId,
+    student: studentId,
+    ...overrides,
+  });
+  return { enrollment };
+}
+
+/**
+ * Create a quiz-type assignment with predictable question data.
+ */
+export async function createTestQuizAssignment(
+  courseId: string | mongoose.Types.ObjectId,
+  overrides: Partial<{
+    title: string;
+    description: string;
+    dueDate: Date;
+    points: number;
+    isPublished: boolean;
+    questions: Array<{
+      id: string;
+      question: string;
+      options: string[];
+      correctAnswer: number;
+      points: number;
+      explanation: string;
+    }>;
+    quizSettings: {
+      timeLimit?: number;
+      shuffleQuestions: boolean;
+      showCorrectAnswers: boolean;
+    };
+  }> = {}
+): Promise<TestAssignmentResult> {
+  const defaultQuestions = [
+    {
+      id: "q1",
+      question: "What is 2 + 2?",
+      options: ["3", "4", "5", "6"],
+      correctAnswer: 1,
+      points: 10,
+      explanation: "Basic addition: 2 + 2 = 4",
+    },
+    {
+      id: "q2",
+      question: "Which planet is closest to the Sun?",
+      options: ["Venus", "Mercury", "Earth", "Mars"],
+      correctAnswer: 1,
+      points: 10,
+      explanation: "Mercury is the closest planet to the Sun",
+    },
+    {
+      id: "q3",
+      question: "What color do you get mixing red and blue?",
+      options: ["Green", "Orange", "Purple", "Yellow"],
+      correctAnswer: 2,
+      points: 10,
+      explanation: "Red and blue make purple",
+    },
+  ];
+
+  const defaults = {
+    title: "Test Quiz",
+    description: "A test quiz assignment",
+    course: courseId,
+    dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    points: 30,
+    submissionType: "text" as const,
+    assignmentType: "quiz" as const,
+    isPublished: true,
+    questions: defaultQuestions,
+    quizSettings: {
+      timeLimit: 30,
+      shuffleQuestions: false,
+      showCorrectAnswers: true,
+    },
   };
 
   const assignment = await Assignment.create({ ...defaults, ...overrides });

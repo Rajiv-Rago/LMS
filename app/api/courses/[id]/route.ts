@@ -15,6 +15,7 @@ const updateCourseSchema = z.object({
   description: z.string().min(1).max(5000).optional(),
   coverImage: httpUrl.optional().nullable(),
   isPublished: z.boolean().optional(),
+  accessLevel: z.enum(["restricted", "unlisted", "published"]).optional(),
 });
 
 export async function GET(
@@ -111,11 +112,13 @@ export async function PATCH(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const { title, description, coverImage, isPublished } = validation.data;
+    const { title, description, coverImage, isPublished, accessLevel } = validation.data;
     if (title !== undefined) course.title = title;
     if (description !== undefined) course.description = description;
     if (coverImage !== undefined) course.coverImage = coverImage ?? undefined;
-    if (isPublished !== undefined) {
+    if (accessLevel !== undefined) {
+      course.accessLevel = accessLevel;
+    } else if (isPublished !== undefined) {
       course.accessLevel = isPublished ? "published" : "restricted";
     }
     await course.save();

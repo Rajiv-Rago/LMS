@@ -158,4 +158,50 @@ describe("User Model", () => {
       expect(user.isLocked()).toBe(false);
     });
   });
+
+  describe("soft-delete", () => {
+    it("excludes soft-deleted users from find()", async () => {
+      const user = await User.create(validUser);
+      user.deletedAt = new Date();
+      await user.save();
+
+      const results = await User.find({});
+      expect(results).toHaveLength(0);
+    });
+
+    it("excludes soft-deleted users from findOne()", async () => {
+      const user = await User.create(validUser);
+      user.deletedAt = new Date();
+      await user.save();
+
+      const found = await User.findOne({ email: validUser.email });
+      expect(found).toBeNull();
+    });
+
+    it("excludes soft-deleted users from findById()", async () => {
+      const user = await User.create(validUser);
+      user.deletedAt = new Date();
+      await user.save();
+
+      const found = await User.findById(user._id);
+      expect(found).toBeNull();
+    });
+
+    it("returns soft-deleted users with includeSoftDeleted option", async () => {
+      const user = await User.create(validUser);
+      user.deletedAt = new Date();
+      await user.save();
+
+      const found = await User.findById(user._id, null, { includeSoftDeleted: true });
+      expect(found).not.toBeNull();
+      expect(found!.email).toBe(validUser.email);
+    });
+
+    it("returns non-deleted users normally", async () => {
+      await User.create(validUser);
+
+      const results = await User.find({});
+      expect(results).toHaveLength(1);
+    });
+  });
 });

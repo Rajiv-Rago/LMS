@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/lib/hooks/useToast";
+import ShareDialog from "@/components/course/ShareDialog";
 
 interface Lesson {
   _id: string;
@@ -104,6 +105,7 @@ export default function CoursePreview({ courseId }: { courseId: string }) {
   const [error, setError] = useState(false);
   const [expandedModules, setExpandedModules] = useState<Set<string>>(new Set());
   const [lockedLesson, setLockedLesson] = useState<string | null>(null);
+  const [shareOpen, setShareOpen] = useState(false);
 
   useEffect(() => {
     async function loadCourse() {
@@ -304,12 +306,20 @@ export default function CoursePreview({ courseId }: { courseId: string }) {
         <div className="lg:w-72 mt-8 lg:mt-0">
           <div className="lg:sticky lg:top-24 space-y-3">
             {permissions?.canEdit ? (
-              <Link
-                href={`/courses/${courseId}/modules`}
-                className="block w-full text-center px-6 py-3 text-sm font-semibold text-white bg-indigo-600 rounded-md hover:bg-indigo-500"
-              >
-                Edit Course
-              </Link>
+              <>
+                <Link
+                  href={`/courses/${courseId}/modules`}
+                  className="block w-full text-center px-6 py-3 text-sm font-semibold text-white bg-indigo-600 rounded-md hover:bg-indigo-500"
+                >
+                  Edit Course
+                </Link>
+                <button
+                  onClick={() => setShareOpen(true)}
+                  className="w-full px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-800 rounded-md hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
+                >
+                  Share
+                </button>
+              </>
             ) : permissions?.isEnrolled ? (
               <Link
                 href={`/courses/${courseId}/modules`}
@@ -348,6 +358,17 @@ export default function CoursePreview({ courseId }: { courseId: string }) {
             {enrolling ? "Enrolling..." : "Enroll for Free"}
           </button>
         </div>
+      )}
+
+      {permissions?.canEdit && (
+        <ShareDialog
+          courseId={courseId}
+          courseTitle={course.title}
+          currentAccessLevel={course.accessLevel as "restricted" | "unlisted" | "published"}
+          open={shareOpen}
+          onClose={() => setShareOpen(false)}
+          onAccessLevelChange={(level) => setCourse((prev) => prev ? { ...prev, accessLevel: level } : prev)}
+        />
       )}
     </div>
   );

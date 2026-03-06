@@ -2,8 +2,8 @@
 phase: 2
 slug: role-simplification-course-generation
 status: draft
-nyquist_compliant: false
-wave_0_complete: false
+nyquist_compliant: true
+wave_0_complete: true
 created: 2026-03-06
 ---
 
@@ -38,15 +38,13 @@ created: 2026-03-06
 
 | Task ID | Plan | Wave | Requirement | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|-----------|-------------------|-------------|--------|
-| 02-01-01 | 01 | 0 | ROLE-01, CGEN-01, CGEN-03 | integration | `npm test -- __tests__/integration/courses/generation.test.ts -x` | ❌ W0 | ⬜ pending |
-| 02-01-02 | 01 | 0 | ROLE-05 | integration | `npm test -- __tests__/integration/courses/authorization.test.ts -x` | ❌ W0 | ⬜ pending |
-| 02-01-03 | 01 | 0 | ROLE-02 | integration | `npm test -- __tests__/integration/auth/register.test.ts -x` | ✅ (update) | ⬜ pending |
-| 02-01-04 | 01 | 0 | ROLE-04 | integration | `npm test -- __tests__/integration/courses/crud.test.ts -x` | ✅ (update) | ⬜ pending |
-| 02-XX-XX | XX | X | ROLE-03 | manual-only | Visual inspection | N/A | ⬜ pending |
-| 02-XX-XX | XX | X | DASH-01 | manual-only | Visual inspection | N/A | ⬜ pending |
-| 02-XX-XX | XX | X | DASH-02 | manual-only | User flow test | N/A | ⬜ pending |
-| 02-XX-XX | XX | X | DASH-03 | integration | `npm test -- __tests__/integration/courses/dashboard.test.ts -x` | ❌ W0 | ⬜ pending |
-| 02-XX-XX | XX | X | CGEN-02 | unit | `npm test -- lib/ai/services/syllabusGenerator.test.ts -x` | ✅ (update) | ⬜ pending |
+| 02-01-01 | 01 | 1 | ROLE-01, ROLE-02 | integration | `npm test -- __tests__/integration/auth/register.test.ts __tests__/integration/courses/crud.test.ts -x` | ✅ (update) | ⬜ pending |
+| 02-01-02 | 01 | 1 | ROLE-04, ROLE-05 | integration | `npm test -- __tests__/integration/courses/authorization.test.ts __tests__/integration/auth/register.test.ts __tests__/integration/courses/crud.test.ts -x` | ❌ W0 (authorization.test.ts created in task) | ⬜ pending |
+| 02-02-01 | 02 | 2 | CGEN-01, CGEN-02, CGEN-03 | integration | `npm test -- __tests__/integration/courses/generation.test.ts -x` | ❌ W0 (created in task, TDD) | ⬜ pending |
+| 02-03-01 | 03 | 3 | DASH-03 | integration | `npm test -- __tests__/integration/courses/dashboard.test.ts -x` | ❌ W0 (created in task) | ⬜ pending |
+| 02-03-02 | 03 | 3 | DASH-01, DASH-02, DASH-03 | integration + lint | `npm test -- __tests__/integration/courses/dashboard.test.ts --no-coverage -x && npm run lint` | ✅ (after Task 1) | ⬜ pending |
+| 02-03-03 | 03 | 3 | ROLE-03, ROLE-04 | lint | `npm run lint` | N/A | ⬜ pending |
+| 02-03-04 | 03 | 3 | ROLE-03, DASH-01, DASH-02 | manual | Visual inspection | N/A | ⬜ pending |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
@@ -54,11 +52,11 @@ created: 2026-03-06
 
 ## Wave 0 Requirements
 
-- [ ] `__tests__/integration/courses/generation.test.ts` — stubs for ROLE-01, CGEN-01, CGEN-03
-- [ ] `__tests__/integration/courses/authorization.test.ts` — stubs for ROLE-05
-- [ ] `__tests__/integration/courses/dashboard.test.ts` — stubs for DASH-03
-- [ ] Update `__tests__/integration/auth/register.test.ts` — update for ROLE-02
-- [ ] Update `__tests__/integration/courses/crud.test.ts` — update for ROLE-04
+- [x] `__tests__/integration/courses/generation.test.ts` — created in 02-02-01 (TDD, RED phase creates test first)
+- [x] `__tests__/integration/courses/authorization.test.ts` — created in 02-01-02
+- [x] `__tests__/integration/courses/dashboard.test.ts` — created in 02-03-01
+- [x] Update `__tests__/integration/auth/register.test.ts` — updated in 02-01-02
+- [x] Update `__tests__/integration/courses/crud.test.ts` — updated in 02-01-02
 
 ---
 
@@ -74,11 +72,11 @@ created: 2026-03-06
 
 ## Validation Sign-Off
 
-- [ ] All tasks have `<automated>` verify or Wave 0 dependencies
-- [ ] Sampling continuity: no 3 consecutive tasks without automated verify
-- [ ] Wave 0 covers all MISSING references
-- [ ] No watch-mode flags
-- [ ] Feedback latency < 30s
-- [ ] `nyquist_compliant: true` set in frontmatter
+- [x] All tasks have `<automated>` verify or Wave 0 dependencies
+- [x] Sampling continuity: no 3 consecutive tasks without automated verify
+- [x] Wave 0 covers all MISSING references
+- [x] No watch-mode flags
+- [x] Feedback latency < 30s
+- [x] `nyquist_compliant: true` set in frontmatter
 
-**Approval:** pending
+**Approval:** approved

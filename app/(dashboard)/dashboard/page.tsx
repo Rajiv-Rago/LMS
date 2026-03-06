@@ -1,46 +1,74 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
+import { useEffect, useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import GenerationInput from "@/components/dashboard/GenerationInput";
+import GeneratingCard from "@/components/dashboard/GeneratingCard";
+import CourseSection from "@/components/dashboard/CourseSection";
+import { useJobPoller, JobResult } from "@/lib/hooks/useJobPoller";
 import { Skeleton, SkeletonCard } from "@/components/ui/Skeleton";
 
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: "student" | "teacher" | "admin";
+interface CourseModule {
+  lessons: unknown[];
 }
 
 interface Course {
   _id: string;
   title: string;
-  description: string;
-  instructor: { name: string; email: string };
-  enrolledStudents: string[];
-  isPublished: boolean;
+  description?: string;
+  modules?: CourseModule[];
+  instructor?: { name: string };
 }
 
+type GenerationPhase = "idle" | "submitting" | "generating" | "complete";
+
 export default function DashboardPage() {
-  const [user, setUser] = useState<User | null>(null);
-  const [courses, setCourses] = useState<Course[]>([]);
+  const router = useRouter();
+  const [myCourses, setMyCourses] = useState<Course[]>([]);
+  const [enrolledCourses, setEnrolledCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
+  const [generationPhase, setGenerationPhase] = useState<GenerationPhase>("idle");
+  const [generatingTopic, setGeneratingTopic] = useState("");
+  const [error, setError] = useState("");
+
+  const handleComplete = useCallback(
+    (result: JobResult) => {
+      setGenerationPhase("complete");
+      const courseId = (result.result as { courseId?: string })?.courseId;
+      if (courseId) {
+        router.push(`/courses/${courseId}`);
+      }
+    },
+    [router]
+  );
+
+  const handleFailed = useCallback((result: JobResult) => {
+    setError(result.error || "Generation failed");
+    setGenerationPhase("idle");
+    setGeneratingTopic("");
+  }, []);
+
+  const { addJobs } = useJobPoller({
+    onComplete: handleComplete,
+    onFailed: handleFailed,
+  });
 
   useEffect(() => {
     async function fetchData() {
       try {
-        const [userRes, coursesRes] = await Promise.all([
-          fetch("/api/auth/me"),
-          fetch("/api/courses"),
+        const [myRes, enrolledRes] = await Promise.all([
+          fetch("/api/courses/ai/my-courses"),
+          fetch("/api/courses?enrolled=true"),
         ]);
 
-        if (userRes.ok) {
-          const userData = await userRes.json();
-          setUser(userData.user);
+        if (myRes.ok) {
+          const data = await myRes.json();
+          setMyCourses(data.courses || []);
         }
 
-        if (coursesRes.ok) {
-          const coursesData = await coursesRes.json();
-          setCourses(coursesData.courses);
+        if (enrolledRes.ok) {
+          const data = await enrolledRes.json();
+          setEnrolledCourses(data.courses || []);
         }
       } catch {
         // Handled by error boundary
@@ -51,20 +79,61 @@ export default function DashboardPage() {
     fetchData();
   }, []);
 
+  async function handleGenerate(topic: string, skillLevel: string) {
+    setError("");
+    setGenerationPhase("submitting");
+    setGeneratingTopic(topic);
+
+    try {
+      const res = await fetch("/api/courses/generate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Requested-With": "XMLHttpRequest",
+        },
+        body: JSON.stringify({ topic, skillLevel }),
+      });
+
+      if (res.status === 429) {
+        const data = await res.json();
+        setError(data.error || "Rate limit reached. Please try again later.");
+        setGenerationPhase("idle");
+        setGeneratingTopic("");
+        return;
+      }
+
+      if (res.status === 503) {
+        setError("AI service is temporarily unavailable. Please try again later.");
+        setGenerationPhase("idle");
+        setGeneratingTopic("");
+        return;
+      }
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to start generation");
+      }
+
+      const data = await res.json();
+      setGenerationPhase("generating");
+      addJobs([{ jobId: data.jobId, meta: { topic } }]);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to start generation");
+      setGenerationPhase("idle");
+      setGeneratingTopic("");
+    }
+  }
+
+  const courseCount = myCourses.length;
+  const limitReached = courseCount >= 5;
+  const isEmpty = myCourses.length === 0 && enrolledCourses.length === 0;
+
   if (loading) {
     return (
       <div className="space-y-6">
         <div className="space-y-2">
           <Skeleton className="h-7 w-48" />
           <Skeleton className="h-4 w-64" />
-        </div>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800 p-6">
-              <Skeleton className="h-4 w-24 mb-3" />
-              <Skeleton className="h-8 w-16" />
-            </div>
-          ))}
         </div>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 3 }).map((_, i) => (
@@ -76,160 +145,41 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">
-          Welcome back, {user?.name}!
-        </h1>
-        <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-          Here&apos;s what&apos;s happening with your courses
-        </p>
-      </div>
+    <div className="space-y-8">
+      <GenerationInput
+        onSubmit={handleGenerate}
+        disabled={generationPhase !== "idle"}
+        limitReached={limitReached}
+        showWelcome={isEmpty}
+      />
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <div className="bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800 p-6">
-          <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
-            {user?.role === "teacher" ? "Your Courses" : "Enrolled Courses"}
-          </p>
-          <p className="mt-2 text-3xl font-bold text-zinc-900 dark:text-white">
-            {courses.length}
-          </p>
+      {error && (
+        <div className="rounded-lg bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 p-4">
+          <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
         </div>
+      )}
 
-        {user?.role === "teacher" && (
-          <div className="bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800 p-6">
-            <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
-              Total Students
-            </p>
-            <p className="mt-2 text-3xl font-bold text-zinc-900 dark:text-white">
-              {courses.reduce((acc, c) => acc + c.enrolledStudents.length, 0)}
-            </p>
-          </div>
-        )}
+      {generationPhase === "generating" && generatingTopic && (
+        <GeneratingCard
+          topic={generatingTopic}
+          onCancel={() => {
+            setGenerationPhase("idle");
+            setGeneratingTopic("");
+          }}
+        />
+      )}
 
-        <div className="bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800 p-6">
-          <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
-            Account Type
-          </p>
-          <p className="mt-2 text-3xl font-bold text-zinc-900 dark:text-white capitalize">
-            {user?.role}
-          </p>
-        </div>
-      </div>
+      <CourseSection
+        title="My Courses"
+        courses={myCourses}
+        emptyMessage="You haven't generated any courses yet"
+      />
 
-      {/* Recent Courses */}
-      <div>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-zinc-900 dark:text-white">
-            {user?.role === "teacher" ? "Your Courses" : "Your Enrolled Courses"}
-          </h2>
-          {user?.role === "teacher" && (
-            <div className="flex gap-2">
-              <Link
-                href="/courses/new"
-                className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-500"
-              >
-                Create Course
-              </Link>
-              <Link
-                href="/courses/new/ai"
-                className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-violet-600 rounded-md hover:from-violet-500 hover:to-indigo-500"
-              >
-                Create with AI
-              </Link>
-            </div>
-          )}
-          {user?.role === "student" && (
-            <div className="flex gap-2">
-              <Link
-                href="/courses/new/ai"
-                className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-violet-600 rounded-md hover:from-violet-500 hover:to-indigo-500"
-              >
-                Create AI Course
-              </Link>
-              <Link
-                href="/courses"
-                className="text-sm font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400"
-              >
-                Browse Courses
-              </Link>
-            </div>
-          )}
-        </div>
-
-        {courses.length === 0 ? (
-          <div className="bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800 p-8 text-center">
-            <p className="text-zinc-500 dark:text-zinc-400">
-              {user?.role === "teacher"
-                ? "You haven't created any courses yet."
-                : "You haven't enrolled in any courses yet."}
-            </p>
-            <div className="mt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
-              {user?.role === "teacher" ? (
-                <>
-                  <Link
-                    href="/courses/new"
-                    className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-500"
-                  >
-                    Create your first course
-                  </Link>
-                  <Link
-                    href="/courses/new/ai"
-                    className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-violet-600 rounded-md hover:from-violet-500 hover:to-indigo-500"
-                  >
-                    Or try AI-powered creation
-                  </Link>
-                </>
-              ) : (
-                <>
-                  <Link
-                    href="/courses/new/ai"
-                    className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-violet-600 rounded-md hover:from-violet-500 hover:to-indigo-500"
-                  >
-                    Create a personalized AI course
-                  </Link>
-                  <Link
-                    href="/courses"
-                    className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-500"
-                  >
-                    Browse available courses
-                  </Link>
-                </>
-              )}
-            </div>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {courses.slice(0, 6).map((course) => (
-              <Link
-                key={course._id}
-                href={`/courses/${course._id}`}
-                className="block bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800 p-6 hover:border-indigo-500 dark:hover:border-indigo-500 transition-colors"
-              >
-                <h3 className="font-semibold text-zinc-900 dark:text-white truncate">
-                  {course.title}
-                </h3>
-                <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400 line-clamp-2">
-                  {course.description}
-                </p>
-                <div className="mt-4 flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400">
-                  <span>
-                    {user?.role === "teacher"
-                      ? `${course.enrolledStudents.length} students`
-                      : `By ${course.instructor.name}`}
-                  </span>
-                  {!course.isPublished && user?.role === "teacher" && (
-                    <span className="px-2 py-1 bg-yellow-100 dark:bg-yellow-900/50 text-yellow-700 dark:text-yellow-300 rounded">
-                      Draft
-                    </span>
-                  )}
-                </div>
-              </Link>
-            ))}
-          </div>
-        )}
-      </div>
+      <CourseSection
+        title="Enrolled Courses"
+        courses={enrolledCourses}
+        emptyMessage="You haven't enrolled in any courses yet"
+      />
     </div>
   );
 }

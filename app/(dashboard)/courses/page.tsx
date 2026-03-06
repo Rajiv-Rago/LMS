@@ -85,27 +85,8 @@ export default function CoursesPage() {
             Courses
           </h1>
           <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-            {user?.role === "teacher"
-              ? "Manage your courses"
-              : "Browse and enroll in courses"}
+            Browse and enroll in courses
           </p>
-        </div>
-
-        <div className="flex gap-2">
-          {user?.role === "teacher" && (
-            <Link
-              href="/courses/new"
-              className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-500"
-            >
-              Create Course
-            </Link>
-          )}
-          <Link
-            href="/courses/new/ai"
-            className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-violet-600 rounded-md hover:from-violet-500 hover:to-indigo-500"
-          >
-            {user?.role === "teacher" ? "Create with AI" : "Create AI Course"}
-          </Link>
         </div>
       </div>
 
@@ -126,8 +107,6 @@ export default function CoursesPage() {
           <p className="text-zinc-500 dark:text-zinc-400">
             {search
               ? "No courses found matching your search."
-              : user?.role === "teacher"
-              ? "You haven't created any courses yet."
               : "No courses available."}
           </p>
         </div>

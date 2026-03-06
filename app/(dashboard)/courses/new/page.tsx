@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useToast } from "@/lib/hooks/useToast";
@@ -8,12 +8,47 @@ import { useToast } from "@/lib/hooks/useToast";
 export default function NewCoursePage() {
   const router = useRouter();
   const toast = useToast();
+  const [authorized, setAuthorized] = useState(false);
+  const [checkingAuth, setCheckingAuth] = useState(true);
   const [formData, setFormData] = useState({
     title: "",
     description: "",
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    async function checkAdmin() {
+      try {
+        const res = await fetch("/api/auth/me");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.user?.role === "admin") {
+            setAuthorized(true);
+          } else {
+            router.push("/dashboard");
+            return;
+          }
+        } else {
+          router.push("/login");
+          return;
+        }
+      } catch {
+        router.push("/dashboard");
+      } finally {
+        setCheckingAuth(false);
+      }
+    }
+    checkAdmin();
+  }, [router]);
+
+  if (checkingAuth || !authorized) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+      </div>
+    );
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -18,6 +18,8 @@ const phaseMessages: Record<GenerationPhase, string> = {
 
 export default function NewAICoursePage() {
   const router = useRouter();
+  const [authorized, setAuthorized] = useState(false);
+  const [checkingAuth, setCheckingAuth] = useState(true);
   const [formData, setFormData] = useState({
     topic: "",
     targetLevel: "beginner" as TargetLevel,
@@ -25,6 +27,31 @@ export default function NewAICoursePage() {
     additionalContext: "",
     includeVideos: false,
   });
+
+  useEffect(() => {
+    async function checkAdmin() {
+      try {
+        const res = await fetch("/api/auth/me");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.user?.role === "admin") {
+            setAuthorized(true);
+          } else {
+            router.push("/dashboard");
+            return;
+          }
+        } else {
+          router.push("/login");
+          return;
+        }
+      } catch {
+        router.push("/dashboard");
+      } finally {
+        setCheckingAuth(false);
+      }
+    }
+    checkAdmin();
+  }, [router]);
   const userDefaults = useUserAIDefaults();
   const [modelValue, setModelValue] = useState<ModelSelectorValue>({
     tier: "balanced",
@@ -147,6 +174,14 @@ export default function NewAICoursePage() {
       default: return 0;
     }
   };
+
+  if (checkingAuth || !authorized) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-2xl mx-auto">

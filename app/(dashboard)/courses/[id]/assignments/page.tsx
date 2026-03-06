@@ -24,6 +24,11 @@ interface User {
   role: "student" | "teacher" | "admin";
 }
 
+interface CourseData {
+  instructor: string | { _id: string };
+  owner?: string;
+}
+
 export default function AssignmentsPage({
   params,
 }: {
@@ -34,6 +39,7 @@ export default function AssignmentsPage({
   const toast = useToast();
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [user, setUser] = useState<User | null>(null);
+  const [course, setCourse] = useState<CourseData | null>(null);
   const [loading, setLoading] = useState(true);
   const [showNew, setShowNew] = useState(false);
   const [filter, setFilter] = useState<"all" | AssignmentType>("all");
@@ -49,14 +55,20 @@ export default function AssignmentsPage({
   useEffect(() => {
     async function fetchData() {
       try {
-        const [userRes, assignmentsRes] = await Promise.all([
+        const [userRes, assignmentsRes, courseRes] = await Promise.all([
           fetch("/api/auth/me"),
           fetch(`/api/courses/${id}/assignments`),
+          fetch(`/api/courses/${id}`),
         ]);
 
         if (userRes.ok) {
           const userData = await userRes.json();
           setUser(userData.user);
+        }
+
+        if (courseRes.ok) {
+          const courseData = await courseRes.json();
+          setCourse(courseData.course);
         }
 
         if (!assignmentsRes.ok) {
@@ -107,7 +119,14 @@ export default function AssignmentsPage({
     }
   };
 
-  const isTeacher = user?.role === "teacher" || user?.role === "admin";
+  const instructorId =
+    course?.instructor && typeof course.instructor === "object"
+      ? course.instructor._id
+      : course?.instructor;
+  const isInstructorOrOwner =
+    user?.role === "admin" ||
+    (user && instructorId === user.id) ||
+    (user && course?.owner === user.id);
 
   if (loading) {
     return (
@@ -134,7 +153,7 @@ export default function AssignmentsPage({
         <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">
           Assignments
         </h1>
-        {isTeacher && (
+        {isInstructorOrOwner && (
           <button
             onClick={() => setShowNew(true)}
             className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-500"

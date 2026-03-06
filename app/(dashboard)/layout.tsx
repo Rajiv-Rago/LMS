@@ -63,15 +63,11 @@ export default function DashboardLayout({
   }
 
   const navigation = [
-    { name: "Dashboard", href: "/dashboard", roles: ["student", "teacher", "admin"] },
-    { name: "My Courses", href: "/courses", roles: ["student", "teacher", "admin"] },
-    { name: "Profile", href: "/profile", roles: ["student", "teacher", "admin"] },
-    { name: "Settings", href: "/settings", roles: ["student", "teacher", "admin"] },
+    { name: "Dashboard", href: "/dashboard" },
+    { name: "My Courses", href: "/courses" },
+    { name: "Profile", href: "/profile" },
+    { name: "Settings", href: "/settings" },
   ];
-
-  const filteredNav = navigation.filter(
-    (item) => user && item.roles.includes(user.role)
-  );
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
@@ -127,7 +123,7 @@ export default function DashboardLayout({
           </div>
 
           <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto" aria-label="Sidebar navigation">
-            {filteredNav.map((item) => {
+            {navigation.map((item) => {
               const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
               return (
                 <Link
@@ -158,8 +154,8 @@ export default function DashboardLayout({
                 <p className="text-sm font-medium text-zinc-900 dark:text-white truncate">
                   {user?.name}
                 </p>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400 capitalize">
-                  {user?.role}
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 truncate">
+                  {user?.email}
                 </p>
               </div>
             </div>

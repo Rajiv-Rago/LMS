@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { dbConnect } from "@/lib/db";
 import { Course } from "@/lib/models";
+import Enrollment from "@/lib/models/Enrollment";
 import { authenticate, requireCsrf } from "@/lib/auth";
+import { validateObjectId } from "@/lib/utils/validateObjectId";
 import { captureException } from "@/lib/logger";
 import { sendNotification } from "@/lib/notifications";
 import * as cache from "@/lib/cache";
@@ -15,6 +17,10 @@ export async function POST(
     if (csrfError) return csrfError;
 
     const { id } = await params;
+
+    const idError = validateObjectId(id, "course ID");
+    if (idError) return idError;
+
     const user = await authenticate(request);
 
     if (!user) {
@@ -43,19 +49,22 @@ export async function POST(
       );
     }
 
-    const alreadyEnrolled = course.enrolledStudents.some(
-      (s: { toString: () => string }) => s.toString() === user.userId
-    );
-
-    if (alreadyEnrolled) {
-      return NextResponse.json(
-        { error: "Already enrolled in this course" },
-        { status: 400 }
-      );
+    try {
+      await Enrollment.create({ course: id, student: user.userId });
+    } catch (err: unknown) {
+      if (
+        err &&
+        typeof err === "object" &&
+        "code" in err &&
+        (err as { code: number }).code === 11000
+      ) {
+        return NextResponse.json(
+          { error: "Already enrolled in this course" },
+          { status: 400 }
+        );
+      }
+      throw err;
     }
-
-    course.enrolledStudents.push(user.userId as unknown as typeof course.enrolledStudents[0]);
-    await course.save();
 
     cache.invalidate(`course:${id}`);
 
@@ -86,6 +95,10 @@ export async function DELETE(
     if (csrfError) return csrfError;
 
     const { id } = await params;
+
+    const idError = validateObjectId(id, "course ID");
+    if (idError) return idError;
+
     const user = await authenticate(request);
 
     if (!user) {
@@ -100,21 +113,17 @@ export async function DELETE(
       return NextResponse.json({ error: "Course not found" }, { status: 404 });
     }
 
-    const isEnrolled = course.enrolledStudents.some(
-      (s: { toString: () => string }) => s.toString() === user.userId
-    );
+    const result = await Enrollment.deleteOne({
+      course: id,
+      student: user.userId,
+    });
 
-    if (!isEnrolled) {
+    if (result.deletedCount === 0) {
       return NextResponse.json(
         { error: "Not enrolled in this course" },
         { status: 400 }
       );
     }
-
-    course.enrolledStudents = course.enrolledStudents.filter(
-      (s: { toString: () => string }) => s.toString() !== user.userId
-    );
-    await course.save();
 
     return NextResponse.json({ message: "Unenrolled successfully" });
   } catch (error) {

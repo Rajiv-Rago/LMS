@@ -8,12 +8,16 @@ import { buildRequest, parseResponse } from "../../helpers/api";
 import { GET } from "@/app/api/courses/route";
 import { GET as GET_COURSE } from "@/app/api/courses/[id]/route";
 import Course from "@/lib/models/Course";
+import * as cache from "@/lib/cache";
 
 beforeAll(async () => {
   await connectTestDb();
+  await Course.ensureIndexes();
 }, 30000);
 
 afterEach(async () => {
+  cache.invalidatePrefix("catalog:");
+  cache.invalidatePrefix("courses:");
   await clearTestDb();
 });
 

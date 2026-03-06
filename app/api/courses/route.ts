@@ -20,14 +20,29 @@ export async function GET(request: NextRequest) {
   try {
     const user = await authenticate(request);
     const { searchParams } = new URL(request.url);
-    const { page, limit, skip } = parsePagination(request, { limit: 10 });
+    const isCatalog = searchParams.get("catalog") === "true";
+    const defaultLimit = isCatalog ? 12 : 10;
+    const { page, limit, skip } = parsePagination(request, { limit: defaultLimit });
     const search = searchParams.get("search")?.slice(0, 200) || null;
 
     await dbConnect();
 
     let query: Record<string, unknown> = {};
+    let sort: Record<string, 1 | -1> = { createdAt: -1 };
 
-    if (user) {
+    if (isCatalog) {
+      query.accessLevel = "published";
+      sort = { enrolledCount: -1, createdAt: -1 };
+
+      if (user) {
+        const enrolledCourseIds = await Enrollment.find({ student: user.userId }).distinct("course");
+        query.instructor = { $ne: user.userId };
+        query.owner = { $ne: user.userId };
+        if (enrolledCourseIds.length > 0) {
+          query._id = { $nin: enrolledCourseIds };
+        }
+      }
+    } else if (user) {
       if (user.role === "admin") {
         // Admin sees all courses
       } else {
@@ -42,22 +57,26 @@ export async function GET(request: NextRequest) {
               { owner: user.userId },
               { _id: { $in: enrolledCourseIds } },
               { sharedWith: user.userId },
-              { isPublished: true, owner: { $exists: false } },
+              { accessLevel: { $in: ["published"] }, owner: { $exists: false } },
             ],
           };
         }
       }
     } else {
-      query = { isPublished: true };
+      query = { accessLevel: { $in: ["published"] } };
     }
 
     if (search) {
       query.$text = { $search: search };
     }
 
-    // Cache unauthenticated published course listings
-    const isPublicListing = !user && !search;
-    const cacheKey = isPublicListing ? `courses:published:p${page}:l${limit}` : null;
+    const isPublicListing = !user && !search && !isCatalog;
+    const isCatalogListing = isCatalog && !user && !search;
+    const cacheKey = isPublicListing
+      ? `courses:published:p${page}:l${limit}`
+      : isCatalogListing
+        ? `catalog:published:p${page}:l${limit}`
+        : null;
 
     if (cacheKey) {
       const cached = cache.get<{ courses: unknown[]; pagination: unknown }>(cacheKey);
@@ -69,7 +88,7 @@ export async function GET(request: NextRequest) {
     const total = await Course.countDocuments(query);
     const courses = await Course.find(query)
       .populate("instructor", "name email")
-      .sort({ createdAt: -1 })
+      .sort(sort)
       .skip(skip)
       .limit(limit);
 

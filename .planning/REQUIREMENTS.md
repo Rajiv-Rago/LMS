@@ -41,7 +41,7 @@ Requirements for this milestone. Each maps to roadmap phases.
 - [x] **CATL-01**: Public course catalog page is browsable without authentication
 - [x] **CATL-02**: Catalog supports keyword search across course titles and descriptions
 - [ ] **CATL-03**: User can enroll in a course from the catalog with one click (redirects to login if needed)
-- [ ] **CATL-04**: Courses have shareable URLs with Open Graph metadata for link previews
+- [x] **CATL-04**: Courses have shareable URLs with Open Graph metadata for link previews
 
 ### Inline Feedback
 
@@ -122,7 +122,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CATL-01 | Phase 4: Public Catalog & Sharing | Complete |
 | CATL-02 | Phase 4: Public Catalog & Sharing | Complete |
 | CATL-03 | Phase 4: Public Catalog & Sharing | Pending |
-| CATL-04 | Phase 4: Public Catalog & Sharing | Pending |
+| CATL-04 | Phase 4: Public Catalog & Sharing | Complete |
 | FDBK-01 | Phase 5: Inline Feedback | Pending |
 | FDBK-02 | Phase 5: Inline Feedback | Pending |
 | FDBK-03 | Phase 5: Inline Feedback | Pending |

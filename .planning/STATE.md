@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 04-01-PLAN.md
-last_updated: "2026-03-06T18:18:03.333Z"
-last_activity: 2026-03-06 -- Executed plan 04-01 (Backend Catalog & Access Level)
+stopped_at: Completed 04-02-PLAN.md
+last_updated: "2026-03-06T18:24:41Z"
+last_activity: 2026-03-06 -- Executed plan 04-02 (Public Catalog UI & Course Preview)
 progress:
   total_phases: 6
   completed_phases: 3
   total_plans: 14
-  completed_plans: 12
-  percent: 86
+  completed_plans: 13
+  percent: 93
 ---
 
 # Project State
@@ -26,18 +26,18 @@ See: .planning/PROJECT.md (updated 2026-03-06)
 ## Current Position
 
 Phase: 4 of 6 (Public Catalog & Sharing)
-Plan: 1 of 3 in current phase -- COMPLETE
+Plan: 2 of 3 in current phase -- COMPLETE
 Status: In Progress
-Last activity: 2026-03-06 -- Executed plan 04-01 (Backend Catalog & Access Level)
+Last activity: 2026-03-06 -- Executed plan 04-02 (Public Catalog UI & Course Preview)
 
-Progress: [████████░░] 86%
+Progress: [█████████░] 93%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 11
+- Total plans completed: 12
 - Average duration: 8 min
-- Total execution time: 1.32 hours
+- Total execution time: 1.40 hours
 
 **By Phase:**
 
@@ -46,10 +46,10 @@ Progress: [████████░░] 86%
 | 01-dark-mode | 2/2 | 10 min | 5 min |
 | 02-role-simplification | 3/3 | 21 min | 7 min |
 | 03-stabilization-bug-fixes | 5/6 | 38 min | 8 min |
-| 04-public-catalog-sharing | 1/3 | 16 min | 16 min |
+| 04-public-catalog-sharing | 2/3 | 21 min | 11 min |
 
 **Recent Trend:**
-- Last 5 plans: 03-02 (9 min), 03-03 (5 min), 03-06 (6 min), 03-04 (15 min), 04-01 (16 min)
+- Last 5 plans: 03-03 (5 min), 03-06 (6 min), 03-04 (15 min), 04-01 (16 min), 04-02 (5 min)
 - Trend: Consistent
 
 *Updated after each plan completion*
@@ -63,6 +63,7 @@ Progress: [████████░░] 86%
 | Phase 03 P05 | 9 | 2 tasks | 6 files |
 | Phase 03 P04 | 15min | 2 tasks | 21 files |
 | Phase 04 P01 | 16min | 2 tasks | 12 files |
+| Phase 04 P02 | 5min | 2 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -107,6 +108,10 @@ Recent decisions affecting current work:
 - [04-01]: Catalog mode defaults to 12 per page sorted by enrolledCount descending
 - [04-01]: PATCH handler maps isPublished boolean to accessLevel to preserve API contract
 - [04-01]: Outsiders on published courses get 200 for view-only routes (assignments, quiz status)
+- [04-02]: Dashboard course detail page replaced with public route group version that adapts UI based on auth
+- [04-02]: CoursePreview fetches both course API and modules API in parallel for full syllabus data
+- [04-02]: Post-auth auto-enrollment via ?enroll=courseId URL param on login/register pages
+- [04-02]: OG image uses next/og ImageResponse with Satori inline styles (indigo-to-violet gradient)
 
 ### Pending Todos
 
@@ -120,6 +125,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-06T18:18:03.329Z
-Stopped at: Completed 04-01-PLAN.md
+Last session: 2026-03-06T18:24:41Z
+Stopped at: Completed 04-02-PLAN.md
 Resume file: None

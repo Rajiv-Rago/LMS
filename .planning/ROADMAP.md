@@ -81,11 +81,12 @@ Plans:
   2. Clicking "Enroll" on a course redirects to login/register, then completes enrollment automatically after auth
   3. Sharing a course URL on social media or messaging shows a rich link preview with title, description, and image (Open Graph metadata)
   4. Enrolled users can navigate the full course content (modules, lessons) from the catalog entry point
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 04-01: TBD
-- [ ] 04-02: TBD
+- [ ] 04-01-PLAN.md — Backend foundation: accessLevel schema field, permissions update, catalog API query, integration tests
+- [ ] 04-02-PLAN.md — Public pages: (public) route group, /explore catalog, /courses/[id] detail with OG metadata and image
+- [ ] 04-03-PLAN.md — Sharing and enrollment: ShareDialog redesign, auto-enroll after auth, navigation entry points
 
 ### Phase 5: Inline Feedback
 **Goal**: Learners can improve course content by flagging issues and triggering instant AI regeneration, with safety nets against bad outputs
@@ -125,6 +126,6 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 | 1. Dark Mode | 2/2 | Complete | 2026-03-05 |
 | 2. Role Simplification & Course Generation | 3/3 | Complete   | 2026-03-06 |
 | 3. Stabilization & Bug Fixes | 6/6 | Complete   | 2026-03-06 |
-| 4. Public Catalog & Sharing | 0/2 | Not started | - |
+| 4. Public Catalog & Sharing | 0/3 | Not started | - |
 | 5. Inline Feedback | 0/2 | Not started | - |
 | 6. Visual Polish | 0/1 | Not started | - |

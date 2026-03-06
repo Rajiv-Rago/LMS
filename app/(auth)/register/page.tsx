@@ -1,11 +1,14 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
-export default function RegisterPage() {
+function RegisterForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const enrollCourseId = searchParams.get("enroll");
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -48,7 +51,19 @@ export default function RegisterPage() {
         throw new Error(data.error || "Registration failed");
       }
 
-      router.push("/dashboard");
+      if (enrollCourseId) {
+        try {
+          await fetch(`/api/courses/${enrollCourseId}/enroll`, {
+            method: "POST",
+            headers: { "X-Requested-With": "XMLHttpRequest" },
+          });
+        } catch {
+          // Enrollment failure is non-blocking
+        }
+        router.push(`/courses/${enrollCourseId}`);
+      } else {
+        router.push("/dashboard");
+      }
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registration failed");
@@ -66,7 +81,7 @@ export default function RegisterPage() {
         <p className="mt-2 text-center text-sm text-zinc-600 dark:text-zinc-400">
           Already have an account?{" "}
           <Link
-            href="/login"
+            href={enrollCourseId ? `/login?enroll=${enrollCourseId}` : "/login"}
             className="font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400"
           >
             Sign in
@@ -75,6 +90,14 @@ export default function RegisterPage() {
       </div>
 
       <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+        {enrollCourseId && (
+          <div className="rounded-md bg-indigo-50 dark:bg-indigo-900/50 p-3">
+            <p className="text-sm text-indigo-700 dark:text-indigo-200">
+              Create an account to enroll in this course
+            </p>
+          </div>
+        )}
+
         {error && (
           <div className="rounded-md bg-red-50 dark:bg-red-900/50 p-4">
             <p className="text-sm text-red-700 dark:text-red-200">{error}</p>
@@ -180,5 +203,13 @@ export default function RegisterPage() {
         </button>
       </form>
     </>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense>
+      <RegisterForm />
+    </Suspense>
   );
 }

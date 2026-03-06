@@ -50,10 +50,10 @@ export default function Home() {
               Start Learning
             </Link>
             <Link
-              href="/login"
+              href="/explore"
               className="px-6 py-3 text-sm font-semibold text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 rounded-md hover:bg-indigo-50 dark:hover:bg-indigo-950"
             >
-              Browse Paths
+              Browse Courses
             </Link>
           </div>
           <p className="mt-6 text-sm text-zinc-500 dark:text-zinc-500">

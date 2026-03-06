@@ -64,6 +64,7 @@ export default function DashboardLayout({
 
   const navigation = [
     { name: "Dashboard", href: "/dashboard" },
+    { name: "Explore", href: "/explore" },
     { name: "My Courses", href: "/courses" },
     { name: "Profile", href: "/profile" },
     { name: "Settings", href: "/settings" },

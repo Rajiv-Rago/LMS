@@ -1,11 +1,14 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const enrollCourseId = searchParams.get("enroll");
+
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -31,7 +34,19 @@ export default function LoginPage() {
         throw new Error(data.error || "Login failed");
       }
 
-      router.push("/dashboard");
+      if (enrollCourseId) {
+        try {
+          await fetch(`/api/courses/${enrollCourseId}/enroll`, {
+            method: "POST",
+            headers: { "X-Requested-With": "XMLHttpRequest" },
+          });
+        } catch {
+          // Enrollment failure is non-blocking
+        }
+        router.push(`/courses/${enrollCourseId}`);
+      } else {
+        router.push("/dashboard");
+      }
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");
@@ -49,7 +64,7 @@ export default function LoginPage() {
         <p className="mt-2 text-center text-sm text-zinc-600 dark:text-zinc-400">
           Or{" "}
           <Link
-            href="/register"
+            href={enrollCourseId ? `/register?enroll=${enrollCourseId}` : "/register"}
             className="font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400"
           >
             create a new account
@@ -58,6 +73,14 @@ export default function LoginPage() {
       </div>
 
       <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+        {enrollCourseId && (
+          <div className="rounded-md bg-indigo-50 dark:bg-indigo-900/50 p-3">
+            <p className="text-sm text-indigo-700 dark:text-indigo-200">
+              Sign in to enroll in this course
+            </p>
+          </div>
+        )}
+
         {error && (
           <div className="rounded-md bg-red-50 dark:bg-red-900/50 p-4">
             <p className="text-sm text-red-700 dark:text-red-200">{error}</p>
@@ -128,5 +151,13 @@ export default function LoginPage() {
         </button>
       </form>
     </>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
   );
 }

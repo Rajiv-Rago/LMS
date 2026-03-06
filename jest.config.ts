@@ -11,6 +11,7 @@ const customJestConfig = {
   forceExit: true,
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/$1",
+    "^@youtube-core/(.*)$": "<rootDir>/packages/youtube-learning-path/src/core/$1",
   },
   testMatch: [
     "<rootDir>/**/*.test.ts",

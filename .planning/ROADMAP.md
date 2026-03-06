@@ -47,12 +47,12 @@ Plans:
   3. The dashboard clearly shows the user's enrolled courses and their generated courses
   4. Admin can still manually create and edit courses
   5. No teacher-specific labels, dropdowns, or conditionals appear anywhere in the learner-facing UI
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 02-01: TBD
-- [ ] 02-02: TBD
-- [ ] 02-03: TBD
+- [ ] 02-01-PLAN.md — Remove teacher role gates from registration and API routes, replace with ownership-based authorization
+- [ ] 02-02-PLAN.md — Create unified course generation endpoint (POST /api/courses/generate) with 5-course limit
+- [ ] 02-03-PLAN.md — Rebuild dashboard with inline generation input, two-section layout, and remove teacher UI conditionals
 
 ### Phase 3: Stabilization & Bug Fixes
 **Goal**: Core platform flows work reliably with no broken functionality
@@ -117,7 +117,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Dark Mode | 1/2 | In Progress | - |
+| 1. Dark Mode | 2/2 | Complete | 2026-03-05 |
 | 2. Role Simplification & Course Generation | 0/3 | Not started | - |
 | 3. Stabilization & Bug Fixes | 0/1 | Not started | - |
 | 4. Public Catalog & Sharing | 0/2 | Not started | - |

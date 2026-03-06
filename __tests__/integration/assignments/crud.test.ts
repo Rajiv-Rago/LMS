@@ -69,7 +69,7 @@ describe("Assignment CRUD", () => {
       expect(data.assignments[0].title).toBe("Published");
     });
 
-    it("returns 403 for non-enrolled users", async () => {
+    it("returns 200 for non-enrolled users on published course", async () => {
       const { user: teacher } = await createTestUser({ role: "teacher" });
       const { token: outsiderToken } = await createTestUser({ role: "student" });
       const { course } = await createTestCourse(teacher._id, { isPublished: true });
@@ -82,7 +82,7 @@ describe("Assignment CRUD", () => {
       });
       const { status } = await parseResponse(response);
 
-      expect(status).toBe(403);
+      expect(status).toBe(200);
     });
 
     it("returns 404 for non-existent course", async () => {

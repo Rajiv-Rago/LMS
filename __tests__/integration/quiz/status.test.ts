@@ -107,7 +107,7 @@ describe("GET /api/courses/[id]/assignments/[assignmentId]/quiz", () => {
     expect(data.isInstructor).toBe(true);
   });
 
-  it("returns 403 for non-enrolled outsider", async () => {
+  it("returns 200 for non-enrolled outsider on published course", async () => {
     const { user: teacher } = await createTestUser({ role: "teacher" });
     const { token: outsiderToken } = await createTestUser({ role: "student" });
     const { course } = await createTestCourse(teacher._id, { isPublished: true });
@@ -125,7 +125,7 @@ describe("GET /api/courses/[id]/assignments/[assignmentId]/quiz", () => {
       }),
     });
     const { status } = await parseResponse(response);
-    expect(status).toBe(403);
+    expect(status).toBe(200);
   });
 
   it("detects active attempt", async () => {

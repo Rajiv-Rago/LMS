@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: in-progress
-stopped_at: Completed 03-01-PLAN.md
-last_updated: "2026-03-06T16:00:00.000Z"
-last_activity: 2026-03-06 -- Executed plan 03-01 (Foundational Utilities)
+stopped_at: Completed 03-03-PLAN.md
+last_updated: "2026-03-06T16:08:17.000Z"
+last_activity: 2026-03-06 -- Executed plan 03-03 (Quiz Route Split)
 progress:
   total_phases: 6
   completed_phases: 2
   total_plans: 11
-  completed_plans: 6
-  percent: 55
+  completed_plans: 8
+  percent: 73
 ---
 
 # Project State
@@ -26,18 +26,18 @@ See: .planning/PROJECT.md (updated 2026-03-06)
 ## Current Position
 
 Phase: 3 of 6 (Stabilization & Bug Fixes)
-Plan: 1 of 6 in current phase -- COMPLETE
+Plan: 3 of 6 in current phase -- COMPLETE
 Status: In Progress
-Last activity: 2026-03-06 -- Executed plan 03-01 (Foundational Utilities)
+Last activity: 2026-03-06 -- Executed plan 03-03 (Quiz Route Split)
 
-Progress: [██████░░░░] 55%
+Progress: [███████░░░] 73%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 6
+- Total plans completed: 8
 - Average duration: 6 min
-- Total execution time: 0.57 hours
+- Total execution time: 0.70 hours
 
 **By Phase:**
 
@@ -45,10 +45,10 @@ Progress: [██████░░░░] 55%
 |-------|-------|-------|----------|
 | 01-dark-mode | 2/2 | 10 min | 5 min |
 | 02-role-simplification | 3/3 | 21 min | 7 min |
-| 03-stabilization-bug-fixes | 1/6 | 3 min | 3 min |
+| 03-stabilization-bug-fixes | 3/6 | 8 min | 3 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-02 (5 min), 02-01 (6 min), 02-02 (3 min), 02-03 (12 min), 03-01 (3 min)
+- Last 5 plans: 02-02 (3 min), 02-03 (12 min), 03-01 (3 min), 03-02 (n/a), 03-03 (5 min)
 - Trend: Consistent
 
 *Updated after each plan completion*
@@ -56,6 +56,7 @@ Progress: [██████░░░░] 55%
 | Phase 02-role-simplification P02 | 3min | 1 task | 2 files |
 | Phase 02-role-simplification P03 | 12min | 4 tasks | 13 files |
 | Phase 03-stabilization P01 | 3min | 2 tasks | 8 files |
+| Phase 03-stabilization P03 | 5min | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -83,6 +84,8 @@ Recent decisions affecting current work:
 - [03-01]: Enrollment.isEnrolled queries Enrollment collection, not course.enrolledStudents array -- new source of truth
 - [03-01]: getCoursePermissions takes pre-fetched ICourse to avoid redundant DB lookups
 - [03-01]: CoursePermissions adds isSharedWith and derived canEdit/canView flags beyond CourseOwnershipResult
+- [03-03]: Enrollment check via Enrollment.isEnrolled in all quiz routes (not enrolledStudents array)
+- [03-03]: Old POST /quiz returns 410 Gone instead of being removed, for cached frontend safety
 
 ### Pending Todos
 
@@ -96,6 +99,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-06T16:00:00.000Z
-Stopped at: Completed 03-01-PLAN.md
-Resume file: .planning/phases/03-stabilization-bug-fixes/03-01-SUMMARY.md
+Last session: 2026-03-06T16:08:17Z
+Stopped at: Completed 03-03-PLAN.md
+Resume file: .planning/phases/03-stabilization-bug-fixes/03-03-SUMMARY.md

@@ -65,3 +65,6 @@ export type { IMigration } from "./Migration";
 
 export { default as AIUsage } from "./AIUsage";
 export type { IAIUsage, AIUsageCategory } from "./AIUsage";
+
+export { default as Enrollment } from "./Enrollment";
+export type { IEnrollment } from "./Enrollment";

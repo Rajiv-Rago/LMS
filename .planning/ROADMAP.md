@@ -62,7 +62,7 @@ Plans:
   1. Auth flow (register, login, logout, session persistence) works without errors
   2. Course generation, enrollment, and lesson progression complete successfully end-to-end
   3. Quiz taking (start, answer, submit, view results) works for all question types
-**Plans**: 5 plans
+**Plans**: 6 plans
 
 Plans:
 - [ ] 03-01-PLAN.md — Create shared utilities: validateObjectId, getCoursePermissions, Enrollment model, test fixtures
@@ -70,6 +70,7 @@ Plans:
 - [ ] 03-03-PLAN.md — Split quiz POST route into /quiz/start and /quiz/submit with comprehensive tests
 - [ ] 03-04-PLAN.md — Apply getCoursePermissions and validateObjectId across all course routes
 - [ ] 03-05-PLAN.md — Fix User soft-delete, add auth session tests, queue worker tests, account deletion tests
+- [ ] 03-06-PLAN.md — Add AI generation handler tests (syllabus, module-content, lesson-content)
 
 ### Phase 4: Public Catalog & Sharing
 **Goal**: Anyone on the internet can discover courses, preview them, and enroll via a shareable link
@@ -123,7 +124,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 |-------|----------------|--------|-----------|
 | 1. Dark Mode | 2/2 | Complete | 2026-03-05 |
 | 2. Role Simplification & Course Generation | 3/3 | Complete   | 2026-03-06 |
-| 3. Stabilization & Bug Fixes | 0/5 | Not started | - |
+| 3. Stabilization & Bug Fixes | 0/6 | Not started | - |
 | 4. Public Catalog & Sharing | 0/2 | Not started | - |
 | 5. Inline Feedback | 0/2 | Not started | - |
 | 6. Visual Polish | 0/1 | Not started | - |

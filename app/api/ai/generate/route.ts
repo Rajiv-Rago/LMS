@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { dbConnect } from "@/lib/db";
 import { Course, Lesson, AIGeneratedContent } from "@/lib/models";
-import Enrollment from "@/lib/models/Enrollment";
 import { authenticate, requireCsrf } from "@/lib/auth";
+import { getCoursePermissions } from "@/lib/auth/coursePermissions";
+import { validateObjectId } from "@/lib/utils/validateObjectId";
 import { createAIProvider, resolveProvider } from "@/lib/ai";
 import { AITier, AIProviderName } from "@/lib/ai/types";
 import { getUserAIPreferences } from "@/lib/ai/utils/userPreferences";
@@ -61,6 +62,9 @@ export async function POST(request: NextRequest) {
 
     const { courseId, lessonId, contentType, tier, provider: reqProvider, model: reqModel, options } = validation.data;
 
+    const invalidCourseId = validateObjectId(courseId, "Course ID");
+    if (invalidCourseId) return invalidCourseId;
+
     await dbConnect();
 
     const course = await Course.findById(courseId);
@@ -69,11 +73,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Course not found" }, { status: 404 });
     }
 
-    const isAuthorized =
-      course.instructor.toString() === user.userId ||
-      course.owner?.toString() === user.userId ||
-      user.role === "admin";
-    if (!isAuthorized) {
+    const perms = await getCoursePermissions(course, user);
+
+    if (!perms.canEdit) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -180,6 +182,9 @@ export async function GET(request: NextRequest) {
     const query: Record<string, unknown> = {};
 
     if (courseId) {
+      const invalidCourseId = validateObjectId(courseId, "Course ID");
+      if (invalidCourseId) return invalidCourseId;
+
       const course = await Course.findById(courseId);
       if (!course) {
         return NextResponse.json(
@@ -188,18 +193,15 @@ export async function GET(request: NextRequest) {
         );
       }
 
-      const isInstructor =
-        course.instructor.toString() === user.userId ||
-        course.owner?.toString() === user.userId;
-      const isEnrolled = await Enrollment.isEnrolled(courseId, user.userId);
+      const perms = await getCoursePermissions(course, user);
 
-      if (!isInstructor && !isEnrolled && user.role !== "admin") {
+      if (!perms.canView) {
         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
       }
 
       query.course = courseId;
 
-      if (!isInstructor && user.role !== "admin") {
+      if (!perms.canEdit) {
         query.approvalStatus = "approved";
       }
     } else {

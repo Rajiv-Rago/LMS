@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { dbConnect } from "@/lib/db";
-import { Course, Assignment, Submission, Enrollment } from "@/lib/models";
+import { Course, Assignment, Submission } from "@/lib/models";
 import { authenticate, requireCsrf } from "@/lib/auth";
+import { getCoursePermissions } from "@/lib/auth/coursePermissions";
 import { validateObjectId } from "@/lib/utils/validateObjectId";
 import {
   gradeQuiz,
@@ -43,8 +44,9 @@ export async function POST(
       return NextResponse.json({ error: "Course not found" }, { status: 404 });
     }
 
-    const isEnrolled = await Enrollment.isEnrolled(course._id, user.userId);
-    if (!isEnrolled) {
+    const perms = await getCoursePermissions(course, user);
+
+    if (!perms.isEnrolled) {
       return NextResponse.json(
         { error: "You must be enrolled to submit quizzes" },
         { status: 403 }

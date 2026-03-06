@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { dbConnect } from "@/lib/db";
 import { Course, Module } from "@/lib/models";
-import Enrollment from "@/lib/models/Enrollment";
 import { authenticate, requireCsrf } from "@/lib/auth";
+import { getCoursePermissions } from "@/lib/auth/coursePermissions";
+import { validateObjectId } from "@/lib/utils/validateObjectId";
 import { captureException } from "@/lib/logger";
 import { parsePagination, paginationMeta } from "@/lib/utils/pagination";
 
@@ -20,6 +21,9 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
+    const invalidId = validateObjectId(id, "Course ID");
+    if (invalidId) return invalidId;
+
     const user = await authenticate(request);
 
     await dbConnect();
@@ -30,16 +34,14 @@ export async function GET(
       return NextResponse.json({ error: "Course not found" }, { status: 404 });
     }
 
-    const isInstructor = user && (course.instructor.toString() === user.userId || course.owner?.toString() === user.userId);
-    const isEnrolled = user ? await Enrollment.isEnrolled(id, user.userId) : false;
-    const isAdmin = user?.role === "admin";
+    const perms = user ? await getCoursePermissions(course, user) : null;
 
-    if (!course.isPublished && !isInstructor && !isEnrolled && !isAdmin) {
+    if (!course.isPublished && (!perms || !perms.canView)) {
       return NextResponse.json({ error: "Course not found" }, { status: 404 });
     }
 
     const moduleQuery: Record<string, unknown> = { course: id };
-    if (!isInstructor && !isAdmin) {
+    if (!perms?.canEdit) {
       moduleQuery.isPublished = true;
     }
 
@@ -76,6 +78,9 @@ export async function POST(
     if (csrfError) return csrfError;
 
     const { id } = await params;
+    const invalidId = validateObjectId(id, "Course ID");
+    if (invalidId) return invalidId;
+
     const user = await authenticate(request);
 
     if (!user) {
@@ -100,11 +105,9 @@ export async function POST(
       return NextResponse.json({ error: "Course not found" }, { status: 404 });
     }
 
-    const isAuthorized =
-      course.instructor.toString() === user.userId ||
-      course.owner?.toString() === user.userId ||
-      user.role === "admin";
-    if (!isAuthorized) {
+    const perms = await getCoursePermissions(course, user);
+
+    if (!perms.canEdit) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

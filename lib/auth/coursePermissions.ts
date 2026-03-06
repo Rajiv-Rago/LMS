@@ -12,12 +12,19 @@ export interface CoursePermissions {
   canView: boolean;
 }
 
+function resolveId(field: unknown): string {
+  if (field && typeof field === "object" && "_id" in field) {
+    return (field as { _id: { toString(): string } })._id.toString();
+  }
+  return String(field);
+}
+
 export async function getCoursePermissions(
   course: ICourse,
   user: JWTPayload
 ): Promise<CoursePermissions> {
-  const isInstructor = course.instructor.toString() === user.userId;
-  const isOwner = course.owner?.toString() === user.userId;
+  const isInstructor = resolveId(course.instructor) === user.userId;
+  const isOwner = course.owner ? resolveId(course.owner) === user.userId : false;
   const isAdmin = user.role === "admin";
   const isSharedWith =
     course.sharedWith?.some((id) => id.toString() === user.userId) ?? false;

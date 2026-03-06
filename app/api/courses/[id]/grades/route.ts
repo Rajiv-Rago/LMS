@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { dbConnect } from "@/lib/db";
 import { Course, Assignment, Submission } from "@/lib/models";
-import Enrollment from "@/lib/models/Enrollment";
 import { authenticate } from "@/lib/auth";
+import { getCoursePermissions } from "@/lib/auth/coursePermissions";
+import { validateObjectId } from "@/lib/utils/validateObjectId";
 import { captureException } from "@/lib/logger";
 
 export async function GET(
@@ -11,6 +12,9 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
+    const invalidId = validateObjectId(id, "Course ID");
+    if (invalidId) return invalidId;
+
     const user = await authenticate(request);
 
     if (!user) {
@@ -25,9 +29,9 @@ export async function GET(
       return NextResponse.json({ error: "Course not found" }, { status: 404 });
     }
 
-    const isEnrolled = await Enrollment.isEnrolled(id, user.userId);
+    const perms = await getCoursePermissions(course, user);
 
-    if (!isEnrolled) {
+    if (!perms.canView) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

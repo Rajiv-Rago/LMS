@@ -4,6 +4,8 @@ import { dbConnect } from "@/lib/db";
 import { Course } from "@/lib/models";
 import User from "@/lib/models/User";
 import { authenticate, requireCsrf } from "@/lib/auth";
+import { getCoursePermissions } from "@/lib/auth/coursePermissions";
+import { validateObjectId } from "@/lib/utils/validateObjectId";
 import { captureException } from "@/lib/logger";
 
 const shareSchema = z.object({
@@ -18,6 +20,9 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
+    const invalidId = validateObjectId(id, "Course ID");
+    if (invalidId) return invalidId;
+
     const user = await authenticate(request);
 
     if (!user) {
@@ -35,11 +40,9 @@ export async function GET(
       return NextResponse.json({ error: "Course not found" }, { status: 404 });
     }
 
-    const isOwner = course.owner?.toString() === user.userId;
-    const isInstructor = course.instructor.toString() === user.userId;
-    const isAdmin = user.role === "admin";
+    const perms = await getCoursePermissions(course, user);
 
-    if (!isOwner && !isInstructor && !isAdmin) {
+    if (!perms.canEdit) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -65,6 +68,9 @@ export async function POST(
     if (csrfError) return csrfError;
 
     const { id } = await params;
+    const invalidId = validateObjectId(id, "Course ID");
+    if (invalidId) return invalidId;
+
     const user = await authenticate(request);
 
     if (!user) {
@@ -89,15 +95,12 @@ export async function POST(
       return NextResponse.json({ error: "Course not found" }, { status: 404 });
     }
 
-    const isOwner = course.owner?.toString() === user.userId;
-    const isInstructor = course.instructor.toString() === user.userId;
-    const isAdmin = user.role === "admin";
+    const perms = await getCoursePermissions(course, user);
 
-    if (!isOwner && !isInstructor && !isAdmin) {
+    if (!perms.canEdit) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Enforce share limit for students
     if (
       user.role === "student" &&
       (course.sharedWith?.length || 0) >= MAX_SHARES_STUDENT
@@ -126,7 +129,6 @@ export async function POST(
       );
     }
 
-    // Check if already shared
     if (course.sharedWith?.some((s) => s.toString() === targetUser._id.toString())) {
       return NextResponse.json(
         { error: "Course is already shared with this user" },
@@ -160,6 +162,9 @@ export async function DELETE(
     if (csrfError) return csrfError;
 
     const { id } = await params;
+    const invalidId = validateObjectId(id, "Course ID");
+    if (invalidId) return invalidId;
+
     const user = await authenticate(request);
 
     if (!user) {
@@ -184,11 +189,9 @@ export async function DELETE(
       return NextResponse.json({ error: "Course not found" }, { status: 404 });
     }
 
-    const isOwner = course.owner?.toString() === user.userId;
-    const isInstructor = course.instructor.toString() === user.userId;
-    const isAdmin = user.role === "admin";
+    const perms = await getCoursePermissions(course, user);
 
-    if (!isOwner && !isInstructor && !isAdmin) {
+    if (!perms.canEdit) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

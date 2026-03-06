@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { dbConnect, withTransaction } from "@/lib/db";
 import { Course, Assignment, Submission } from "@/lib/models";
-import Enrollment from "@/lib/models/Enrollment";
 import { authenticate, requireCsrf } from "@/lib/auth";
+import { getCoursePermissions } from "@/lib/auth/coursePermissions";
+import { validateObjectId } from "@/lib/utils/validateObjectId";
 import { captureException } from "@/lib/logger";
 
 const quizQuestionSchema = z.object({
@@ -37,7 +38,6 @@ const updateAssignmentSchema = z.object({
   allowedFileTypes: z.array(z.string()).optional(),
   maxFileSize: z.number().min(0).optional(),
   isPublished: z.boolean().optional(),
-  // Quiz and project fields
   assignmentType: z.enum(["standard", "quiz", "project"]).optional(),
   questions: z.array(quizQuestionSchema).optional(),
   quizSettings: quizSettingsSchema.optional(),
@@ -51,6 +51,11 @@ export async function GET(
 ) {
   try {
     const { id, assignmentId } = await params;
+    const invalidId = validateObjectId(id, "Course ID");
+    if (invalidId) return invalidId;
+    const invalidAssignmentId = validateObjectId(assignmentId, "Assignment ID");
+    if (invalidAssignmentId) return invalidAssignmentId;
+
     const user = await authenticate(request);
 
     await dbConnect();
@@ -73,41 +78,35 @@ export async function GET(
       );
     }
 
-    const isInstructor = user && (course.instructor.toString() === user.userId || course.owner?.toString() === user.userId);
-    const isEnrolled = user ? await Enrollment.isEnrolled(id, user.userId) : false;
-    const isAdmin = user?.role === "admin";
+    const perms = user ? await getCoursePermissions(course, user) : null;
 
-    if (!assignment.isPublished && !isInstructor && !isAdmin) {
+    if (!assignment.isPublished && (!perms || !perms.canEdit)) {
       return NextResponse.json(
         { error: "Assignment not found" },
         { status: 404 }
       );
     }
 
-    if (!isInstructor && !isEnrolled && !isAdmin) {
+    if (!perms || !perms.canView) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     let submission = null;
-    if (user && !isInstructor) {
+    if (user && !perms.isInstructor) {
       submission = await Submission.findOne({
         assignment: assignmentId,
         student: user.userId,
       });
     }
 
-    // Prepare assignment data for response
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const assignmentData: any = assignment.toObject();
 
-    // For students viewing a quiz, strip correct answers from questions
     if (
       assignment.assignmentType === "quiz" &&
-      !isInstructor &&
-      !isAdmin &&
+      !perms.canEdit &&
       assignment.questions
     ) {
-      // Strip correctAnswer and explanation from questions for student view
       assignmentData.questions = assignment.questions.map((q) => ({
         id: q.id,
         question: q.question,
@@ -120,9 +119,9 @@ export async function GET(
       assignment: assignmentData,
       submission,
       permissions: {
-        canEdit: isInstructor || isAdmin,
-        canSubmit: isEnrolled && !isInstructor,
-        canGrade: isInstructor || isAdmin,
+        canEdit: perms.canEdit,
+        canSubmit: perms.isEnrolled && !perms.isInstructor,
+        canGrade: perms.canEdit,
       },
     });
   } catch (error) {
@@ -143,6 +142,11 @@ export async function PATCH(
     if (csrfError) return csrfError;
 
     const { id, assignmentId } = await params;
+    const invalidId = validateObjectId(id, "Course ID");
+    if (invalidId) return invalidId;
+    const invalidAssignmentId = validateObjectId(assignmentId, "Assignment ID");
+    if (invalidAssignmentId) return invalidAssignmentId;
+
     const user = await authenticate(request);
 
     if (!user) {
@@ -167,11 +171,9 @@ export async function PATCH(
       return NextResponse.json({ error: "Course not found" }, { status: 404 });
     }
 
-    const isAuthorized =
-      course.instructor.toString() === user.userId ||
-      course.owner?.toString() === user.userId ||
-      user.role === "admin";
-    if (!isAuthorized) {
+    const perms = await getCoursePermissions(course, user);
+
+    if (!perms.canEdit) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -235,6 +237,11 @@ export async function DELETE(
     if (csrfError) return csrfError;
 
     const { id, assignmentId } = await params;
+    const invalidId = validateObjectId(id, "Course ID");
+    if (invalidId) return invalidId;
+    const invalidAssignmentId = validateObjectId(assignmentId, "Assignment ID");
+    if (invalidAssignmentId) return invalidAssignmentId;
+
     const user = await authenticate(request);
 
     if (!user) {
@@ -249,11 +256,9 @@ export async function DELETE(
       return NextResponse.json({ error: "Course not found" }, { status: 404 });
     }
 
-    const isAuthorized =
-      course.instructor.toString() === user.userId ||
-      course.owner?.toString() === user.userId ||
-      user.role === "admin";
-    if (!isAuthorized) {
+    const perms = await getCoursePermissions(course, user);
+
+    if (!perms.canEdit) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

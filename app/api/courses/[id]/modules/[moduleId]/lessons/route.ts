@@ -3,6 +3,8 @@ import { z } from "zod";
 import { dbConnect } from "@/lib/db";
 import { Course, Module, Lesson } from "@/lib/models";
 import { authenticate, requireCsrf } from "@/lib/auth";
+import { getCoursePermissions } from "@/lib/auth/coursePermissions";
+import { validateObjectId } from "@/lib/utils/validateObjectId";
 import { captureException } from "@/lib/logger";
 import { httpUrl } from "@/lib/validation/commonSchemas";
 
@@ -24,6 +26,11 @@ export async function GET(
 ) {
   try {
     const { id, moduleId } = await params;
+    const invalidId = validateObjectId(id, "Course ID");
+    if (invalidId) return invalidId;
+    const invalidModuleId = validateObjectId(moduleId, "Module ID");
+    if (invalidModuleId) return invalidModuleId;
+
     const user = await authenticate(request);
 
     await dbConnect();
@@ -40,11 +47,10 @@ export async function GET(
       return NextResponse.json({ error: "Module not found" }, { status: 404 });
     }
 
-    const isInstructor = user && (course.instructor.toString() === user.userId || course.owner?.toString() === user.userId);
-    const isAdmin = user?.role === "admin";
+    const perms = user ? await getCoursePermissions(course, user) : null;
 
     const lessonQuery: Record<string, unknown> = { module: moduleId };
-    if (!isInstructor && !isAdmin) {
+    if (!perms?.canEdit) {
       lessonQuery.isPublished = true;
     }
 
@@ -69,6 +75,11 @@ export async function POST(
     if (csrfError) return csrfError;
 
     const { id, moduleId } = await params;
+    const invalidId = validateObjectId(id, "Course ID");
+    if (invalidId) return invalidId;
+    const invalidModuleId = validateObjectId(moduleId, "Module ID");
+    if (invalidModuleId) return invalidModuleId;
+
     const user = await authenticate(request);
 
     if (!user) {
@@ -93,11 +104,9 @@ export async function POST(
       return NextResponse.json({ error: "Course not found" }, { status: 404 });
     }
 
-    const isAuthorized =
-      course.instructor.toString() === user.userId ||
-      course.owner?.toString() === user.userId ||
-      user.role === "admin";
-    if (!isAuthorized) {
+    const perms = await getCoursePermissions(course, user);
+
+    if (!perms.canEdit) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

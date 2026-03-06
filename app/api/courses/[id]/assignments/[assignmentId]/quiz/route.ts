@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { dbConnect } from "@/lib/db";
-import { Course, Assignment, Submission, Enrollment } from "@/lib/models";
+import { Course, Assignment, Submission } from "@/lib/models";
 import { authenticate } from "@/lib/auth";
+import { getCoursePermissions } from "@/lib/auth/coursePermissions";
+import { validateObjectId } from "@/lib/utils/validateObjectId";
 import {
   isAttemptValid,
 } from "@/lib/utils/quizGrader";
@@ -26,6 +28,11 @@ export async function GET(
 ) {
   try {
     const { id, assignmentId } = await params;
+    const invalidId = validateObjectId(id, "Course ID");
+    if (invalidId) return invalidId;
+    const invalidAssignmentId = validateObjectId(assignmentId, "Assignment ID");
+    if (invalidAssignmentId) return invalidAssignmentId;
+
     const user = await authenticate(request);
 
     if (!user) {
@@ -49,16 +56,14 @@ export async function GET(
       return NextResponse.json({ error: "Quiz not found" }, { status: 404 });
     }
 
-    const isInstructor = course.instructor.toString() === user.userId;
-    const isAdmin = user.role === "admin";
-    const isEnrolled = await Enrollment.isEnrolled(course._id, user.userId);
+    const perms = await getCoursePermissions(course, user);
 
-    if (!isInstructor && !isAdmin && !isEnrolled) {
+    if (!perms.canView) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     // For instructors/admins, return full quiz details
-    if (isInstructor || isAdmin) {
+    if (perms.canEdit) {
       return NextResponse.json({
         assignment,
         isInstructor: true,

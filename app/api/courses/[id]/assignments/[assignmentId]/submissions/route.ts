@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { dbConnect } from "@/lib/db";
 import { Course, Assignment, Submission } from "@/lib/models";
-import Enrollment from "@/lib/models/Enrollment";
 import { authenticate, requireCsrf } from "@/lib/auth";
+import { getCoursePermissions } from "@/lib/auth/coursePermissions";
+import { validateObjectId } from "@/lib/utils/validateObjectId";
 import { captureException } from "@/lib/logger";
 import { sendNotification } from "@/lib/notifications";
 import { parsePagination, paginationMeta } from "@/lib/utils/pagination";
@@ -22,6 +23,11 @@ export async function GET(
 ) {
   try {
     const { id, assignmentId } = await params;
+    const invalidId = validateObjectId(id, "Course ID");
+    if (invalidId) return invalidId;
+    const invalidAssignmentId = validateObjectId(assignmentId, "Assignment ID");
+    if (invalidAssignmentId) return invalidAssignmentId;
+
     const user = await authenticate(request);
 
     if (!user) {
@@ -36,10 +42,9 @@ export async function GET(
       return NextResponse.json({ error: "Course not found" }, { status: 404 });
     }
 
-    const isInstructor = user && course.instructor.toString() === user.userId;
-    const isAdmin = user?.role === "admin";
+    const perms = await getCoursePermissions(course, user);
 
-    if (!isInstructor && !isAdmin) {
+    if (!perms.canEdit) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -77,6 +82,11 @@ export async function POST(
     if (csrfError) return csrfError;
 
     const { id, assignmentId } = await params;
+    const invalidId = validateObjectId(id, "Course ID");
+    if (invalidId) return invalidId;
+    const invalidAssignmentId = validateObjectId(assignmentId, "Assignment ID");
+    if (invalidAssignmentId) return invalidAssignmentId;
+
     const user = await authenticate(request);
 
     if (!user) {
@@ -101,9 +111,9 @@ export async function POST(
       return NextResponse.json({ error: "Course not found" }, { status: 404 });
     }
 
-    const isEnrolled = await Enrollment.isEnrolled(id, user.userId);
+    const perms = await getCoursePermissions(course, user);
 
-    if (!isEnrolled) {
+    if (!perms.isEnrolled) {
       return NextResponse.json(
         { error: "You must be enrolled to submit" },
         { status: 403 }

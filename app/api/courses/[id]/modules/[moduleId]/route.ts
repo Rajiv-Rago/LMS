@@ -3,6 +3,8 @@ import { z } from "zod";
 import { dbConnect, withTransaction } from "@/lib/db";
 import { Course, Module, Lesson } from "@/lib/models";
 import { authenticate, requireCsrf } from "@/lib/auth";
+import { getCoursePermissions } from "@/lib/auth/coursePermissions";
+import { validateObjectId } from "@/lib/utils/validateObjectId";
 import { captureException } from "@/lib/logger";
 
 const updateModuleSchema = z.object({
@@ -18,6 +20,11 @@ export async function GET(
 ) {
   try {
     const { id, moduleId } = await params;
+    const invalidId = validateObjectId(id, "Course ID");
+    if (invalidId) return invalidId;
+    const invalidModuleId = validateObjectId(moduleId, "Module ID");
+    if (invalidModuleId) return invalidModuleId;
+
     const user = await authenticate(request);
 
     await dbConnect();
@@ -37,17 +44,16 @@ export async function GET(
       return NextResponse.json({ error: "Module not found" }, { status: 404 });
     }
 
-    const isInstructor = user && (course.instructor.toString() === user.userId || course.owner?.toString() === user.userId);
-    const isAdmin = user?.role === "admin";
+    const perms = user ? await getCoursePermissions(course, user) : null;
 
-    if (!moduleDoc.isPublished && !isInstructor && !isAdmin) {
+    if (!moduleDoc.isPublished && (!perms || !perms.canEdit)) {
       return NextResponse.json({ error: "Module not found" }, { status: 404 });
     }
 
     return NextResponse.json({
       module: moduleDoc,
       permissions: {
-        canEdit: isInstructor || isAdmin,
+        canEdit: perms?.canEdit || false,
       },
     });
   } catch (error) {
@@ -68,6 +74,11 @@ export async function PATCH(
     if (csrfError) return csrfError;
 
     const { id, moduleId } = await params;
+    const invalidId = validateObjectId(id, "Course ID");
+    if (invalidId) return invalidId;
+    const invalidModuleId = validateObjectId(moduleId, "Module ID");
+    if (invalidModuleId) return invalidModuleId;
+
     const user = await authenticate(request);
 
     if (!user) {
@@ -92,11 +103,9 @@ export async function PATCH(
       return NextResponse.json({ error: "Course not found" }, { status: 404 });
     }
 
-    const isAuthorized =
-      course.instructor.toString() === user.userId ||
-      course.owner?.toString() === user.userId ||
-      user.role === "admin";
-    if (!isAuthorized) {
+    const perms = await getCoursePermissions(course, user);
+
+    if (!perms.canEdit) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -132,6 +141,11 @@ export async function DELETE(
     if (csrfError) return csrfError;
 
     const { id, moduleId } = await params;
+    const invalidId = validateObjectId(id, "Course ID");
+    if (invalidId) return invalidId;
+    const invalidModuleId = validateObjectId(moduleId, "Module ID");
+    if (invalidModuleId) return invalidModuleId;
+
     const user = await authenticate(request);
 
     if (!user) {
@@ -146,11 +160,9 @@ export async function DELETE(
       return NextResponse.json({ error: "Course not found" }, { status: 404 });
     }
 
-    const isAuthorized =
-      course.instructor.toString() === user.userId ||
-      course.owner?.toString() === user.userId ||
-      user.role === "admin";
-    if (!isAuthorized) {
+    const perms = await getCoursePermissions(course, user);
+
+    if (!perms.canEdit) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

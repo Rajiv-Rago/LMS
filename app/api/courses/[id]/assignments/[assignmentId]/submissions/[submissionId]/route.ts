@@ -3,6 +3,8 @@ import { z } from "zod";
 import { dbConnect } from "@/lib/db";
 import { Course, Submission } from "@/lib/models";
 import { authenticate, requireCsrf } from "@/lib/auth";
+import { getCoursePermissions } from "@/lib/auth/coursePermissions";
+import { validateObjectId } from "@/lib/utils/validateObjectId";
 import { captureException } from "@/lib/logger";
 import { sendNotification } from "@/lib/notifications";
 
@@ -17,6 +19,13 @@ export async function GET(
 ) {
   try {
     const { id, assignmentId, submissionId } = await params;
+    const invalidId = validateObjectId(id, "Course ID");
+    if (invalidId) return invalidId;
+    const invalidAssignmentId = validateObjectId(assignmentId, "Assignment ID");
+    if (invalidAssignmentId) return invalidAssignmentId;
+    const invalidSubmissionId = validateObjectId(submissionId, "Submission ID");
+    if (invalidSubmissionId) return invalidSubmissionId;
+
     const user = await authenticate(request);
 
     if (!user) {
@@ -30,6 +39,8 @@ export async function GET(
     if (!course) {
       return NextResponse.json({ error: "Course not found" }, { status: 404 });
     }
+
+    const perms = await getCoursePermissions(course, user);
 
     const submission = await Submission.findOne({
       _id: submissionId,
@@ -46,19 +57,17 @@ export async function GET(
       );
     }
 
-    const isInstructor = course.instructor.toString() === user.userId;
-    const isOwner = submission.student._id.toString() === user.userId;
-    const isAdmin = user.role === "admin";
+    const isSubmissionOwner = submission.student._id.toString() === user.userId;
 
-    if (!isInstructor && !isOwner && !isAdmin) {
+    if (!perms.canEdit && !isSubmissionOwner) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     return NextResponse.json({
       submission,
       permissions: {
-        canGrade: isInstructor || isAdmin,
-        canEdit: isOwner && submission.status !== "graded",
+        canGrade: perms.canEdit,
+        canEdit: isSubmissionOwner && submission.status !== "graded",
       },
     });
   } catch (error) {
@@ -79,6 +88,13 @@ export async function PATCH(
     if (csrfError) return csrfError;
 
     const { id, assignmentId, submissionId } = await params;
+    const invalidId = validateObjectId(id, "Course ID");
+    if (invalidId) return invalidId;
+    const invalidAssignmentId = validateObjectId(assignmentId, "Assignment ID");
+    if (invalidAssignmentId) return invalidAssignmentId;
+    const invalidSubmissionId = validateObjectId(submissionId, "Submission ID");
+    if (invalidSubmissionId) return invalidSubmissionId;
+
     const user = await authenticate(request);
 
     if (!user) {
@@ -103,10 +119,9 @@ export async function PATCH(
       return NextResponse.json({ error: "Course not found" }, { status: 404 });
     }
 
-    const isInstructor = course.instructor.toString() === user.userId;
-    const isAdmin = user.role === "admin";
+    const perms = await getCoursePermissions(course, user);
 
-    if (!isInstructor && !isAdmin) {
+    if (!perms.canEdit) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

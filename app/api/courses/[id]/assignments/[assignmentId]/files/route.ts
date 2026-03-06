@@ -3,6 +3,8 @@ import { dbConnect } from "@/lib/db";
 import { Course, Assignment, Submission } from "@/lib/models";
 import Enrollment from "@/lib/models/Enrollment";
 import { authenticate, requireCsrf } from "@/lib/auth";
+import { getCoursePermissions } from "@/lib/auth/coursePermissions";
+import { validateObjectId } from "@/lib/utils/validateObjectId";
 import { writeFile, mkdir, unlink } from "fs/promises";
 import { join } from "path";
 import { existsSync } from "fs";
@@ -12,7 +14,6 @@ import { validateFileMagic } from "@/lib/utils/fileMagic";
 
 const UPLOAD_DIR = join(process.cwd(), "data", "uploads", "submissions");
 
-// Ensure upload directory exists
 async function ensureUploadDir(submissionId: string): Promise<string> {
   const dir = join(UPLOAD_DIR, submissionId);
   if (!existsSync(dir)) {
@@ -21,7 +22,6 @@ async function ensureUploadDir(submissionId: string): Promise<string> {
   return dir;
 }
 
-// Validate file against assignment settings
 function validateFile(
   file: File,
   settings: { maxFileSize: number; allowedFileTypes: string[] }
@@ -41,8 +41,6 @@ function validateFile(
   return null;
 }
 
-// POST /api/courses/[id]/assignments/[assignmentId]/files
-// Upload file(s) for a project submission
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string; assignmentId: string }> }
@@ -52,6 +50,11 @@ export async function POST(
     if (csrfError) return csrfError;
 
     const { id, assignmentId } = await params;
+    const invalidId = validateObjectId(id, "Course ID");
+    if (invalidId) return invalidId;
+    const invalidAssignmentId = validateObjectId(assignmentId, "Assignment ID");
+    if (invalidAssignmentId) return invalidAssignmentId;
+
     const user = await authenticate(request);
 
     if (!user) {
@@ -65,9 +68,9 @@ export async function POST(
       return NextResponse.json({ error: "Course not found" }, { status: 404 });
     }
 
-    const isEnrolled = await Enrollment.isEnrolled(id, user.userId);
+    const perms = await getCoursePermissions(course, user);
 
-    if (!isEnrolled) {
+    if (!perms.isEnrolled) {
       return NextResponse.json(
         { error: "You must be enrolled to submit files" },
         { status: 403 }
@@ -91,7 +94,6 @@ export async function POST(
       );
     }
 
-    // Get or create submission
     let submission = await Submission.findOne({
       assignment: assignmentId,
       student: user.userId,
@@ -113,11 +115,9 @@ export async function POST(
       );
     }
 
-    // Check current file count
     const currentFileCount = submission.files?.length || 0;
     const maxFiles = assignment.projectSettings?.maxFiles || 5;
 
-    // Parse form data
     const formData = await request.formData();
     const files = formData.getAll("files") as File[];
 
@@ -135,7 +135,6 @@ export async function POST(
       );
     }
 
-    // Validate all files first
     const settings = {
       maxFileSize: assignment.projectSettings?.maxFileSize || 10 * 1024 * 1024,
       allowedFileTypes: assignment.projectSettings?.allowedFileTypes || [],
@@ -148,10 +147,8 @@ export async function POST(
       }
     }
 
-    // Ensure upload directory exists
     const uploadDir = await ensureUploadDir(submission._id.toString());
 
-    // Process and save files
     const uploadedFiles = [];
     for (const file of files) {
       const fileId = randomUUID();
@@ -159,7 +156,6 @@ export async function POST(
       const filename = `${fileId}.${ext}`;
       const filepath = join(uploadDir, filename);
 
-      // Read file bytes and validate magic bytes
       const bytes = await file.arrayBuffer();
       const buffer = Buffer.from(bytes);
       const magicError = validateFileMagic(buffer, file.name);
@@ -167,7 +163,6 @@ export async function POST(
         return NextResponse.json({ error: magicError }, { status: 400 });
       }
 
-      // Write file to disk
       await writeFile(filepath, buffer);
 
       const uploadedFile = {
@@ -183,7 +178,6 @@ export async function POST(
       uploadedFiles.push(uploadedFile);
     }
 
-    // Update submission with new files
     submission.files = submission.files || [];
     submission.files.push(...uploadedFiles);
     await submission.save();
@@ -201,8 +195,6 @@ export async function POST(
   }
 }
 
-// DELETE /api/courses/[id]/assignments/[assignmentId]/files?fileId=xxx
-// Remove a file from a project submission
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string; assignmentId: string }> }
@@ -212,6 +204,11 @@ export async function DELETE(
     if (csrfError) return csrfError;
 
     const { id, assignmentId } = await params;
+    const invalidId = validateObjectId(id, "Course ID");
+    if (invalidId) return invalidId;
+    const invalidAssignmentId = validateObjectId(assignmentId, "Assignment ID");
+    if (invalidAssignmentId) return invalidAssignmentId;
+
     const user = await authenticate(request);
 
     if (!user) {
@@ -235,9 +232,9 @@ export async function DELETE(
       return NextResponse.json({ error: "Course not found" }, { status: 404 });
     }
 
-    const isEnrolled = await Enrollment.isEnrolled(id, user.userId);
+    const perms = await getCoursePermissions(course, user);
 
-    if (!isEnrolled) {
+    if (!perms.isEnrolled) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -260,7 +257,6 @@ export async function DELETE(
       );
     }
 
-    // Find the file
     const fileIndex = submission.files?.findIndex((f) => f.id === fileId) ?? -1;
     if (fileIndex === -1) {
       return NextResponse.json({ error: "File not found" }, { status: 404 });
@@ -268,7 +264,6 @@ export async function DELETE(
 
     const file = submission.files![fileIndex];
 
-    // Delete file from disk
     try {
       const filepath = join(UPLOAD_DIR, submission._id.toString(), file.filename);
       await unlink(filepath);
@@ -276,7 +271,6 @@ export async function DELETE(
       // File might not exist on disk, continue anyway
     }
 
-    // Remove from submission
     submission.files!.splice(fileIndex, 1);
     await submission.save();
 
@@ -293,14 +287,17 @@ export async function DELETE(
   }
 }
 
-// GET /api/courses/[id]/assignments/[assignmentId]/files
-// Get list of uploaded files for a submission
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string; assignmentId: string }> }
 ) {
   try {
     const { id, assignmentId } = await params;
+    const invalidId = validateObjectId(id, "Course ID");
+    if (invalidId) return invalidId;
+    const invalidAssignmentId = validateObjectId(assignmentId, "Assignment ID");
+    if (invalidAssignmentId) return invalidAssignmentId;
+
     const user = await authenticate(request);
 
     if (!user) {
@@ -314,22 +311,17 @@ export async function GET(
       return NextResponse.json({ error: "Course not found" }, { status: 404 });
     }
 
-    const isInstructor = course.instructor.toString() === user.userId;
-    const isAdmin = user.role === "admin";
-    const isEnrolled = await Enrollment.isEnrolled(id, user.userId);
+    const perms = await getCoursePermissions(course, user);
 
-    if (!isInstructor && !isAdmin && !isEnrolled) {
+    if (!perms.canView) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // For students, get their own submission
-    // For instructors, they can optionally specify a studentId
     const url = new URL(request.url);
-    const studentId = (isInstructor || isAdmin)
+    const studentId = perms.canEdit
       ? url.searchParams.get("studentId") || user.userId
       : user.userId;
 
-    // Verify the requested student is enrolled in this course
     if (studentId !== user.userId) {
       const isStudentEnrolled = await Enrollment.isEnrolled(id, studentId);
       if (!isStudentEnrolled) {

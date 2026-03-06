@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import { Course } from "@/lib/models";
+import Enrollment from "@/lib/models/Enrollment";
 import { JWTPayload } from "./jwt";
 
 export interface CourseOwnershipResult {
@@ -39,9 +40,7 @@ export async function checkCourseOwnership(
   const isAdmin = user.role === "admin";
   const isInstructor = course.instructor.toString() === user.userId;
   const isOwner = course.owner?.toString() === user.userId;
-  const isEnrolled = course.enrolledStudents.some(
-    (studentId: mongoose.Types.ObjectId) => studentId.toString() === user.userId
-  );
+  const isEnrolled = await Enrollment.isEnrolled(courseId, user.userId);
 
   return {
     isOwner,

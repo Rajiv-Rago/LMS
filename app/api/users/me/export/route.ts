@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { dbConnect } from "@/lib/db";
 import { authenticate } from "@/lib/auth";
 import { User, Course, Submission, AIChatSession } from "@/lib/models";
+import Enrollment from "@/lib/models/Enrollment";
 import { captureException } from "@/lib/logger";
 
 export async function GET(request: NextRequest) {
@@ -14,10 +15,12 @@ export async function GET(request: NextRequest) {
 
     await dbConnect();
 
+    const enrolledCourseIds = await Enrollment.find({ student: user.userId }).distinct("course");
+
     const [profile, enrolledCourses, ownedCourses, submissions, chatSessions] =
       await Promise.all([
         User.findById(user.userId).select("-password -resetPasswordToken -resetPasswordExpires"),
-        Course.find({ enrolledStudents: user.userId }).select("title description createdAt"),
+        Course.find({ _id: { $in: enrolledCourseIds } }).select("title description createdAt"),
         Course.find({ instructor: user.userId }).select("title description createdAt"),
         Submission.find({ student: user.userId }).populate("assignment", "title"),
         AIChatSession.find({ user: user.userId }).select("title messages createdAt"),

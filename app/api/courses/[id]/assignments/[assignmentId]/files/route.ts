@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { dbConnect } from "@/lib/db";
 import { Course, Assignment, Submission } from "@/lib/models";
+import Enrollment from "@/lib/models/Enrollment";
 import { authenticate, requireCsrf } from "@/lib/auth";
 import { writeFile, mkdir, unlink } from "fs/promises";
 import { join } from "path";
@@ -64,9 +65,7 @@ export async function POST(
       return NextResponse.json({ error: "Course not found" }, { status: 404 });
     }
 
-    const isEnrolled = course.enrolledStudents.some(
-      (s: { toString: () => string }) => s.toString() === user.userId
-    );
+    const isEnrolled = await Enrollment.isEnrolled(id, user.userId);
 
     if (!isEnrolled) {
       return NextResponse.json(
@@ -236,9 +235,7 @@ export async function DELETE(
       return NextResponse.json({ error: "Course not found" }, { status: 404 });
     }
 
-    const isEnrolled = course.enrolledStudents.some(
-      (s: { toString: () => string }) => s.toString() === user.userId
-    );
+    const isEnrolled = await Enrollment.isEnrolled(id, user.userId);
 
     if (!isEnrolled) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -319,9 +316,7 @@ export async function GET(
 
     const isInstructor = course.instructor.toString() === user.userId;
     const isAdmin = user.role === "admin";
-    const isEnrolled = course.enrolledStudents.some(
-      (s: { toString: () => string }) => s.toString() === user.userId
-    );
+    const isEnrolled = await Enrollment.isEnrolled(id, user.userId);
 
     if (!isInstructor && !isAdmin && !isEnrolled) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -336,9 +331,7 @@ export async function GET(
 
     // Verify the requested student is enrolled in this course
     if (studentId !== user.userId) {
-      const isStudentEnrolled = course.enrolledStudents.some(
-        (s: { toString: () => string }) => s.toString() === studentId
-      );
+      const isStudentEnrolled = await Enrollment.isEnrolled(id, studentId);
       if (!isStudentEnrolled) {
         return NextResponse.json(
           { error: "Student not enrolled in this course" },

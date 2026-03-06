@@ -53,6 +53,7 @@ const courseSchema = new mongoose.Schema<ICourse, CourseModel>(
       ref: "User",
       required: [true, "Instructor is required"],
     },
+    // DEPRECATED: Use Enrollment collection. This field retained for data migration only.
     enrolledStudents: [
       {
         type: mongoose.Schema.Types.ObjectId,

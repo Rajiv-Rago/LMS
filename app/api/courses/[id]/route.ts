@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { dbConnect } from "@/lib/db";
 import { Course } from "@/lib/models";
+import Enrollment from "@/lib/models/Enrollment";
 import { authenticate, requireCsrf } from "@/lib/auth";
 import { captureException } from "@/lib/logger";
 import * as cache from "@/lib/cache";
@@ -26,19 +27,14 @@ export async function GET(
 
     const course = await Course.findById(id)
       .populate("instructor", "name email")
-      .populate("modules", "title description order isPublished lessons")
-      .populate("enrolledStudents", "name email");
+      .populate("modules", "title description order isPublished lessons");
 
     if (!course) {
       return NextResponse.json({ error: "Course not found" }, { status: 404 });
     }
 
     const isInstructor = user && (course.instructor._id.toString() === user.userId || course.owner?.toString() === user.userId);
-    const isEnrolled =
-      user &&
-      course.enrolledStudents.some(
-        (s: { _id: { toString: () => string } }) => s._id.toString() === user.userId
-      );
+    const isEnrolled = user ? await Enrollment.isEnrolled(course._id, user.userId) : false;
     const isSharedWith =
       user &&
       course.sharedWith?.some(
@@ -52,12 +48,10 @@ export async function GET(
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const courseObj: any = course.toObject();
+    delete courseObj.enrolledStudents;
 
-    // Strip enrolled student details for non-privileged users
-    if (!isInstructor && !isAdmin) {
-      courseObj.enrolledCount = course.enrolledStudents.length;
-      delete courseObj.enrolledStudents;
-    }
+    const enrolledCount = await Enrollment.getEnrollmentCount(course._id);
+    courseObj.enrolledCount = enrolledCount;
 
     return NextResponse.json({
       course: courseObj,

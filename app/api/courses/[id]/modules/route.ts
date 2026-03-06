@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { dbConnect } from "@/lib/db";
 import { Course, Module } from "@/lib/models";
+import Enrollment from "@/lib/models/Enrollment";
 import { authenticate, requireCsrf } from "@/lib/auth";
 import { captureException } from "@/lib/logger";
 import { parsePagination, paginationMeta } from "@/lib/utils/pagination";
@@ -30,11 +31,7 @@ export async function GET(
     }
 
     const isInstructor = user && (course.instructor.toString() === user.userId || course.owner?.toString() === user.userId);
-    const isEnrolled =
-      user &&
-      course.enrolledStudents.some(
-        (s: { toString: () => string }) => s.toString() === user.userId
-      );
+    const isEnrolled = user ? await Enrollment.isEnrolled(id, user.userId) : false;
     const isAdmin = user?.role === "admin";
 
     if (!course.isPublished && !isInstructor && !isEnrolled && !isAdmin) {

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { dbConnect } from "@/lib/db";
 import { Course, Assignment, Submission } from "@/lib/models";
+import Enrollment from "@/lib/models/Enrollment";
 import { authenticate } from "@/lib/auth";
 import { captureException } from "@/lib/logger";
 import { parsePagination, paginationMeta } from "@/lib/utils/pagination";
@@ -51,14 +52,13 @@ export async function GET(
 
     const { page, limit, skip } = parsePagination(request);
 
-    const totalStudents = course.enrolledStudents.length;
+    const totalStudents = await Enrollment.getEnrollmentCount(id);
 
-    // Paginate the enrolled students populate
-    const paginatedCourse = await Course.findById(id).populate({
-      path: "enrolledStudents",
-      select: "name email",
-      options: { skip, limit },
-    });
+    const enrollments = await Enrollment.find({ course: id })
+      .populate("student", "name email")
+      .sort({ enrolledAt: 1 })
+      .skip(skip)
+      .limit(limit);
 
     const assignments = await Assignment.find({
       course: id,
@@ -66,7 +66,7 @@ export async function GET(
     }).sort({ dueDate: 1 });
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const pagedStudents = paginatedCourse!.enrolledStudents as any[];
+    const pagedStudents = enrollments.map((e: any) => e.student).filter(Boolean);
 
     // Only fetch submissions for the paged students
     const studentIds = pagedStudents.map((s: { _id: { toString: () => string } }) => s._id);

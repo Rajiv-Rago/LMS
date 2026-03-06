@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { dbConnect } from "@/lib/db";
 import { Course, AIGeneratedContent } from "@/lib/models";
+import Enrollment from "@/lib/models/Enrollment";
 import { authenticate, requireCsrf } from "@/lib/auth";
 import { captureException } from "@/lib/logger";
 
@@ -36,11 +37,7 @@ export async function GET(
 
     const course = await Course.findById(content.course._id);
     const isInstructor = course && course.instructor.toString() === user.userId;
-    const isEnrolled =
-      course &&
-      course.enrolledStudents.some(
-        (s: { toString: () => string }) => s.toString() === user.userId
-      );
+    const isEnrolled = course ? await Enrollment.isEnrolled(course._id, user.userId) : false;
 
     if (!isInstructor && !isEnrolled && user.role !== "admin") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });

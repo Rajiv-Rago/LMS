@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { dbConnect } from "@/lib/db";
 import { Course } from "@/lib/models";
+import Enrollment from "@/lib/models/Enrollment";
 import { authenticate, requireCsrf } from "@/lib/auth";
 import { captureException } from "@/lib/logger";
 import * as cache from "@/lib/cache";
@@ -30,15 +31,16 @@ export async function GET(request: NextRequest) {
       if (user.role === "admin") {
         // Admin sees all courses
       } else {
+        const enrolledCourseIds = await Enrollment.find({ student: user.userId }).distinct("course");
         const enrolled = searchParams.get("enrolled") === "true";
         if (enrolled) {
-          query = { enrolledStudents: user.userId };
+          query = { _id: { $in: enrolledCourseIds } };
         } else {
           query = {
             $or: [
               { instructor: user.userId },
               { owner: user.userId },
-              { enrolledStudents: user.userId },
+              { _id: { $in: enrolledCourseIds } },
               { sharedWith: user.userId },
               { isPublished: true, owner: { $exists: false } },
             ],

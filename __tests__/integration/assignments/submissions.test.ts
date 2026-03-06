@@ -3,6 +3,7 @@ import {
   createTestUser,
   createTestCourse,
   createTestAssignment,
+  createTestEnrollment,
 } from "../../helpers/fixtures";
 import { buildRequest, parseResponse } from "../../helpers/api";
 import {
@@ -27,10 +28,7 @@ afterAll(async () => {
 }, 30000);
 
 async function enrollStudent(courseId: string, studentId: string) {
-  const Course = (await import("@/lib/models/Course")).default;
-  await Course.findByIdAndUpdate(courseId, {
-    $push: { enrolledStudents: studentId },
-  });
+  await createTestEnrollment(courseId, studentId);
 }
 
 describe("Submissions", () => {

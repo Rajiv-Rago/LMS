@@ -10,6 +10,7 @@ import {
   Notification,
   Session,
 } from "@/lib/models";
+import Enrollment from "@/lib/models/Enrollment";
 import { captureException } from "@/lib/logger";
 
 const deleteAccountSchema = z.object({
@@ -67,12 +68,8 @@ export async function DELETE(request: NextRequest) {
         { session }
       );
 
-      // Remove from course enrollments
-      await Course.updateMany(
-        { enrolledStudents: user.userId },
-        { $pull: { enrolledStudents: user.userId } },
-        { session }
-      );
+      // Remove enrollment records
+      await Enrollment.deleteMany({ student: user.userId }, { session });
 
       // Delete chat sessions
       await AIChatSession.deleteMany({ user: user.userId }, { session });

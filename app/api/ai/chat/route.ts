@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { dbConnect } from "@/lib/db";
 import { Course, Lesson, AIChatSession } from "@/lib/models";
+import Enrollment from "@/lib/models/Enrollment";
 import { authenticate, requireCsrf } from "@/lib/auth";
 import { createAIProvider, resolveProvider } from "@/lib/ai";
 import { AITier, AIProviderName } from "@/lib/ai/types";
@@ -62,9 +63,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Course not found" }, { status: 404 });
     }
 
-    const isEnrolled = course.enrolledStudents.some(
-      (s: { toString: () => string }) => s.toString() === user.userId
-    );
+    const isEnrolled = await Enrollment.isEnrolled(courseId, user.userId);
     const isInstructor = course.instructor.toString() === user.userId;
 
     if (!isEnrolled && !isInstructor && user.role !== "admin") {

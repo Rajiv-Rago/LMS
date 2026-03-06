@@ -56,6 +56,7 @@ describe("Enrollment model", () => {
   });
 
   it("prevents duplicate enrollment with compound unique index", async () => {
+    await Enrollment.syncIndexes();
     await Enrollment.create({ course: courseId, student: studentId });
 
     await expect(

@@ -3,6 +3,7 @@ import {
   createTestUser,
   createTestCourse,
   createTestAssignment,
+  createTestEnrollment,
 } from "../../helpers/fixtures";
 import { buildRequest, parseResponse } from "../../helpers/api";
 import {
@@ -53,10 +54,7 @@ describe("Assignment CRUD", () => {
       await createTestAssignment(course._id, { title: "Draft", isPublished: false });
 
       // Enroll student
-      const Course = (await import("@/lib/models/Course")).default;
-      await Course.findByIdAndUpdate(course._id, {
-        $push: { enrolledStudents: student._id },
-      });
+      await createTestEnrollment(course._id, student._id);
 
       const request = buildRequest("GET", `/api/courses/${course._id}/assignments`, {
         token: studentToken,
@@ -255,10 +253,7 @@ describe("Assignment CRUD", () => {
       const { user: student, token: studentToken } = await createTestUser({ role: "student" });
       const { course } = await createTestCourse(teacher._id, { isPublished: true });
 
-      const Course = (await import("@/lib/models/Course")).default;
-      await Course.findByIdAndUpdate(course._id, {
-        $push: { enrolledStudents: student._id },
-      });
+      await createTestEnrollment(course._id, student._id);
 
       const Assignment = (await import("@/lib/models/Assignment")).default;
       const assignment = await Assignment.create({
@@ -307,10 +302,7 @@ describe("Assignment CRUD", () => {
       const { user: student, token: studentToken } = await createTestUser({ role: "student" });
       const { course } = await createTestCourse(teacher._id, { isPublished: true });
 
-      const Course = (await import("@/lib/models/Course")).default;
-      await Course.findByIdAndUpdate(course._id, {
-        $push: { enrolledStudents: student._id },
-      });
+      await createTestEnrollment(course._id, student._id);
 
       const { assignment } = await createTestAssignment(course._id, { isPublished: false });
 

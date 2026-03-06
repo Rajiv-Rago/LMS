@@ -288,7 +288,7 @@ describe("Cross-route authorization consistency", () => {
       expect(status).toBe(404);
     });
 
-    it("GET /api/courses/:id/assignments returns 403 for outsider", async () => {
+    it("GET /api/courses/:id/assignments returns 200 for outsider on published course", async () => {
       const { outsiderToken, course } = await setupCourseWithData();
 
       const request = buildRequest(
@@ -301,7 +301,7 @@ describe("Cross-route authorization consistency", () => {
       });
       const { status } = await parseResponse(response);
 
-      expect(status).toBe(403);
+      expect(status).toBe(200);
     });
 
     it("POST /api/courses/:id/modules returns 403 for outsider", async () => {

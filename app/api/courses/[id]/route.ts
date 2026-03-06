@@ -38,9 +38,9 @@ export async function GET(
       return NextResponse.json({ error: "Course not found" }, { status: 404 });
     }
 
-    const perms = user ? await getCoursePermissions(course, user) : null;
+    const perms = await getCoursePermissions(course, user);
 
-    if (!course.isPublished && (!perms || !perms.canView)) {
+    if (!perms.canView) {
       return NextResponse.json({ error: "Course not found" }, { status: 404 });
     }
 
@@ -54,10 +54,10 @@ export async function GET(
     return NextResponse.json({
       course: courseObj,
       permissions: {
-        canEdit: perms?.canEdit || false,
-        canEnroll: !perms?.isInstructor && !perms?.isEnrolled && course.isPublished,
-        isEnrolled: perms?.isEnrolled || false,
-        isInstructor: perms?.isInstructor || false,
+        canEdit: perms.canEdit,
+        canEnroll: !perms.isInstructor && !perms.isEnrolled && course.accessLevel !== "restricted",
+        isEnrolled: perms.isEnrolled,
+        isInstructor: perms.isInstructor,
       },
     });
   } catch (error) {
@@ -115,7 +115,9 @@ export async function PATCH(
     if (title !== undefined) course.title = title;
     if (description !== undefined) course.description = description;
     if (coverImage !== undefined) course.coverImage = coverImage ?? undefined;
-    if (isPublished !== undefined) course.isPublished = isPublished;
+    if (isPublished !== undefined) {
+      course.accessLevel = isPublished ? "published" : "restricted";
+    }
     await course.save();
 
     await course.populate("instructor", "name email");

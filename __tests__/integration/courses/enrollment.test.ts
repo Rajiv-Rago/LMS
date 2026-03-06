@@ -102,7 +102,7 @@ describe("Course Enrollment", () => {
       );
 
       expect(status).toBe(400);
-      expect(data.error).toContain("unpublished");
+      expect(data.error).toContain("restricted");
     });
 
     it("prevents an instructor from enrolling in their own course", async () => {

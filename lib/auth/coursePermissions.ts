@@ -21,8 +21,21 @@ function resolveId(field: unknown): string {
 
 export async function getCoursePermissions(
   course: ICourse,
-  user: JWTPayload
+  user: JWTPayload | null
 ): Promise<CoursePermissions> {
+  if (!user) {
+    const canView = course.accessLevel === "published" || course.accessLevel === "unlisted";
+    return {
+      isInstructor: false,
+      isEnrolled: false,
+      isOwner: false,
+      isAdmin: false,
+      isSharedWith: false,
+      canEdit: false,
+      canView,
+    };
+  }
+
   const isInstructor = resolveId(course.instructor) === user.userId;
   const isOwner = course.owner ? resolveId(course.owner) === user.userId : false;
   const isAdmin = user.role === "admin";
@@ -31,7 +44,8 @@ export async function getCoursePermissions(
   const isEnrolled = await Enrollment.isEnrolled(course._id, user.userId);
 
   const canEdit = isInstructor || isOwner || isAdmin;
-  const canView = canEdit || isEnrolled || isSharedWith;
+  const isAccessible = course.accessLevel === "published" || course.accessLevel === "unlisted";
+  const canView = canEdit || isEnrolled || isSharedWith || isAccessible;
 
   return {
     isInstructor,

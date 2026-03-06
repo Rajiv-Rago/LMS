@@ -8,6 +8,8 @@ export interface AIPreferences {
   defaultModel?: string;
 }
 
+export type AccessLevel = "restricted" | "unlisted" | "published";
+
 export interface ICourse extends Document {
   _id: mongoose.Types.ObjectId;
   title: string;
@@ -16,6 +18,8 @@ export interface ICourse extends Document {
   enrolledStudents: mongoose.Types.ObjectId[];
   modules: mongoose.Types.ObjectId[];
   coverImage?: string;
+  accessLevel: AccessLevel;
+  enrolledCount: number;
   isPublished: boolean;
   owner?: mongoose.Types.ObjectId;
   sharedWith: mongoose.Types.ObjectId[];
@@ -69,9 +73,14 @@ const courseSchema = new mongoose.Schema<ICourse, CourseModel>(
     coverImage: {
       type: String,
     },
-    isPublished: {
-      type: Boolean,
-      default: false,
+    accessLevel: {
+      type: String,
+      enum: ["restricted", "unlisted", "published"],
+      default: "restricted",
+    },
+    enrolledCount: {
+      type: Number,
+      default: 0,
     },
     owner: {
       type: mongoose.Schema.Types.ObjectId,
@@ -116,8 +125,14 @@ const courseSchema = new mongoose.Schema<ICourse, CourseModel>(
   },
   {
     timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
   }
 );
+
+courseSchema.virtual("isPublished").get(function () {
+  return this.accessLevel !== "restricted";
+});
 
 // Soft-delete: exclude deleted documents from all find queries by default
 courseSchema.pre(/^find/, function (this: mongoose.Query<unknown, ICourse>, next) {
@@ -130,7 +145,8 @@ courseSchema.pre(/^find/, function (this: mongoose.Query<unknown, ICourse>, next
 courseSchema.index({ deletedAt: 1 });
 courseSchema.index({ instructor: 1 });
 courseSchema.index({ enrolledStudents: 1 });
-courseSchema.index({ isPublished: 1 });
+courseSchema.index({ accessLevel: 1 });
+courseSchema.index({ enrolledCount: -1 });
 courseSchema.index({ title: "text", description: "text" });
 courseSchema.index({ owner: 1 });
 courseSchema.index({ sharedWith: 1 });

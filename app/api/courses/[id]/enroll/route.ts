@@ -35,9 +35,9 @@ export async function POST(
       return NextResponse.json({ error: "Course not found" }, { status: 404 });
     }
 
-    if (!course.isPublished) {
+    if (course.accessLevel === "restricted") {
       return NextResponse.json(
-        { error: "Cannot enroll in unpublished course" },
+        { error: "Cannot enroll in restricted course" },
         { status: 400 }
       );
     }
@@ -65,6 +65,8 @@ export async function POST(
       }
       throw err;
     }
+
+    await Course.findByIdAndUpdate(id, { $inc: { enrolledCount: 1 } });
 
     cache.invalidate(`course:${id}`);
 
@@ -124,6 +126,8 @@ export async function DELETE(
         { status: 400 }
       );
     }
+
+    await Course.findByIdAndUpdate(id, { $inc: { enrolledCount: -1 } });
 
     return NextResponse.json({ message: "Unenrolled successfully" });
   } catch (error) {

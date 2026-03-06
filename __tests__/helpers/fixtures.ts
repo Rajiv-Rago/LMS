@@ -65,17 +65,24 @@ export async function createTestCourse(
     title: string;
     description: string;
     isPublished: boolean;
+    accessLevel: "restricted" | "unlisted" | "published";
     owner: string | mongoose.Types.ObjectId;
   }> = {}
 ): Promise<TestCourseResult> {
-  const defaults = {
+  const { isPublished, ...rest } = overrides;
+  const defaults: Record<string, unknown> = {
     title: "Test Course",
     description: "A test course description",
     instructor: instructorId,
-    isPublished: false,
   };
 
-  const course = await Course.create({ ...defaults, ...overrides });
+  if (rest.accessLevel) {
+    defaults.accessLevel = rest.accessLevel;
+  } else if (isPublished !== undefined) {
+    defaults.accessLevel = isPublished ? "published" : "restricted";
+  }
+
+  const course = await Course.create({ ...defaults, ...rest });
   return { course };
 }
 

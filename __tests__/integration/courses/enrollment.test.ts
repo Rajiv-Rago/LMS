@@ -1,10 +1,15 @@
 import { connectTestDb, clearTestDb, disconnectTestDb } from "../../helpers/db";
-import { createTestUser, createTestCourse } from "../../helpers/fixtures";
+import {
+  createTestUser,
+  createTestCourse,
+  createTestEnrollment,
+} from "../../helpers/fixtures";
 import { buildRequest, parseResponse } from "../../helpers/api";
 import {
   POST as ENROLL,
   DELETE as UNENROLL,
 } from "@/app/api/courses/[id]/enroll/route";
+import Enrollment from "@/lib/models/Enrollment";
 
 beforeAll(async () => {
   await connectTestDb();
@@ -20,48 +25,56 @@ afterAll(async () => {
 
 describe("Course Enrollment", () => {
   describe("POST /api/courses/[id]/enroll", () => {
-    it("enrolls a student in a published course", async () => {
+    it("enrolls a student and creates an Enrollment document", async () => {
       const { user: teacher } = await createTestUser({ role: "teacher" });
-      const { token: studentToken } = await createTestUser({ role: "student" });
+      const { user: student, token: studentToken } = await createTestUser({
+        role: "student",
+      });
       const { course } = await createTestCourse(teacher._id, {
         isPublished: true,
       });
 
-      const request = buildRequest("POST", `/api/courses/${course._id}/enroll`, {
-        token: studentToken,
-      });
+      const request = buildRequest(
+        "POST",
+        `/api/courses/${course._id}/enroll`,
+        { token: studentToken }
+      );
       const response = await ENROLL(request, {
         params: Promise.resolve({ id: course._id.toString() }),
       });
-      const { status, data } = await parseResponse<{ message: string }>(response);
+      const { status, data } = await parseResponse<{ message: string }>(
+        response
+      );
 
       expect(status).toBe(200);
       expect(data.message).toBe("Enrolled successfully");
+
+      const enrolled = await Enrollment.isEnrolled(course._id, student._id);
+      expect(enrolled).toBe(true);
     });
 
-    it("returns 400 for double enrollment", async () => {
+    it("returns 400 for duplicate enrollment (compound index)", async () => {
       const { user: teacher } = await createTestUser({ role: "teacher" });
-      const { token: studentToken } = await createTestUser({ role: "student" });
+      const { user: student, token: studentToken } = await createTestUser({
+        role: "student",
+      });
       const { course } = await createTestCourse(teacher._id, {
         isPublished: true,
       });
 
-      // Enroll once
-      const req1 = buildRequest("POST", `/api/courses/${course._id}/enroll`, {
-        token: studentToken,
-      });
-      await ENROLL(req1, {
-        params: Promise.resolve({ id: course._id.toString() }),
-      });
+      await createTestEnrollment(course._id, student._id);
 
-      // Try to enroll again
-      const req2 = buildRequest("POST", `/api/courses/${course._id}/enroll`, {
-        token: studentToken,
-      });
-      const response = await ENROLL(req2, {
+      const request = buildRequest(
+        "POST",
+        `/api/courses/${course._id}/enroll`,
+        { token: studentToken }
+      );
+      const response = await ENROLL(request, {
         params: Promise.resolve({ id: course._id.toString() }),
       });
-      const { status, data } = await parseResponse<{ error: string }>(response);
+      const { status, data } = await parseResponse<{ error: string }>(
+        response
+      );
 
       expect(status).toBe(400);
       expect(data.error).toBe("Already enrolled in this course");
@@ -69,18 +82,24 @@ describe("Course Enrollment", () => {
 
     it("returns 400 when enrolling in unpublished course", async () => {
       const { user: teacher } = await createTestUser({ role: "teacher" });
-      const { token: studentToken } = await createTestUser({ role: "student" });
+      const { token: studentToken } = await createTestUser({
+        role: "student",
+      });
       const { course } = await createTestCourse(teacher._id, {
         isPublished: false,
       });
 
-      const request = buildRequest("POST", `/api/courses/${course._id}/enroll`, {
-        token: studentToken,
-      });
+      const request = buildRequest(
+        "POST",
+        `/api/courses/${course._id}/enroll`,
+        { token: studentToken }
+      );
       const response = await ENROLL(request, {
         params: Promise.resolve({ id: course._id.toString() }),
       });
-      const { status, data } = await parseResponse<{ error: string }>(response);
+      const { status, data } = await parseResponse<{ error: string }>(
+        response
+      );
 
       expect(status).toBe(400);
       expect(data.error).toContain("unpublished");
@@ -94,13 +113,17 @@ describe("Course Enrollment", () => {
         isPublished: true,
       });
 
-      const request = buildRequest("POST", `/api/courses/${course._id}/enroll`, {
-        token: teacherToken,
-      });
+      const request = buildRequest(
+        "POST",
+        `/api/courses/${course._id}/enroll`,
+        { token: teacherToken }
+      );
       const response = await ENROLL(request, {
         params: Promise.resolve({ id: course._id.toString() }),
       });
-      const { status, data } = await parseResponse<{ error: string }>(response);
+      const { status, data } = await parseResponse<{ error: string }>(
+        response
+      );
 
       expect(status).toBe(400);
       expect(data.error).toContain("own courses");
@@ -138,44 +161,94 @@ describe("Course Enrollment", () => {
 
       expect(status).toBe(404);
     });
-  });
 
-  describe("DELETE /api/courses/[id]/enroll (unenroll)", () => {
-    it("unenrolls a student from a course", async () => {
+    it("returns 400 for invalid ObjectId", async () => {
+      const { token } = await createTestUser({ role: "student" });
+
+      const request = buildRequest(
+        "POST",
+        `/api/courses/not-a-valid-id/enroll`,
+        { token }
+      );
+      const response = await ENROLL(request, {
+        params: Promise.resolve({ id: "not-a-valid-id" }),
+      });
+      const { status } = await parseResponse(response);
+
+      expect(status).toBe(400);
+    });
+
+    it("only creates one enrollment for concurrent attempts", async () => {
       const { user: teacher } = await createTestUser({ role: "teacher" });
-      const { token: studentToken } = await createTestUser({ role: "student" });
+      const { user: student, token: studentToken } = await createTestUser({
+        role: "student",
+      });
       const { course } = await createTestCourse(teacher._id, {
         isPublished: true,
       });
 
-      // First enroll
-      const enrollReq = buildRequest(
-        "POST",
-        `/api/courses/${course._id}/enroll`,
-        { token: studentToken }
-      );
-      await ENROLL(enrollReq, {
-        params: Promise.resolve({ id: course._id.toString() }),
+      const makeRequest = () => {
+        const req = buildRequest(
+          "POST",
+          `/api/courses/${course._id}/enroll`,
+          { token: studentToken }
+        );
+        return ENROLL(req, {
+          params: Promise.resolve({ id: course._id.toString() }),
+        });
+      };
+
+      const [res1, res2] = await Promise.all([makeRequest(), makeRequest()]);
+      const { status: s1 } = await parseResponse(res1);
+      const { status: s2 } = await parseResponse(res2);
+
+      const statuses = [s1, s2].sort();
+      expect(statuses).toEqual([200, 400]);
+
+      const count = await Enrollment.countDocuments({
+        course: course._id,
+        student: student._id,
+      });
+      expect(count).toBe(1);
+    });
+  });
+
+  describe("DELETE /api/courses/[id]/enroll (unenroll)", () => {
+    it("unenrolls a student by removing the Enrollment document", async () => {
+      const { user: teacher } = await createTestUser({ role: "teacher" });
+      const { user: student, token: studentToken } = await createTestUser({
+        role: "student",
+      });
+      const { course } = await createTestCourse(teacher._id, {
+        isPublished: true,
       });
 
-      // Then unenroll
-      const unenrollReq = buildRequest(
+      await createTestEnrollment(course._id, student._id);
+
+      const request = buildRequest(
         "DELETE",
         `/api/courses/${course._id}/enroll`,
         { token: studentToken }
       );
-      const response = await UNENROLL(unenrollReq, {
+      const response = await UNENROLL(request, {
         params: Promise.resolve({ id: course._id.toString() }),
       });
-      const { status, data } = await parseResponse<{ message: string }>(response);
+      const { status, data } = await parseResponse<{ message: string }>(
+        response
+      );
 
       expect(status).toBe(200);
       expect(data.message).toBe("Unenrolled successfully");
+
+      const enrolled = await Enrollment.isEnrolled(course._id, student._id);
+      expect(enrolled).toBe(false);
     });
 
     it("returns 400 when not enrolled", async () => {
       const { user: teacher } = await createTestUser({ role: "teacher" });
-      const { token: studentToken } = await createTestUser({ role: "student" });
+      const { token: studentToken } = await createTestUser({
+        role: "student",
+      });
       const { course } = await createTestCourse(teacher._id, {
         isPublished: true,
       });
@@ -188,7 +261,9 @@ describe("Course Enrollment", () => {
       const response = await UNENROLL(request, {
         params: Promise.resolve({ id: course._id.toString() }),
       });
-      const { status, data } = await parseResponse<{ error: string }>(response);
+      const { status, data } = await parseResponse<{ error: string }>(
+        response
+      );
 
       expect(status).toBe(400);
       expect(data.error).toBe("Not enrolled in this course");

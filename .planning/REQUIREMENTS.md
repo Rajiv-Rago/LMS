@@ -26,9 +26,9 @@ Requirements for this milestone. Each maps to roadmap phases.
 
 ### Course Generation
 
-- [ ] **CGEN-01**: Course generation produces hybrid courses mixing AI text lessons and YouTube video lessons
-- [ ] **CGEN-02**: AI decides which lessons are text vs video based on topic and content availability
-- [ ] **CGEN-03**: Single unified generation flow (no separate "AI course" vs "YouTube course")
+- [x] **CGEN-01**: Course generation produces hybrid courses mixing AI text lessons and YouTube video lessons
+- [x] **CGEN-02**: AI decides which lessons are text vs video based on topic and content availability
+- [x] **CGEN-03**: Single unified generation flow (no separate "AI course" vs "YouTube course")
 
 ### Dashboard & Navigation
 
@@ -112,9 +112,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ROLE-03 | Phase 2: Role Simplification & Course Generation | Pending |
 | ROLE-04 | Phase 2: Role Simplification & Course Generation | Complete |
 | ROLE-05 | Phase 2: Role Simplification & Course Generation | Complete |
-| CGEN-01 | Phase 2: Role Simplification & Course Generation | Pending |
-| CGEN-02 | Phase 2: Role Simplification & Course Generation | Pending |
-| CGEN-03 | Phase 2: Role Simplification & Course Generation | Pending |
+| CGEN-01 | Phase 2: Role Simplification & Course Generation | Complete |
+| CGEN-02 | Phase 2: Role Simplification & Course Generation | Complete |
+| CGEN-03 | Phase 2: Role Simplification & Course Generation | Complete |
 | DASH-01 | Phase 2: Role Simplification & Course Generation | Pending |
 | DASH-02 | Phase 2: Role Simplification & Course Generation | Pending |
 | DASH-03 | Phase 2: Role Simplification & Course Generation | Pending |

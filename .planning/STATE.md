@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 02-01-PLAN.md
-last_updated: "2026-03-06T02:55:10.883Z"
-last_activity: 2026-03-06 -- Executed plan 02-01 (Role simplification and ownership-based auth)
+stopped_at: Completed 02-02-PLAN.md
+last_updated: "2026-03-06T02:58:46.000Z"
+last_activity: 2026-03-06 -- Executed plan 02-02 (Unified course generation endpoint)
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 5
-  completed_plans: 3
-  percent: 60
+  completed_plans: 4
+  percent: 80
 ---
 
 # Project State
@@ -26,32 +26,33 @@ See: .planning/PROJECT.md (updated 2026-03-06)
 ## Current Position
 
 Phase: 2 of 6 (Role Simplification & Course Generation)
-Plan: 1 of 3 in current phase -- COMPLETE
+Plan: 2 of 3 in current phase -- COMPLETE
 Status: Executing
-Last activity: 2026-03-06 -- Executed plan 02-01 (Role simplification and ownership-based auth)
+Last activity: 2026-03-06 -- Executed plan 02-02 (Unified course generation endpoint)
 
-Progress: [██████----] 60%
+Progress: [████████--] 80%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 3
+- Total plans completed: 4
 - Average duration: 5 min
-- Total execution time: 0.27 hours
+- Total execution time: 0.32 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01-dark-mode | 2/2 | 10 min | 5 min |
-| 02-role-simplification | 1/3 | 6 min | 6 min |
+| 02-role-simplification | 2/3 | 9 min | 5 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (5 min), 01-02 (5 min), 02-01 (6 min)
+- Last 5 plans: 01-01 (5 min), 01-02 (5 min), 02-01 (6 min), 02-02 (3 min)
 - Trend: Consistent
 
 *Updated after each plan completion*
 | Phase 02-role-simplification P01 | 6min | 2 tasks | 15 files |
+| Phase 02-role-simplification P02 | 3min | 1 task | 2 files |
 
 ## Accumulated Context
 
@@ -71,6 +72,8 @@ Recent decisions affecting current work:
 - [02-01]: Unified GET /api/courses query for all roles instead of role-based branching
 - [02-01]: POST /api/courses restricted to admin-only; teachers no longer create courses manually
 - [02-01]: AI generate POST removes role gate entirely; authorization via course ownership check
+- [02-02]: MAX_GENERATED_COURSES as module-level constant (5) for easy future adjustment
+- [02-02]: subscriptionTier from JWT payload with admin override for rate limiting
 
 ### Pending Todos
 
@@ -84,6 +87,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-06T02:55:10.881Z
-Stopped at: Completed 02-01-PLAN.md
+Last session: 2026-03-06T02:58:46.000Z
+Stopped at: Completed 02-02-PLAN.md
 Resume file: None

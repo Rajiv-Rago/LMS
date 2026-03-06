@@ -20,7 +20,7 @@ Requirements for this milestone. Each maps to roadmap phases.
 
 - [x] **ROLE-01**: Any authenticated user can generate courses (no teacher role required)
 - [x] **ROLE-02**: Registration page has no role selection --- all users are learners
-- [ ] **ROLE-03**: Teacher-specific UI elements (labels, conditionals) are removed from student-facing pages
+- [x] **ROLE-03**: Teacher-specific UI elements (labels, conditionals) are removed from student-facing pages
 - [x] **ROLE-04**: Admin retains ability to manually create and edit courses
 - [x] **ROLE-05**: API routes use ownership-based authorization instead of role-based checks
 
@@ -32,9 +32,9 @@ Requirements for this milestone. Each maps to roadmap phases.
 
 ### Dashboard & Navigation
 
-- [ ] **DASH-01**: Dashboard has a prominent "Create Course" entry point for AI generation
-- [ ] **DASH-02**: Course generation can be started in 2 clicks from the dashboard (topic input + generate)
-- [ ] **DASH-03**: Dashboard shows user's enrolled courses and generated courses clearly
+- [x] **DASH-01**: Dashboard has a prominent "Create Course" entry point for AI generation
+- [x] **DASH-02**: Course generation can be started in 2 clicks from the dashboard (topic input + generate)
+- [x] **DASH-03**: Dashboard shows user's enrolled courses and generated courses clearly
 
 ### Public Catalog
 
@@ -109,15 +109,15 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DARK-06 | Phase 1: Dark Mode | Complete |
 | ROLE-01 | Phase 2: Role Simplification & Course Generation | Complete |
 | ROLE-02 | Phase 2: Role Simplification & Course Generation | Complete |
-| ROLE-03 | Phase 2: Role Simplification & Course Generation | Pending |
+| ROLE-03 | Phase 2: Role Simplification & Course Generation | Complete |
 | ROLE-04 | Phase 2: Role Simplification & Course Generation | Complete |
 | ROLE-05 | Phase 2: Role Simplification & Course Generation | Complete |
 | CGEN-01 | Phase 2: Role Simplification & Course Generation | Complete |
 | CGEN-02 | Phase 2: Role Simplification & Course Generation | Complete |
 | CGEN-03 | Phase 2: Role Simplification & Course Generation | Complete |
-| DASH-01 | Phase 2: Role Simplification & Course Generation | Pending |
-| DASH-02 | Phase 2: Role Simplification & Course Generation | Pending |
-| DASH-03 | Phase 2: Role Simplification & Course Generation | Pending |
+| DASH-01 | Phase 2: Role Simplification & Course Generation | Complete |
+| DASH-02 | Phase 2: Role Simplification & Course Generation | Complete |
+| DASH-03 | Phase 2: Role Simplification & Course Generation | Complete |
 | BUGS-01 | Phase 3: Stabilization & Bug Fixes | Pending |
 | CATL-01 | Phase 4: Public Catalog & Sharing | Pending |
 | CATL-02 | Phase 4: Public Catalog & Sharing | Pending |

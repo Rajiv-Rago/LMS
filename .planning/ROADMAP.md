@@ -13,7 +13,7 @@ This milestone transforms Kantigo from a functional but rough prototype into a p
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Dark Mode** - Fix broken dark/light toggle and ensure consistent theming across all pages
-- [ ] **Phase 2: Role Simplification & Course Generation** - Any authenticated user can generate hybrid courses from the dashboard
+- [x] **Phase 2: Role Simplification & Course Generation** - Any authenticated user can generate hybrid courses from the dashboard (completed 2026-03-06)
 - [ ] **Phase 3: Stabilization & Bug Fixes** - Audit and fix broken functionality across core flows
 - [ ] **Phase 4: Public Catalog & Sharing** - Browsable course catalog and shareable enrollment links for unauthenticated users
 - [ ] **Phase 5: Inline Feedback** - Learners can flag lesson issues and trigger instant LLM regeneration with content versioning
@@ -118,7 +118,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Dark Mode | 2/2 | Complete | 2026-03-05 |
-| 2. Role Simplification & Course Generation | 0/3 | Not started | - |
+| 2. Role Simplification & Course Generation | 3/3 | Complete   | 2026-03-06 |
 | 3. Stabilization & Bug Fixes | 0/1 | Not started | - |
 | 4. Public Catalog & Sharing | 0/2 | Not started | - |
 | 5. Inline Feedback | 0/2 | Not started | - |

@@ -5,6 +5,8 @@ import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { NotificationBell } from "@/components/ui/NotificationBell";
 import ThemeToggle from "@/components/ui/ThemeToggle";
+import BottomNav from "@/components/ui/BottomNav";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 interface User {
   id: string;
@@ -56,8 +58,23 @@ export default function DashboardLayout({
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-zinc-50 dark:bg-zinc-950" aria-busy="true">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+      <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950" aria-busy="true">
+        <aside className="hidden lg:block fixed inset-y-0 left-0 w-64 bg-white dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-800">
+          <div className="h-16 border-b border-zinc-200 dark:border-zinc-800 px-4 flex items-center">
+            <Skeleton className="h-6 w-24" />
+          </div>
+          <div className="px-4 py-4 space-y-2">
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-full" />
+          </div>
+        </aside>
+        <div className="lg:pl-64 pt-14 lg:pt-0 p-4 lg:p-6">
+          <Skeleton className="h-8 w-48 mb-6" />
+          <Skeleton className="h-64 w-full" />
+        </div>
       </div>
     );
   }
@@ -180,9 +197,11 @@ export default function DashboardLayout({
       )}
 
       {/* Main content */}
-      <main id="main-content" className="lg:pl-64 pt-14 lg:pt-0">
-        <div className="p-6">{children}</div>
+      <main id="main-content" className="lg:pl-64 pt-14 lg:pt-0 pb-16 lg:pb-0">
+        <div className="p-4 lg:p-6">{children}</div>
       </main>
+
+      <BottomNav />
     </div>
   );
 }

@@ -53,7 +53,7 @@ Requirements for this milestone. Each maps to roadmap phases.
 
 ### Visual Polish
 
-- [ ] **VISL-01**: Loading states use consistent skeleton screens across all pages
+- [x] **VISL-01**: Loading states use consistent skeleton screens across all pages
 - [x] **VISL-02**: Responsive design works on mobile --- no content overflow or broken layouts
 - [x] **VISL-03**: Consistent spacing and typography across dashboard pages
 
@@ -128,7 +128,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FDBK-03 | Phase 5: Inline Feedback | Complete |
 | FDBK-04 | Phase 5: Inline Feedback | Complete |
 | FDBK-05 | Phase 5: Inline Feedback | Complete |
-| VISL-01 | Phase 6: Visual Polish | Pending |
+| VISL-01 | Phase 6: Visual Polish | Complete |
 | VISL-02 | Phase 6: Visual Polish | Complete |
 | VISL-03 | Phase 6: Visual Polish | Complete |
 

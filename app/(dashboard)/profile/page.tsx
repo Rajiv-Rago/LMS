@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Skeleton } from "@/components/ui/Skeleton";
+import Button from "@/components/ui/Button";
 
 interface User {
   id: string;
@@ -87,20 +88,22 @@ export default function ProfilePage() {
   if (loading) {
     return (
       <div className="max-w-2xl mx-auto space-y-6">
-        <Skeleton className="h-7 w-24" />
-        <div className="bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800 p-6">
-          <div className="flex items-center gap-4 mb-6">
-            <Skeleton className="w-16 h-16 rounded-full" />
-            <div className="space-y-2">
-              <Skeleton className="h-5 w-32" />
-              <Skeleton className="h-4 w-48" />
-            </div>
+        <Skeleton className="h-8 w-32" />
+        <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 p-4 space-y-4">
+          <div>
+            <Skeleton className="h-4 w-24 mb-2" />
+            <Skeleton className="h-10 w-full" />
           </div>
-          <div className="space-y-4">
-            <Skeleton className="h-4 w-40" />
-            <Skeleton className="h-4 w-32" />
+          <div>
+            <Skeleton className="h-4 w-24 mb-2" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+          <div>
+            <Skeleton className="h-4 w-24 mb-2" />
+            <Skeleton className="h-10 w-full" />
           </div>
         </div>
+        <Skeleton className="h-10 w-24" />
       </div>
     );
   }
@@ -113,7 +116,7 @@ export default function ProfilePage() {
         Profile
       </h1>
 
-      <div className="bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800 p-6">
+      <div className="bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800 p-4">
         <div className="flex items-center gap-4 mb-6">
           <div className="w-16 h-16 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center">
             <span className="text-2xl font-bold text-indigo-700 dark:text-indigo-200">
@@ -121,35 +124,34 @@ export default function ProfilePage() {
             </span>
           </div>
           <div>
-            <h2 className="text-xl font-semibold text-zinc-900 dark:text-white">
+            <h2 className="text-lg font-semibold text-zinc-900 dark:text-white">
               {user.name}
             </h2>
-            <p className="text-zinc-500 dark:text-zinc-400">{user.email}</p>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">{user.email}</p>
           </div>
         </div>
 
         <dl className="space-y-4">
           <div>
-            <dt className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
+            <dt className="text-xs text-zinc-500 dark:text-zinc-400">
               Account Type
             </dt>
-            <dd className="mt-1 text-zinc-900 dark:text-white capitalize">
+            <dd className="mt-1 text-sm text-zinc-900 dark:text-white capitalize">
               {user.role}
             </dd>
           </div>
           <div>
-            <dt className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
+            <dt className="text-xs text-zinc-500 dark:text-zinc-400">
               Member Since
             </dt>
-            <dd className="mt-1 text-zinc-900 dark:text-white">
+            <dd className="mt-1 text-sm text-zinc-900 dark:text-white">
               {new Date(user.createdAt).toLocaleDateString()}
             </dd>
           </div>
         </dl>
       </div>
 
-      {/* Data & Privacy */}
-      <div className="bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800 p-6">
+      <div className="bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800 p-4">
         <h2 className="text-lg font-semibold text-zinc-900 dark:text-white mb-4">
           Data & Privacy
         </h2>
@@ -159,17 +161,17 @@ export default function ProfilePage() {
               <p className="text-sm font-medium text-zinc-900 dark:text-white">
                 Export my data
               </p>
-              <p className="text-sm text-zinc-500 dark:text-zinc-400">
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">
                 Download all your personal data as a JSON file.
               </p>
             </div>
-            <button
+            <Button
+              variant="secondary"
               onClick={handleExport}
               disabled={exporting}
-              className="px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800 rounded-md hover:bg-zinc-200 dark:hover:bg-zinc-700 disabled:opacity-50"
             >
               {exporting ? "Exporting..." : "Export"}
-            </button>
+            </Button>
           </div>
 
           <hr className="border-zinc-200 dark:border-zinc-800" />
@@ -179,24 +181,23 @@ export default function ProfilePage() {
               <p className="text-sm font-medium text-red-600 dark:text-red-400">
                 Delete my account
               </p>
-              <p className="text-sm text-zinc-500 dark:text-zinc-400">
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">
                 Permanently delete your account and anonymize your data.
               </p>
             </div>
-            <button
+            <Button
+              variant="danger"
               onClick={() => setShowDeleteDialog(true)}
-              className="px-4 py-2 text-sm font-medium text-red-600 border border-red-300 dark:border-red-800 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20"
             >
               Delete
-            </button>
+            </Button>
           </div>
         </div>
       </div>
 
-      {/* Delete confirmation dialog */}
       {showDeleteDialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800 p-6 max-w-md w-full mx-4">
+          <div className="bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800 p-4 max-w-md w-full mx-4">
             <h3 className="text-lg font-semibold text-zinc-900 dark:text-white mb-2">
               Delete Account
             </h3>
@@ -218,27 +219,27 @@ export default function ProfilePage() {
                 onChange={(e) => setDeletePassword(e.target.value)}
                 placeholder="Enter your password"
                 required
-                className="w-full rounded-md border border-zinc-300 dark:border-zinc-700 px-3 py-2 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white mb-4"
+                className="w-full rounded-lg border border-zinc-300 dark:border-zinc-700 px-3 py-2 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white mb-4"
               />
               <div className="flex justify-end gap-3">
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
                   onClick={() => {
                     setShowDeleteDialog(false);
                     setDeletePassword("");
                     setDeleteError("");
                   }}
-                  className="px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-md"
                 >
                   Cancel
-                </button>
-                <button
+                </Button>
+                <Button
                   type="submit"
+                  variant="danger"
                   disabled={deleting}
-                  className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-500 disabled:opacity-50"
                 >
                   {deleting ? "Deleting..." : "Delete Account"}
-                </button>
+                </Button>
               </div>
             </form>
           </div>

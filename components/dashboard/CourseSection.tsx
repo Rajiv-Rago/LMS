@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import Link from "next/link";
 
 interface CourseModule {
@@ -18,12 +19,14 @@ interface CourseSectionProps {
   title: string;
   courses: Course[];
   emptyMessage?: string;
+  emptyState?: React.ReactNode;
 }
 
 export default function CourseSection({
   title,
   courses,
   emptyMessage = "No courses yet",
+  emptyState,
 }: CourseSectionProps) {
   const totalLessons = (course: Course) =>
     course.modules?.reduce((sum, m) => sum + (m.lessons?.length || 0), 0) || 0;
@@ -35,9 +38,11 @@ export default function CourseSection({
       </h2>
 
       {courses.length === 0 ? (
-        <p className="text-sm text-zinc-500 dark:text-zinc-400 py-4">
-          {emptyMessage}
-        </p>
+        emptyState || (
+          <p className="text-sm text-zinc-500 dark:text-zinc-400 py-4">
+            {emptyMessage}
+          </p>
+        )
       ) : (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           {courses.map((course) => {

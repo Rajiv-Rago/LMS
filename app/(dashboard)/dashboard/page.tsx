@@ -2,9 +2,11 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { BookOpen, Compass } from "lucide-react";
 import GenerationInput from "@/components/dashboard/GenerationInput";
 import GeneratingCard from "@/components/dashboard/GeneratingCard";
 import CourseSection from "@/components/dashboard/CourseSection";
+import EmptyState from "@/components/ui/EmptyState";
 import { useJobPoller, JobResult } from "@/lib/hooks/useJobPoller";
 import { Skeleton, SkeletonCard } from "@/components/ui/Skeleton";
 
@@ -131,21 +133,32 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <div className="space-y-6">
-        <div className="space-y-2">
-          <Skeleton className="h-7 w-48" />
-          <Skeleton className="h-4 w-64" />
+        <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 p-4">
+          <Skeleton className="h-6 w-48 mb-4" />
+          <Skeleton className="h-10 w-full" />
         </div>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <SkeletonCard key={i} />
-          ))}
+        <div>
+          <Skeleton className="h-5 w-32 mb-4" />
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <SkeletonCard key={i} />
+            ))}
+          </div>
+        </div>
+        <div>
+          <Skeleton className="h-5 w-32 mb-4" />
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: 2 }).map((_, i) => (
+              <SkeletonCard key={i} />
+            ))}
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <GenerationInput
         onSubmit={handleGenerate}
         disabled={generationPhase !== "idle"}
@@ -172,13 +185,35 @@ export default function DashboardPage() {
       <CourseSection
         title="My Courses"
         courses={myCourses}
-        emptyMessage="You haven't generated any courses yet"
+        emptyState={
+          <EmptyState
+            icon={BookOpen}
+            title="No courses yet"
+            description="Generate your first course to get started"
+            action={{
+              label: "Generate Course",
+              onClick: () => {
+                window.scrollTo({ top: 0, behavior: "smooth" });
+                const input = document.querySelector<HTMLInputElement>(
+                  'input[placeholder="What do you want to learn?"]'
+                );
+                input?.focus();
+              },
+            }}
+          />
+        }
       />
 
       <CourseSection
         title="Enrolled Courses"
         courses={enrolledCourses}
-        emptyMessage="You haven't enrolled in any courses yet"
+        emptyState={
+          <EmptyState
+            icon={Compass}
+            title="No enrollments"
+            description="Browse the course catalog to find courses"
+          />
+        }
       />
     </div>
   );

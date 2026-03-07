@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { ModelSelector, ModelSelectorValue } from "@/components/ai/ModelSelector";
 import { useToast } from "@/lib/hooks/useToast";
+import { Skeleton } from "@/components/ui/Skeleton";
+import Button from "@/components/ui/Button";
 import type { UserAIPreferences } from "@/lib/ai/types";
 
 export default function SettingsPage() {
@@ -79,24 +81,34 @@ export default function SettingsPage() {
 
   if (loading) {
     return (
-      <div className="max-w-2xl mx-auto">
-        <h1 className="text-2xl font-bold text-zinc-900 dark:text-white mb-6">
-          Settings
-        </h1>
-        <div className="animate-pulse space-y-4">
-          <div className="h-32 bg-zinc-200 dark:bg-zinc-800 rounded-lg" />
+      <div className="max-w-2xl mx-auto space-y-6">
+        <Skeleton className="h-8 w-32" />
+        <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 p-4 space-y-4">
+          <div>
+            <Skeleton className="h-4 w-32 mb-2" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+          <div>
+            <Skeleton className="h-4 w-32 mb-2" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+          <div>
+            <Skeleton className="h-4 w-32 mb-2" />
+            <Skeleton className="h-10 w-full" />
+          </div>
         </div>
+        <Skeleton className="h-10 w-24" />
       </div>
     );
   }
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <h1 className="text-2xl font-bold text-zinc-900 dark:text-white mb-6">
+    <div className="max-w-2xl mx-auto space-y-6">
+      <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">
         Settings
       </h1>
 
-      <div className="bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800 p-6">
+      <div className="bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800 p-4">
         <h2 className="text-lg font-semibold text-zinc-900 dark:text-white mb-1">
           AI Preferences
         </h2>
@@ -108,13 +120,13 @@ export default function SettingsPage() {
         <ModelSelector value={modelValue} onChange={setModelValue} />
 
         <div className="mt-6 flex justify-end">
-          <button
+          <Button
+            variant="primary"
             onClick={handleSave}
             disabled={saving}
-            className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {saving ? "Saving..." : "Save Preferences"}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

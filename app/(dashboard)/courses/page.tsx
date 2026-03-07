@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { SkeletonCard } from "@/components/ui/Skeleton";
+import { BookOpen } from "lucide-react";
+import { Skeleton, SkeletonCard } from "@/components/ui/Skeleton";
+import EmptyState from "@/components/ui/EmptyState";
 
 interface User {
   id: string;
@@ -62,13 +64,9 @@ export default function CoursesPage() {
   if (loading) {
     return (
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="space-y-2">
-            <div className="h-7 w-32 bg-zinc-200 dark:bg-zinc-700 rounded animate-pulse" />
-            <div className="h-4 w-48 bg-zinc-200 dark:bg-zinc-700 rounded animate-pulse" />
-          </div>
-        </div>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <Skeleton className="h-8 w-40" />
+        <Skeleton className="h-10 w-full rounded-lg" />
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
             <SkeletonCard key={i} />
           ))}
@@ -90,28 +88,32 @@ export default function CoursesPage() {
         </div>
       </div>
 
-      {/* Search */}
       <div>
         <input
           type="text"
           placeholder="Search courses..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full max-w-md rounded-md border border-zinc-300 dark:border-zinc-700 px-3 py-2 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white placeholder-zinc-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          className="w-full max-w-md rounded-lg border border-zinc-300 dark:border-zinc-700 px-3 py-2 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white placeholder-zinc-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
         />
       </div>
 
-      {/* Course List */}
       {filteredCourses.length === 0 ? (
-        <div className="bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800 p-8 text-center">
-          <p className="text-zinc-500 dark:text-zinc-400">
-            {search
-              ? "No courses found matching your search."
-              : "No courses available."}
-          </p>
-        </div>
+        search ? (
+          <div className="bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800 p-8 text-center">
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">
+              No courses found matching your search.
+            </p>
+          </div>
+        ) : (
+          <EmptyState
+            icon={BookOpen}
+            title="No courses"
+            description="You haven't created or enrolled in any courses yet"
+          />
+        )
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           {filteredCourses.map((course) => {
             const isOwner = user && course.instructor._id === user.id;
             const isEnrolled =
@@ -123,9 +125,9 @@ export default function CoursesPage() {
                 href={`/courses/${course._id}`}
                 className="block bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800 hover:border-indigo-500 dark:hover:border-indigo-500 transition-colors overflow-hidden"
               >
-                <div className="p-6">
+                <div className="p-4">
                   <div className="flex items-start justify-between">
-                    <h3 className="font-semibold text-zinc-900 dark:text-white truncate flex-1">
+                    <h3 className="text-base font-semibold text-zinc-900 dark:text-white truncate flex-1">
                       {course.title}
                     </h3>
                     {!course.isPublished && isOwner && !course.owner && (

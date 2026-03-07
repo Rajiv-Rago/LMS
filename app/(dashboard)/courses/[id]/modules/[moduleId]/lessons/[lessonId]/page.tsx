@@ -11,6 +11,8 @@ import { useUserAIDefaults } from "@/lib/hooks/useUserAIDefaults";
 import MarkdownContent from "@/components/ui/MarkdownContent";
 import YouTubeVideoPicker from "@/components/lesson/YouTubeVideoPicker";
 import ContentGenerationSkeleton from "@/components/lesson/ContentGenerationSkeleton";
+import FeedbackSection from "@/components/lesson/FeedbackSection";
+import { useToast } from "@/lib/hooks/useToast";
 
 interface YouTubeMetadata {
   videoId: string;
@@ -39,6 +41,7 @@ interface Lesson {
 
 interface Permissions {
   canEdit: boolean;
+  isSharedWith: boolean;
 }
 
 export default function LessonDetailPage({
@@ -63,16 +66,18 @@ export default function LessonDetailPage({
   });
 
   // AI generation state
-  const [feedback, setFeedback] = useState("");
   const [generating, setGenerating] = useState(false);
   const [genError, setGenError] = useState("");
   const [modelValue, setModelValue] = useState<ModelSelectorValue>({
     tier: "balanced",
   });
-  const [showFeedback, setShowFeedback] = useState(false);
   const [showVideoPicker, setShowVideoPicker] = useState(false);
   const [swapping, setSwapping] = useState(false);
+  const [creditsRemaining, setCreditsRemaining] = useState(0);
+  const [undoAvailable, setUndoAvailable] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const toast = useToast();
 
   const { value: defaultModelValue, loading: defaultsLoading } =
     useUserAIDefaults();
@@ -83,10 +88,11 @@ export default function LessonDetailPage({
     }
   }, [defaultModelValue, defaultsLoading]);
 
-  // Cleanup polling on unmount
+  // Cleanup polling and undo timer on unmount
   useEffect(() => {
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
+      if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
     };
   }, []);
 
@@ -121,6 +127,20 @@ export default function LessonDetailPage({
   useEffect(() => {
     fetchLesson();
   }, [fetchLesson]);
+
+  // Fetch AI credits when permissions are available
+  useEffect(() => {
+    const canFeedback =
+      isOwnedCourse && (permissions?.canEdit || permissions?.isSharedWith);
+    if (!canFeedback) return;
+
+    fetch("/api/ai/credits")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.remaining != null) setCreditsRemaining(data.remaining);
+      })
+      .catch(() => {});
+  }, [isOwnedCourse, permissions]);
 
   const patchLesson = async (body: Record<string, unknown>) => {
     const res = await fetch(
@@ -178,14 +198,18 @@ export default function LessonDetailPage({
     }
   };
 
-  const handleGenerate = async (withFeedback?: string) => {
+  const handleGenerate = async (
+    withFeedback?: string,
+    useModelSelector?: boolean
+  ) => {
     setGenError("");
-    setGenerating(true);
 
     const payload: Record<string, string> = {};
-    if (modelValue.tier) payload.tier = modelValue.tier;
-    if (modelValue.provider) payload.provider = modelValue.provider;
-    if (modelValue.model) payload.model = modelValue.model;
+    if (useModelSelector) {
+      if (modelValue.tier) payload.tier = modelValue.tier;
+      if (modelValue.provider) payload.provider = modelValue.provider;
+      if (modelValue.model) payload.model = modelValue.model;
+    }
     if (withFeedback) payload.feedback = withFeedback;
 
     try {
@@ -201,11 +225,25 @@ export default function LessonDetailPage({
         }
       );
 
+      if (res.status === 429) {
+        setCreditsRemaining(0);
+        toast.error("No credits left -- resets tomorrow");
+        return;
+      }
+
       const data = await res.json();
       if (!res.ok) {
+        toast.error("Regeneration failed. Try again later.");
         setGenError(data.error || "Generation request failed");
-        setGenerating(false);
         return;
+      }
+
+      // Show skeleton only after 202 accepted
+      setGenerating(true);
+
+      const rateLimitHeader = res.headers.get("X-RateLimit-Remaining");
+      if (rateLimitHeader != null) {
+        setCreditsRemaining(Number(rateLimitHeader));
       }
 
       // Poll for job completion
@@ -217,25 +255,57 @@ export default function LessonDetailPage({
             clearInterval(pollRef.current!);
             pollRef.current = null;
             await fetchLesson();
-            setFeedback("");
-            setShowFeedback(false);
+            setCreditsRemaining((prev) => Math.max(0, prev - 1));
+            setUndoAvailable(true);
+            if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
+            undoTimerRef.current = setTimeout(
+              () => setUndoAvailable(false),
+              30000
+            );
             setGenerating(false);
           } else if (jobData.job?.status === "failed") {
             clearInterval(pollRef.current!);
             pollRef.current = null;
+            toast.error("Regeneration failed. Try again later.");
             setGenError(jobData.job.error || "Generation failed");
             setGenerating(false);
           }
         } catch {
           clearInterval(pollRef.current!);
           pollRef.current = null;
-          setGenError("Failed to check generation status");
+          toast.error("Failed to check generation status");
           setGenerating(false);
         }
       }, 2000);
     } catch {
-      setGenError("Failed to start generation");
-      setGenerating(false);
+      toast.error("Failed to start generation");
+    }
+  };
+
+  const handleUndo = async () => {
+    try {
+      const res = await fetch(
+        `/api/courses/ai/${id}/lessons/${lessonId}/revert`,
+        {
+          method: "POST",
+          headers: { "X-Requested-With": "XMLHttpRequest" },
+        }
+      );
+      if (res.ok) {
+        await fetchLesson();
+        setUndoAvailable(false);
+        if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
+        undoTimerRef.current = null;
+        toast.success("Lesson reverted");
+      } else {
+        toast.error(
+          "Failed to revert. The previous version may no longer be available."
+        );
+      }
+    } catch {
+      toast.error(
+        "Failed to revert. The previous version may no longer be available."
+      );
     }
   };
 
@@ -296,10 +366,14 @@ export default function LessonDetailPage({
   if (!lesson) return null;
 
   const canGenerate = isOwnedCourse && permissions?.canEdit;
+  const canFeedback =
+    isOwnedCourse &&
+    (permissions?.canEdit || permissions?.isSharedWith);
   const isSkeleton =
     lesson.generationStatus === "skeleton" || (!lesson.content && isOwnedCourse);
   const isCompleted = lesson.generationStatus === "completed";
   const isFailed = lesson.generationStatus === "failed";
+  const isAITextLesson = lesson.contentType === "text" && isOwnedCourse;
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -514,7 +588,7 @@ export default function LessonDetailPage({
                     disabled={generating}
                   />
                   <button
-                    onClick={() => handleGenerate()}
+                    onClick={() => handleGenerate(undefined, true)}
                     disabled={generating}
                     className="px-4 py-2 text-sm font-medium text-white bg-violet-600 rounded-md hover:bg-violet-500 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
@@ -596,63 +670,33 @@ export default function LessonDetailPage({
                   </div>
                 )}
 
-                {/* AI feedback section for completed AI lessons */}
-                {canGenerate && (isCompleted || isFailed) && !generating && (
-                  <div className="mt-6 border border-zinc-200 dark:border-zinc-700 rounded-lg">
+                {/* Undo bar after regeneration */}
+                {undoAvailable && (
+                  <div className="mt-4 flex items-center justify-between rounded-lg bg-zinc-800 dark:bg-zinc-700 text-white px-4 py-3">
+                    <span className="text-sm font-medium">
+                      Lesson updated
+                    </span>
                     <button
-                      onClick={() => setShowFeedback(!showFeedback)}
-                      className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 rounded-lg"
+                      onClick={handleUndo}
+                      className="px-3 py-1 text-sm font-medium text-white bg-zinc-600 dark:bg-zinc-500 rounded-md hover:bg-zinc-500 dark:hover:bg-zinc-400"
                     >
-                      <span>Improve with AI</span>
-                      <svg
-                        className={`w-4 h-4 transition-transform ${showFeedback ? "rotate-180" : ""}`}
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M19 9l-7 7-7-7"
-                        />
-                      </svg>
+                      Undo
                     </button>
-
-                    {showFeedback && (
-                      <div className="px-4 pb-4 space-y-3 border-t border-zinc-200 dark:border-zinc-700 pt-3">
-                        <textarea
-                          rows={3}
-                          value={feedback}
-                          onChange={(e) => setFeedback(e.target.value)}
-                          placeholder="What would you like changed? e.g., add more examples, simplify the language, focus more on X..."
-                          className="block w-full rounded-md border border-zinc-300 dark:border-zinc-700 px-3 py-2 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white text-sm"
-                        />
-                        <ModelSelector
-                          value={modelValue}
-                          onChange={setModelValue}
-                          disabled={generating}
-                        />
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => handleGenerate(feedback)}
-                            disabled={!feedback.trim() || generating}
-                            className="px-4 py-2 text-sm font-medium text-white bg-violet-600 rounded-md hover:bg-violet-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            Regenerate with Feedback
-                          </button>
-                          <button
-                            onClick={() => handleGenerate()}
-                            disabled={generating}
-                            className="px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800 rounded-md hover:bg-zinc-200 dark:hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            Regenerate
-                          </button>
-                        </div>
-                      </div>
-                    )}
                   </div>
                 )}
+
+                {/* Inline feedback section for completed/failed AI text lessons */}
+                {canFeedback &&
+                  isAITextLesson &&
+                  (isCompleted || isFailed) &&
+                  !generating && (
+                    <FeedbackSection
+                      onSubmit={(fb) => handleGenerate(fb)}
+                      creditsRemaining={creditsRemaining}
+                      disabled={generating}
+                      generating={generating}
+                    />
+                  )}
               </>
             )}
 

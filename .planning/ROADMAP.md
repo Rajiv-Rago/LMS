@@ -97,11 +97,11 @@ Plans:
   2. Submitting feedback triggers LLM regeneration and the lesson content updates without a full page reload
   3. If a regeneration produces worse content, the learner can revert to a previous version
   4. A learner cannot trigger more regenerations than the rate limit allows (clear messaging when limit is hit)
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 05-01: TBD
-- [ ] 05-02: TBD
+- [ ] 05-01-PLAN.md — Backend: content versioning (previousContent), auth expansion to sharedWith, revert and credits endpoints
+- [ ] 05-02-PLAN.md — Frontend: always-visible FeedbackSection component with chips, undo bar, credits display
 
 ### Phase 6: Visual Polish
 **Goal**: The app feels consistent and professional across all screen sizes with polished loading states

@@ -86,8 +86,10 @@ export async function POST(request: NextRequest) {
     return jsonResponse;
   } catch (error) {
     captureException(error, { operation: "Create syllabus error" });
+    const message =
+      error instanceof Error ? error.message : "Something went wrong.";
     return NextResponse.json(
-      { error: "Something went wrong. Please try again later." },
+      { error: message },
       { status: 500 }
     );
   }

@@ -49,7 +49,7 @@ export default function GradebookPage({
         const res = await fetch(`/api/courses/${id}/gradebook`);
 
         if (!res.ok) {
-          router.push(`/courses/${id}`);
+          router.push(`/courses/${id}/overview`);
           return;
         }
 
@@ -79,7 +79,7 @@ export default function GradebookPage({
     <div className="space-y-6">
       <div className="mb-6">
         <Link
-          href={`/courses/${id}`}
+          href={`/courses/${id}/overview`}
           className="text-sm text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
         >
           &larr; Back to course

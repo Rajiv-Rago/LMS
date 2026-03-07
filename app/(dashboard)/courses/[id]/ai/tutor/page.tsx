@@ -156,7 +156,7 @@ export default function AITutorPage({
       <div className="w-full lg:w-64 shrink-0 border-b lg:border-b-0 lg:border-r border-zinc-200 dark:border-zinc-800 flex flex-col bg-white dark:bg-zinc-900">
         <div className="p-4 border-b border-zinc-200 dark:border-zinc-800">
           <Link
-            href={`/courses/${id}`}
+            href={`/courses/${id}/overview`}
             className="text-xs text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
           >
             &larr; Back to course

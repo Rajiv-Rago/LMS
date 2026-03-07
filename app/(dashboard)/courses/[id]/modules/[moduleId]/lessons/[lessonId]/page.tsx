@@ -118,7 +118,7 @@ export default function LessonDetailPage({
         `/api/courses/${id}/modules/${moduleId}/lessons/${lessonId}`
       );
       if (!res.ok) {
-        router.push(`/courses/${id}`);
+        router.push(`/courses/${id}/overview`);
         return;
       }
       const data = await res.json();
@@ -223,7 +223,7 @@ export default function LessonDetailPage({
       );
 
       if (res.ok) {
-        router.push(`/courses/${id}`);
+        router.push(`/courses/${id}/overview`);
       }
     } catch {
       /* ignore */
@@ -450,7 +450,7 @@ export default function LessonDetailPage({
     <div className="max-w-4xl mx-auto space-y-6">
       <div>
         <Link
-          href={`/courses/${id}`}
+          href={`/courses/${id}/overview`}
           className="text-xs text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
         >
           &larr; Back to course

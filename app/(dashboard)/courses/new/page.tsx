@@ -79,7 +79,7 @@ export default function NewCoursePage() {
       }
 
       toast.success("Course created successfully");
-      router.push(`/courses/${data.course._id}`);
+      router.push(`/courses/${data.course._id}/overview`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create course");
     } finally {

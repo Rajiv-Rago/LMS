@@ -6,5 +6,5 @@ export default async function ModuleDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  redirect(`/courses/${id}`);
+  redirect(`/courses/${id}/overview`);
 }

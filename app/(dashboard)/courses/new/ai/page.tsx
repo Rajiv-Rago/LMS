@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ModelSelector, ModelSelectorValue } from "@/components/ai/ModelSelector";
 import { useUserAIDefaults } from "@/lib/hooks/useUserAIDefaults";
+import Button from "@/components/ui/Button";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 type TargetLevel = "beginner" | "intermediate" | "advanced";
 type GenerationPhase = "idle" | "submitting" | "generating" | "complete";
@@ -177,18 +179,29 @@ export default function NewAICoursePage() {
 
   if (checkingAuth || !authorized) {
     return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+      <div className="max-w-2xl mx-auto space-y-6">
+        <Skeleton className="h-4 w-24" />
+        <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 overflow-hidden">
+          <Skeleton className="h-20 w-full" />
+          <div className="p-6 space-y-4">
+            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <div className="mb-6">
+    <div className="max-w-2xl mx-auto space-y-6">
+      <div>
         <Link
           href="/courses"
-          className="text-sm text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
+          className="text-xs text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
         >
           &larr; Back to courses
         </Link>
@@ -196,7 +209,7 @@ export default function NewAICoursePage() {
 
       <div className="bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800 overflow-hidden">
         {/* Header with gradient */}
-        <div className="bg-gradient-to-r from-indigo-600 to-violet-600 px-6 py-5">
+        <div className="bg-gradient-to-r from-indigo-600 to-violet-600 px-4 sm:px-6 py-5">
           <div className="flex items-center gap-3">
             <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-white/20">
               <svg
@@ -214,7 +227,7 @@ export default function NewAICoursePage() {
               </svg>
             </div>
             <div>
-              <h1 className="text-xl font-bold text-white">Create Course with AI</h1>
+              <h1 className="text-2xl font-bold text-white">Create Course with AI</h1>
               <p className="text-sm text-white/80">
                 Describe your topic and we&apos;ll generate a complete course
               </p>
@@ -222,7 +235,7 @@ export default function NewAICoursePage() {
           </div>
         </div>
 
-        <div className="p-6">
+        <div className="p-4 sm:p-6">
           <form onSubmit={handleSubmit} className="space-y-6">
             {error && (
               <div className="rounded-md bg-red-50 dark:bg-red-900/50 p-4">
@@ -244,7 +257,7 @@ export default function NewAICoursePage() {
                 disabled={isGenerating}
                 value={formData.topic}
                 onChange={(e) => setFormData({ ...formData, topic: e.target.value })}
-                className="mt-1 block w-full rounded-md border border-zinc-300 dark:border-zinc-700 px-3 py-2 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white placeholder-zinc-400 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="mt-1 block w-full rounded-md border border-zinc-300 dark:border-zinc-700 px-3 py-2 text-sm bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white placeholder-zinc-400 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 placeholder="e.g., Python programming for beginners, Machine learning fundamentals"
               />
             </div>
@@ -264,7 +277,7 @@ export default function NewAICoursePage() {
                 onChange={(e) =>
                   setFormData({ ...formData, targetLevel: e.target.value as TargetLevel })
                 }
-                className="mt-1 block w-full rounded-md border border-zinc-300 dark:border-zinc-700 px-3 py-2 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="mt-1 block w-full rounded-md border border-zinc-300 dark:border-zinc-700 px-3 py-2 text-sm bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <option value="beginner">Beginner</option>
                 <option value="intermediate">Intermediate</option>
@@ -288,7 +301,7 @@ export default function NewAICoursePage() {
                 onChange={(e) =>
                   setFormData({ ...formData, estimatedDuration: e.target.value })
                 }
-                className="mt-1 block w-full rounded-md border border-zinc-300 dark:border-zinc-700 px-3 py-2 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white placeholder-zinc-400 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="mt-1 block w-full rounded-md border border-zinc-300 dark:border-zinc-700 px-3 py-2 text-sm bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white placeholder-zinc-400 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 placeholder="e.g., 4 weeks, 20 hours, 10 lessons"
               />
             </div>
@@ -308,7 +321,7 @@ export default function NewAICoursePage() {
                 onChange={(e) =>
                   setFormData({ ...formData, additionalContext: e.target.value })
                 }
-                className="mt-1 block w-full rounded-md border border-zinc-300 dark:border-zinc-700 px-3 py-2 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white placeholder-zinc-400 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="mt-1 block w-full rounded-md border border-zinc-300 dark:border-zinc-700 px-3 py-2 text-sm bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white placeholder-zinc-400 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 placeholder="Any specific topics to cover, learning goals, or prerequisites..."
               />
             </div>
@@ -328,7 +341,7 @@ export default function NewAICoursePage() {
                 <span className="font-medium text-zinc-700 dark:text-zinc-300">
                   Include YouTube videos
                 </span>
-                <p className="text-zinc-500 dark:text-zinc-400">
+                <p className="text-xs text-zinc-500 dark:text-zinc-400">
                   Mix AI-written text lessons with curated YouTube videos for a richer learning experience
                 </p>
               </label>
@@ -361,20 +374,20 @@ export default function NewAICoursePage() {
               </div>
             )}
 
-            <div className="flex items-center justify-end gap-3 pt-2">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3 pt-2">
               <Link
                 href="/courses"
-                className="px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-md"
+                className="px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg text-center min-h-[44px] flex items-center justify-center"
               >
                 Cancel
               </Link>
-              <button
+              <Button
                 type="submit"
                 disabled={isGenerating}
-                className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-violet-600 rounded-md hover:from-violet-500 hover:to-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full sm:w-auto bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-violet-500 hover:to-indigo-500"
               >
                 {isGenerating ? "Generating..." : "Generate Course"}
-              </button>
+              </Button>
             </div>
           </form>
         </div>

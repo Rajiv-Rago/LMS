@@ -5,6 +5,8 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ModelSelector, ModelSelectorValue } from "@/components/ai/ModelSelector";
 import { useUserAIDefaults } from "@/lib/hooks/useUserAIDefaults";
+import Button from "@/components/ui/Button";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 interface Message {
   role: "user" | "assistant";
@@ -131,7 +133,7 @@ export default function AITutorPage({
           },
         ]);
       }
-    } catch (_error) {      setMessages((prev) => [
+    } catch (_error) {      setMessages((prev) => [
         ...prev,
         {
           role: "assistant",
@@ -149,28 +151,25 @@ export default function AITutorPage({
   };
 
   return (
-    <div className="h-[calc(100vh-8rem)] flex">
+    <div className="h-[calc(100vh-8rem)] flex flex-col lg:flex-row">
       {/* Sidebar */}
-      <div className="w-64 border-r border-zinc-200 dark:border-zinc-800 flex flex-col bg-white dark:bg-zinc-900">
+      <div className="w-full lg:w-64 shrink-0 border-b lg:border-b-0 lg:border-r border-zinc-200 dark:border-zinc-800 flex flex-col bg-white dark:bg-zinc-900">
         <div className="p-4 border-b border-zinc-200 dark:border-zinc-800">
           <Link
             href={`/courses/${id}`}
-            className="text-sm text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
+            className="text-xs text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
           >
             &larr; Back to course
           </Link>
-          <h2 className="mt-2 font-semibold text-zinc-900 dark:text-white">
+          <h2 className="mt-2 text-lg font-semibold text-zinc-900 dark:text-white">
             AI Tutor
           </h2>
         </div>
 
         <div className="p-4 space-y-3">
-          <button
-            onClick={startNewChat}
-            className="w-full px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-500"
-          >
+          <Button onClick={startNewChat} className="w-full">
             New Chat
-          </button>
+          </Button>
           <ModelSelector
             value={modelValue}
             onChange={setModelValue}
@@ -178,16 +177,18 @@ export default function AITutorPage({
           />
         </div>
 
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto hidden lg:block">
           <div className="px-4 pb-2 text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase">
             Recent Chats
           </div>
           {loadingSessions ? (
-            <div className="px-4 py-2 text-sm text-zinc-500 dark:text-zinc-400">
-              Loading...
+            <div className="px-4 space-y-2">
+              <Skeleton className="h-8 w-full" />
+              <Skeleton className="h-8 w-full" />
+              <Skeleton className="h-8 w-3/4" />
             </div>
           ) : sessions.length === 0 ? (
-            <div className="px-4 py-2 text-sm text-zinc-500 dark:text-zinc-400">
+            <div className="px-4 py-2 text-xs text-zinc-500 dark:text-zinc-400">
               No previous chats
             </div>
           ) : (
@@ -212,13 +213,13 @@ export default function AITutorPage({
       </div>
 
       {/* Chat Area */}
-      <div className="flex-1 flex flex-col bg-zinc-50 dark:bg-zinc-950">
+      <div className="flex-1 flex flex-col bg-zinc-50 dark:bg-zinc-950 min-h-0">
         {/* Messages */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {messages.length === 0 ? (
             <div className="flex items-center justify-center h-full">
               <div className="text-center">
-                <h3 className="text-lg font-medium text-zinc-900 dark:text-white">
+                <h3 className="text-lg font-semibold text-zinc-900 dark:text-white">
                   Ask me anything about this course!
                 </h3>
                 <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
@@ -241,13 +242,13 @@ export default function AITutorPage({
                   }`}
                 >
                   <div
-                    className={`max-w-[80%] rounded-lg px-4 py-3 ${
+                    className={`max-w-[85%] sm:max-w-[80%] rounded-lg px-4 py-3 ${
                       message.role === "user"
                         ? "bg-indigo-600 text-white"
                         : "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white border border-zinc-200 dark:border-zinc-800"
                     }`}
                   >
-                    <p className="whitespace-pre-wrap">{message.content}</p>
+                    <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
                   </div>
                 </div>
               ))}
@@ -275,16 +276,16 @@ export default function AITutorPage({
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Ask a question..."
-              className="flex-1 rounded-md border border-zinc-300 dark:border-zinc-700 px-4 py-2 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white placeholder-zinc-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="flex-1 rounded-md border border-zinc-300 dark:border-zinc-700 px-4 py-2 text-sm bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white placeholder-zinc-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 min-h-[44px]"
               disabled={loading}
             />
-            <button
+            <Button
               type="submit"
               disabled={loading || !input.trim()}
-              className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="shrink-0 min-h-[44px]"
             >
               Send
-            </button>
+            </Button>
           </form>
         </div>
       </div>

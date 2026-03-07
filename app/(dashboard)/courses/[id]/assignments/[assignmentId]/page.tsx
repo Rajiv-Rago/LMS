@@ -4,6 +4,8 @@ import { useEffect, useState, use } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { FileUploader, FileList, InstructionsViewer } from "@/components/project";
+import { Skeleton, SkeletonText } from "@/components/ui/Skeleton";
+import Button from "@/components/ui/Button";
 
 type AssignmentType = "standard" | "quiz" | "project";
 
@@ -156,8 +158,13 @@ export default function AssignmentDetailPage({
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+      <div className="max-w-4xl mx-auto space-y-6">
+        <Skeleton className="h-8 w-64" />
+        <Skeleton className="h-4 w-32" />
+        <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 p-4">
+          <SkeletonText lines={5} />
+        </div>
+        <Skeleton className="h-10 w-32" />
       </div>
     );
   }
@@ -186,7 +193,7 @@ export default function AssignmentDetailPage({
         <div className="flex items-start justify-between">
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-xl font-bold text-zinc-900 dark:text-white">
+              <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">
                 {assignment.title}
               </h1>
               {assignment.assignmentType === "quiz" && (
@@ -218,15 +225,12 @@ export default function AssignmentDetailPage({
 
           {permissions?.canEdit && (
             <div className="flex gap-2">
-              <button
-                onClick={handlePublish}
-                className="px-3 py-1.5 text-sm font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800 rounded-md hover:bg-zinc-200 dark:hover:bg-zinc-700"
-              >
+              <Button variant="secondary" size="sm" onClick={handlePublish}>
                 {assignment.isPublished ? "Unpublish" : "Publish"}
-              </button>
+              </Button>
               <Link
                 href={`/courses/${id}/assignments/${assignmentId}/submissions`}
-                className="px-3 py-1.5 text-sm font-medium text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20 rounded-md hover:bg-indigo-100 dark:hover:bg-indigo-900/40"
+                className="px-3 py-1.5 text-sm rounded-lg font-medium text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20 hover:bg-indigo-100 dark:hover:bg-indigo-900/40"
               >
                 View Submissions
               </Link>
@@ -388,13 +392,12 @@ export default function AssignmentDetailPage({
 
                 {canSubmitNow && (submission?.files?.length || 0) > 0 && submission?.status !== "submitted" && (
                   <div className="flex gap-2 pt-4 border-t border-zinc-200 dark:border-zinc-700">
-                    <button
+                    <Button
                       onClick={() => handleSubmit(false)}
                       disabled={submitting}
-                      className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-500 disabled:opacity-50"
                     >
                       {submitting ? "Submitting..." : "Submit Project"}
-                    </button>
+                    </Button>
                   </div>
                 )}
               </div>
@@ -491,20 +494,19 @@ export default function AssignmentDetailPage({
 
               {canSubmitNow && submission?.status !== "submitted" && (
                 <div className="flex gap-2">
-                  <button
+                  <Button
                     onClick={() => handleSubmit(false)}
                     disabled={submitting}
-                    className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-500 disabled:opacity-50"
                   >
                     {submitting ? "Submitting..." : "Submit"}
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    variant="secondary"
                     onClick={() => handleSubmit(true)}
                     disabled={submitting}
-                    className="px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800 rounded-md hover:bg-zinc-200 dark:hover:bg-zinc-700 disabled:opacity-50"
                   >
                     Save Draft
-                  </button>
+                  </Button>
                 </div>
               )}
             </div>

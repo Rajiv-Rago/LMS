@@ -3,6 +3,9 @@
 import { useEffect, useState, use } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { Skeleton } from "@/components/ui/Skeleton";
+import EmptyState from "@/components/ui/EmptyState";
+import { GraduationCap } from "lucide-react";
 
 interface GradeEntry {
   assignment: {
@@ -63,8 +66,20 @@ export default function StudentGradesPage({
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+      <div className="max-w-4xl mx-auto space-y-6">
+        <Skeleton className="h-8 w-40" />
+        <Skeleton className="h-5 w-32" />
+        <div className="space-y-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div
+              key={i}
+              className="rounded-lg border border-zinc-200 dark:border-zinc-800 p-4 space-y-2"
+            >
+              <Skeleton className="h-5 w-1/3" />
+              <Skeleton className="h-4 w-1/4" />
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -122,11 +137,11 @@ export default function StudentGradesPage({
 
       {/* Grades List */}
       {grades.length === 0 ? (
-        <div className="bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800 p-8 text-center">
-          <p className="text-zinc-500 dark:text-zinc-400">
-            No assignments in this course yet.
-          </p>
-        </div>
+        <EmptyState
+          icon={GraduationCap}
+          title="No grades yet"
+          description="Complete assignments to see your grades"
+        />
       ) : (
         <div className="space-y-4">
           {grades.map(({ assignment, submission }) => {
@@ -136,11 +151,11 @@ export default function StudentGradesPage({
               <Link
                 key={assignment._id}
                 href={`/courses/${id}/assignments/${assignment._id}`}
-                className="block bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800 p-6 hover:border-indigo-500 transition-colors"
+                className="block bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800 p-4 hover:border-indigo-500 transition-colors"
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="font-medium text-zinc-900 dark:text-white">
+                    <h3 className="text-base font-semibold text-zinc-900 dark:text-white">
                       {assignment.title}
                     </h3>
                     <p className="text-sm text-zinc-500 dark:text-zinc-400">

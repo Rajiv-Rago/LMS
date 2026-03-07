@@ -4,6 +4,8 @@ import { useEffect, useState, useCallback, use } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { QuestionCard, QuizTimer, QuizResults } from "@/components/quiz";
+import { Skeleton } from "@/components/ui/Skeleton";
+import Button from "@/components/ui/Button";
 
 interface Question {
   id: string;
@@ -183,11 +185,24 @@ export default function QuizPage({
     startQuiz();
   };
 
-  // Loading state
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+      <div className="max-w-3xl mx-auto space-y-6">
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-4 w-24" />
+        <div className="space-y-6">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div
+              key={i}
+              className="rounded-lg border border-zinc-200 dark:border-zinc-800 p-4 space-y-3"
+            >
+              <Skeleton className="h-5 w-full" />
+              {Array.from({ length: 4 }).map((_, j) => (
+                <Skeleton key={j} className="h-10 w-full" />
+              ))}
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -289,13 +304,9 @@ export default function QuizPage({
                 ? "All questions answered"
                 : `${questions.length - answeredCount} questions remaining`}
             </span>
-            <button
-              onClick={submitQuiz}
-              disabled={submitting}
-              className="px-6 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-500 disabled:opacity-50"
-            >
+            <Button onClick={submitQuiz} disabled={submitting}>
               {submitting ? "Submitting..." : "Submit Quiz"}
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -373,12 +384,9 @@ export default function QuizPage({
               </div>
             )}
 
-            <button
-              onClick={startQuiz}
-              className="mt-6 w-full px-4 py-3 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-500"
-            >
+            <Button onClick={startQuiz} className="mt-6 w-full">
               {attempts.length === 0 ? "Start Quiz" : "Start New Attempt"}
-            </button>
+            </Button>
           </div>
 
           {/* Previous Attempts */}

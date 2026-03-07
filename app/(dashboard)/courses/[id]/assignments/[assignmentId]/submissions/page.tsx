@@ -3,6 +3,10 @@
 import { useEffect, useState, use } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { Skeleton, SkeletonTable } from "@/components/ui/Skeleton";
+import Button from "@/components/ui/Button";
+import EmptyState from "@/components/ui/EmptyState";
+import { FileText } from "lucide-react";
 
 interface Assignment {
   _id: string;
@@ -89,8 +93,9 @@ export default function SubmissionsPage({
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+      <div className="max-w-6xl mx-auto space-y-6">
+        <Skeleton className="h-8 w-48" />
+        <SkeletonTable rows={5} cols={4} />
       </div>
     );
   }
@@ -111,11 +116,11 @@ export default function SubmissionsPage({
       </h1>
 
       {submissions.length === 0 ? (
-        <div className="bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800 p-8 text-center">
-          <p className="text-zinc-500 dark:text-zinc-400">
-            No submissions yet.
-          </p>
-        </div>
+        <EmptyState
+          icon={FileText}
+          title="No submissions"
+          description="No submissions have been made yet"
+        />
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Submissions List */}
@@ -243,13 +248,13 @@ export default function SubmissionsPage({
                     />
                   </div>
 
-                  <button
+                  <Button
                     onClick={handleGrade}
                     disabled={grading}
-                    className="w-full px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-500 disabled:opacity-50"
+                    className="w-full"
                   >
                     {grading ? "Saving..." : "Save Grade"}
-                  </button>
+                  </Button>
                 </div>
               )}
 

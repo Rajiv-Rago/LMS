@@ -3,7 +3,7 @@
 import { useEffect, useState, use } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { SkeletonTable } from "@/components/ui/Skeleton";
+import { Skeleton, SkeletonTable } from "@/components/ui/Skeleton";
 
 interface Assignment {
   _id: string;
@@ -69,8 +69,8 @@ export default function GradebookPage({
   if (loading) {
     return (
       <div className="space-y-6">
-        <div className="h-7 w-32 bg-zinc-200 dark:bg-zinc-700 rounded animate-pulse" />
-        <SkeletonTable rows={5} cols={4} />
+        <Skeleton className="h-8 w-40" />
+        <SkeletonTable rows={8} cols={5} />
       </div>
     );
   }

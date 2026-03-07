@@ -4,7 +4,10 @@ import { useEffect, useState, use } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useToast } from "@/lib/hooks/useToast";
-import { SkeletonCard } from "@/components/ui/Skeleton";
+import { Skeleton, SkeletonCard } from "@/components/ui/Skeleton";
+import Button from "@/components/ui/Button";
+import EmptyState from "@/components/ui/EmptyState";
+import { ClipboardList } from "lucide-react";
 
 type AssignmentType = "standard" | "quiz" | "project";
 
@@ -131,9 +134,12 @@ export default function AssignmentsPage({
   if (loading) {
     return (
       <div className="max-w-4xl mx-auto space-y-6">
-        {Array.from({ length: 3 }).map((_, i) => (
-          <SkeletonCard key={i} />
-        ))}
+        <Skeleton className="h-8 w-48" />
+        <div className="space-y-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <SkeletonCard key={i} />
+          ))}
+        </div>
       </div>
     );
   }
@@ -154,12 +160,9 @@ export default function AssignmentsPage({
           Assignments
         </h1>
         {isInstructorOrOwner && (
-          <button
-            onClick={() => setShowNew(true)}
-            className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-500"
-          >
+          <Button onClick={() => setShowNew(true)}>
             New Assignment
-          </button>
+          </Button>
         )}
       </div>
 
@@ -319,19 +322,16 @@ export default function AssignmentsPage({
           )}
 
           <div className="flex gap-2">
-            <button
-              type="submit"
-              className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-500"
-            >
+            <Button type="submit">
               Create
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
+              variant="secondary"
               onClick={() => setShowNew(false)}
-              className="px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-md"
             >
               Cancel
-            </button>
+            </Button>
           </div>
         </form>
       )}
@@ -344,13 +344,15 @@ export default function AssignmentsPage({
 
         if (filteredAssignments.length === 0) {
           return (
-            <div className="bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800 p-8 text-center">
-              <p className="text-zinc-500 dark:text-zinc-400">
-                {filter === "all"
-                  ? "No assignments yet."
-                  : `No ${filter === "standard" ? "standard assignments" : filter + "s"} yet.`}
-              </p>
-            </div>
+            <EmptyState
+              icon={ClipboardList}
+              title="No assignments"
+              description={
+                filter === "all"
+                  ? "This course has no assignments yet"
+                  : `No ${filter === "standard" ? "standard assignments" : filter + "s"} yet`
+              }
+            />
           );
         }
 
@@ -364,12 +366,12 @@ export default function AssignmentsPage({
                 <Link
                   key={assignment._id}
                   href={`/courses/${id}/assignments/${assignment._id}`}
-                  className="block bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800 p-6 hover:border-indigo-500 transition-colors"
+                  className="block bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800 p-4 hover:border-indigo-500 transition-colors"
                 >
                   <div className="flex items-start justify-between">
                     <div>
                       <div className="flex items-center gap-2">
-                        <h3 className="font-semibold text-zinc-900 dark:text-white">
+                        <h3 className="text-base font-semibold text-zinc-900 dark:text-white">
                           {assignment.title}
                         </h3>
                         {assignmentType === "quiz" && (

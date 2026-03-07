@@ -25,6 +25,7 @@
     "bcryptjs": "^3.0.3",
     "dotenv": "^17.2.3",
     "jsonwebtoken": "^9.0.3",
+    "lucide-react": "^0.577.0",
     "mongoose": "^8.19.2",
     "next": "^16.1.6",
     "openai": "^6.17.0",

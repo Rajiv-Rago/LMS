@@ -124,7 +124,12 @@ Recent decisions affecting current work:
 
 ### Pending Todos
 
-None yet.
+5 pending todos in `.planning/todos/pending/`:
+- **ui**: Merge duplicate course lists into filterable single list
+- **ui**: Fix notifications dropdown overflow
+- **api**: Fix course generation error
+- **ui**: Add course delete and archive actions
+- **ui**: Fix course link routing to public page when authenticated
 
 ### Blockers/Concerns
 

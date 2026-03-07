@@ -21,7 +21,7 @@ export default function Home() {
               </Link>
               <Link
                 href="/register"
-                className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-500"
+                className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-500"
               >
                 Get Started
               </Link>
@@ -42,16 +42,16 @@ export default function Home() {
             curated videos, AI-generated lessons, and projects that actually
             teach you something.
           </p>
-          <div className="mt-10 flex items-center justify-center gap-4">
+          <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
               href="/register"
-              className="px-6 py-3 text-sm font-semibold text-white bg-indigo-600 rounded-md hover:bg-indigo-500 shadow-sm"
+              className="w-full sm:w-auto px-6 py-3 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-500 shadow-sm"
             >
               Start Learning
             </Link>
             <Link
               href="/explore"
-              className="px-6 py-3 text-sm font-semibold text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 rounded-md hover:bg-indigo-50 dark:hover:bg-indigo-950"
+              className="w-full sm:w-auto px-6 py-3 text-sm font-medium text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-950"
             >
               Browse Courses
             </Link>
@@ -247,7 +247,7 @@ export default function Home() {
           </p>
           <Link
             href="/register"
-            className="mt-8 inline-block px-6 py-3 text-sm font-semibold text-indigo-600 bg-white rounded-md hover:bg-indigo-50"
+            className="mt-8 inline-block px-6 py-3 text-sm font-medium text-indigo-600 bg-white rounded-lg hover:bg-indigo-50"
           >
             Get Started Free
           </Link>

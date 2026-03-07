@@ -429,7 +429,7 @@ registerHandler(
 
     const course = await Course.findOne({
       _id: courseId,
-      owner: userId,
+      $or: [{ owner: userId }, { instructor: userId }, { sharedWith: userId }],
     });
 
     if (!course) throw new Error("Course not found");
@@ -511,6 +511,10 @@ registerHandler(
         tier: (tier as AITier) || undefined,
       });
 
+      if (lesson.content) {
+        lesson.previousContent = lesson.content;
+        lesson.previousKeyTakeaways = lesson.keyTakeaways || [];
+      }
       lesson.content = content.content;
       lesson.keyTakeaways = content.keyTakeaways;
       lesson.generationStatus = "completed";

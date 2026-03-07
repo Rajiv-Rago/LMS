@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import { dbConnect } from "@/lib/db";
 import { Course, Module, Lesson } from "@/lib/models";
 import { authenticate, requireCsrf } from "@/lib/auth";
+import { getCoursePermissions } from "@/lib/auth/coursePermissions";
 import { AIProviderName, AITier } from "@/lib/ai/types";
 import { resolveProvider } from "@/lib/ai/utils/providerResolver";
 import { getUserAIPreferences } from "@/lib/ai/utils/userPreferences";
@@ -51,13 +52,15 @@ export async function POST(
 
     await dbConnect();
 
-    const course = await Course.findOne({
-      _id: courseId,
-      owner: user.userId,
-    });
+    const course = await Course.findById(courseId);
 
     if (!course) {
       return NextResponse.json({ error: "Course not found" }, { status: 404 });
+    }
+
+    const perms = await getCoursePermissions(course, user);
+    if (!perms.canEdit && !perms.isSharedWith) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     if (course.syllabusStatus !== "completed") {

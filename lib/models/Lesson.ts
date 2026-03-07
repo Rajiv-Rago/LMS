@@ -24,6 +24,8 @@ export interface ILesson extends Document {
   generationStatus?: LessonGenerationStatus;
   lessonOutline?: string;
   generationConfig?: LessonGenerationConfig;
+  previousContent?: string;
+  previousKeyTakeaways?: string[];
   keyTakeaways?: string[];
   youtubeMetadata?: {
     videoId: string;
@@ -107,6 +109,13 @@ const lessonSchema = new mongoose.Schema<ILesson, LessonModel>(
         type: String,
       },
     },
+    previousContent: {
+      type: String,
+    },
+    previousKeyTakeaways: [{
+      type: String,
+      maxlength: [500, "Key takeaway cannot exceed 500 characters"],
+    }],
     keyTakeaways: [{
       type: String,
       maxlength: [500, "Key takeaway cannot exceed 500 characters"],

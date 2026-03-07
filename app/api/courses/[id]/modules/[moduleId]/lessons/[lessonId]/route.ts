@@ -77,6 +77,7 @@ export async function GET(
       isOwnedCourse: !!course.owner,
       permissions: {
         canEdit: perms?.canEdit || false,
+        isSharedWith: perms?.isSharedWith || false,
       },
     });
   } catch (error) {

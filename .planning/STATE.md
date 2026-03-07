@@ -4,7 +4,7 @@ milestone: v1.0
 milestone_name: milestone
 status: executing
 stopped_at: Completed 06-04-PLAN.md
-last_updated: "2026-03-07T11:19:30.000Z"
+last_updated: "2026-03-07T11:19:31.350Z"
 last_activity: 2026-03-07 -- Executed plan 06-04 (Lesson, AI & Course Creation Polish)
 progress:
   total_phases: 6
@@ -26,9 +26,9 @@ See: .planning/PROJECT.md (updated 2026-03-06)
 ## Current Position
 
 Phase: 6 of 6 (Visual Polish)
-Plan: 3 of 5 in current phase -- COMPLETE
+Plan: 4 of 5 in current phase -- COMPLETE
 Status: Executing phase 6
-Last activity: 2026-03-07 -- Executed plan 06-03 (Assignment & Grade Page Polish)
+Last activity: 2026-03-07 -- Executed plan 06-04 (Lesson, AI & Course Creation Polish)
 
 Progress: [██████████] 100%
 
@@ -72,6 +72,7 @@ Progress: [██████████] 100%
 | Phase 06 P05 | 5min | 2 tasks | 9 files |
 | Phase 06 P02 | 5min | 2 tasks | 9 files |
 | Phase 06 P03 | 8min | 2 tasks | 12 files |
+| Phase 06 P04 | 7min | 2 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -138,6 +139,9 @@ Recent decisions affecting current work:
 - [Phase 06]: CourseSection accepts emptyState ReactNode prop for custom empty rendering rather than hardcoding EmptyState
 - [Phase 06-03]: Gradebook and grades pages omit Button import since they have no action buttons (only Link elements)
 - [Phase 06-03]: Card inner padding normalized to p-4 across assignment and grade cards for consistency
+- [Phase 06-04]: Module sidebar uses state-toggled div with ChevronDown for mobile, sticky sidebar for desktop
+- [Phase 06-04]: Lesson page fetches /api/courses/{id}/modules for sidebar navigation data
+- [Phase 06-04]: AI generation progress spinner preserved as active operation indicator (not loading state)
 
 ### Pending Todos
 
@@ -156,6 +160,6 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-03-07T11:18:44.207Z
-Stopped at: Completed 06-03-PLAN.md
+Last session: 2026-03-07T11:19:31.348Z
+Stopped at: Completed 06-04-PLAN.md
 Resume file: None

@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/lib/hooks/useToast";
 import ShareDialog from "@/components/course/ShareDialog";
+import Button from "@/components/ui/Button";
+import { Skeleton, SkeletonText } from "@/components/ui/Skeleton";
 
 interface Lesson {
   _id: string;
@@ -79,17 +81,17 @@ function getLessonIcon(contentType: string) {
 
 function SkeletonPreview() {
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <div className="h-8 bg-zinc-200 dark:bg-zinc-800 rounded animate-pulse w-2/3 mb-4" />
-      <div className="h-5 bg-zinc-200 dark:bg-zinc-800 rounded animate-pulse w-1/3 mb-6" />
-      <div className="space-y-2 mb-8">
-        <div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded animate-pulse w-full" />
-        <div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded animate-pulse w-5/6" />
-        <div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded animate-pulse w-4/6" />
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-6">
+      <Skeleton className="h-10 w-2/3" />
+      <Skeleton className="h-4 w-32" />
+      <SkeletonText lines={3} />
+      <Skeleton className="h-12 w-40" />
+      <Skeleton className="h-6 w-32" />
+      <div className="space-y-2">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <Skeleton key={i} className="h-12 w-full" />
+        ))}
       </div>
-      {[1, 2, 3].map((i) => (
-        <div key={i} className="h-12 bg-zinc-200 dark:bg-zinc-800 rounded animate-pulse mb-3" />
-      ))}
     </div>
   );
 }
@@ -199,12 +201,12 @@ export default function CoursePreview({ courseId }: { courseId: string }) {
     return (
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-24 text-center">
         <h2 className="text-2xl font-bold text-zinc-900 dark:text-white">Course not found</h2>
-        <p className="mt-2 text-zinc-600 dark:text-zinc-400">
+        <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
           This course may be private or no longer available.
         </p>
         <Link
           href="/explore"
-          className="mt-6 inline-block px-6 py-2 text-sm font-medium text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 rounded-md hover:bg-indigo-50 dark:hover:bg-indigo-950"
+          className="mt-6 inline-block rounded-lg font-medium px-4 py-2 text-sm text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-50 dark:hover:bg-indigo-950"
         >
           Back to Explore
         </Link>
@@ -221,7 +223,7 @@ export default function CoursePreview({ courseId }: { courseId: string }) {
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <div className="lg:flex lg:gap-8">
         <div className="flex-1 min-w-0">
-          <h1 className="text-3xl font-bold text-zinc-900 dark:text-white">
+          <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">
             {course.title}
           </h1>
 
@@ -239,12 +241,12 @@ export default function CoursePreview({ courseId }: { courseId: string }) {
             </span>
           </div>
 
-          <p className="mt-6 text-zinc-700 dark:text-zinc-300 leading-relaxed">
+          <p className="mt-6 text-sm text-zinc-700 dark:text-zinc-300 leading-relaxed">
             {course.description}
           </p>
 
           <div className="mt-8">
-            <h2 className="text-xl font-semibold text-zinc-900 dark:text-white mb-4">
+            <h2 className="text-lg font-semibold text-zinc-900 dark:text-white mb-4">
               Course syllabus
             </h2>
 
@@ -266,7 +268,7 @@ export default function CoursePreview({ courseId }: { courseId: string }) {
                         className="w-full flex items-center gap-3 px-4 py-3 text-left bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors"
                       >
                         <ChevronIcon expanded={expandedModules.has(mod._id)} />
-                        <span className="font-medium text-zinc-900 dark:text-white">
+                        <span className="text-sm font-medium text-zinc-900 dark:text-white">
                           {mod.title}
                         </span>
                         <span className="ml-auto text-xs text-zinc-500 dark:text-zinc-400">
@@ -309,54 +311,57 @@ export default function CoursePreview({ courseId }: { courseId: string }) {
               <>
                 <Link
                   href={`/courses/${courseId}/modules`}
-                  className="block w-full text-center px-6 py-3 text-sm font-semibold text-white bg-indigo-600 rounded-md hover:bg-indigo-500"
+                  className="block w-full text-center rounded-lg font-medium px-4 py-2 text-sm text-white bg-indigo-600 hover:bg-indigo-500"
                 >
                   Edit Course
                 </Link>
-                <button
+                <Button
+                  variant="secondary"
+                  className="w-full"
                   onClick={() => setShareOpen(true)}
-                  className="w-full px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-800 rounded-md hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
                 >
                   Share
-                </button>
+                </Button>
               </>
             ) : permissions?.isEnrolled ? (
               <Link
                 href={`/courses/${courseId}/modules`}
-                className="block w-full text-center px-6 py-3 text-sm font-semibold text-white bg-indigo-600 rounded-md hover:bg-indigo-500"
+                className="block w-full text-center rounded-lg font-medium px-4 py-2 text-sm text-white bg-indigo-600 hover:bg-indigo-500"
               >
                 Continue Learning
               </Link>
             ) : (
-              <button
+              <Button
+                variant="primary"
+                className="w-full sm:w-auto lg:w-full py-3"
                 onClick={handleEnroll}
                 disabled={enrolling}
-                className="w-full px-6 py-3 text-sm font-semibold text-white bg-indigo-600 rounded-md hover:bg-indigo-500 disabled:opacity-50"
               >
                 {enrolling ? "Enrolling..." : "Enroll for Free"}
-              </button>
+              </Button>
             )}
 
-            <button
+            <Button
+              variant="secondary"
+              className="w-full"
               onClick={handleCopyLink}
-              className="w-full px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-800 rounded-md hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
             >
               Copy link
-            </button>
+            </Button>
           </div>
         </div>
       </div>
 
-      {/* Mobile sticky enroll bar */}
       {!permissions?.canEdit && !permissions?.isEnrolled && (
         <div className="lg:hidden fixed bottom-0 left-0 right-0 p-4 bg-white dark:bg-zinc-900 border-t border-zinc-200 dark:border-zinc-800 z-40">
-          <button
+          <Button
+            variant="primary"
+            className="w-full py-3"
             onClick={handleEnroll}
             disabled={enrolling}
-            className="w-full px-6 py-3 text-sm font-semibold text-white bg-indigo-600 rounded-md hover:bg-indigo-500 disabled:opacity-50"
           >
             {enrolling ? "Enrolling..." : "Enroll for Free"}
-          </button>
+          </Button>
         </div>
       )}
 

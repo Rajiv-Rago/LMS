@@ -3,6 +3,10 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Search } from "lucide-react";
+import Button from "@/components/ui/Button";
+import EmptyState from "@/components/ui/EmptyState";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 interface CourseCard {
   _id: string;
@@ -28,14 +32,14 @@ interface Pagination {
 function SkeletonCard() {
   return (
     <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden">
-      <div className="aspect-video bg-zinc-200 dark:bg-zinc-800 animate-pulse" />
-      <div className="p-4 space-y-3">
-        <div className="h-5 bg-zinc-200 dark:bg-zinc-800 rounded animate-pulse w-3/4" />
-        <div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded animate-pulse w-full" />
-        <div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded animate-pulse w-1/2" />
+      <Skeleton className="aspect-video w-full rounded-none" />
+      <div className="p-4 space-y-2">
+        <Skeleton className="h-5 w-3/4" />
+        <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-4 w-1/2" />
         <div className="flex gap-2 pt-2">
-          <div className="h-5 bg-zinc-200 dark:bg-zinc-800 rounded-full animate-pulse w-20" />
-          <div className="h-5 bg-zinc-200 dark:bg-zinc-800 rounded-full animate-pulse w-24" />
+          <Skeleton className="h-5 w-20 rounded-full" />
+          <Skeleton className="h-5 w-24 rounded-full" />
         </div>
       </div>
     </div>
@@ -117,7 +121,7 @@ export default function ExplorePage() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <div className="text-center mb-10">
-        <h1 className="text-3xl font-bold text-zinc-900 dark:text-white">
+        <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">
           Explore courses
         </h1>
         <div className="mt-4 max-w-xl mx-auto">
@@ -126,36 +130,30 @@ export default function ExplorePage() {
             value={search}
             onChange={(e) => handleSearchChange(e.target.value)}
             placeholder="Search by topic, skill, or keyword..."
-            className="w-full px-4 py-3 text-base rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            className="w-full px-4 py-3 text-sm rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
           />
         </div>
       </div>
 
       {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {Array.from({ length: 6 }).map((_, i) => (
             <SkeletonCard key={i} />
           ))}
         </div>
       ) : courses.length === 0 ? (
-        <div className="text-center py-16">
-          <p className="text-lg text-zinc-600 dark:text-zinc-400">
-            {search
-              ? `No courses found for '${search}'. Be the first to create one!`
-              : "No courses available yet. Check back soon!"}
-          </p>
-          {search && (
-            <Link
-              href="/register"
-              className="mt-4 inline-block px-6 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-500"
-            >
-              Get Started
-            </Link>
-          )}
-        </div>
+        <EmptyState
+          icon={Search}
+          title="No courses found"
+          description={
+            search
+              ? `No results for "${search}". Try different search terms.`
+              : "No courses available yet. Check back soon!"
+          }
+        />
       ) : (
-        <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {courses.map((course) => (
               <Link
                 key={course._id}
@@ -178,7 +176,7 @@ export default function ExplorePage() {
                   </div>
                 )}
                 <div className="p-4">
-                  <h3 className="text-lg font-semibold text-zinc-900 dark:text-white line-clamp-2">
+                  <h3 className="text-base font-semibold text-zinc-900 dark:text-white line-clamp-2">
                     {course.title}
                   </h3>
                   <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400 line-clamp-2">
@@ -203,17 +201,17 @@ export default function ExplorePage() {
           </div>
 
           {hasMore && (
-            <div className="mt-8 text-center">
-              <button
+            <div className="text-center">
+              <Button
+                variant="secondary"
                 onClick={handleLoadMore}
                 disabled={loadingMore}
-                className="px-6 py-2 text-sm font-medium text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 rounded-md hover:bg-indigo-50 dark:hover:bg-indigo-950 disabled:opacity-50"
               >
                 {loadingMore ? "Loading..." : "Load more courses"}
-              </button>
+              </Button>
             </div>
           )}
-        </>
+        </div>
       )}
     </div>
   );

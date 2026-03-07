@@ -45,10 +45,10 @@ Requirements for this milestone. Each maps to roadmap phases.
 
 ### Inline Feedback
 
-- [ ] **FDBK-01**: Learner can submit feedback on a lesson (text input describing the issue)
+- [x] **FDBK-01**: Learner can submit feedback on a lesson (text input describing the issue)
 - [x] **FDBK-02**: Submitting feedback triggers instant LLM regeneration of the lesson content
 - [x] **FDBK-03**: Previous lesson content is preserved (versioned) so bad regenerations can be reverted
-- [ ] **FDBK-04**: Feedback UI is visible and discoverable (not hidden in a collapsed accordion)
+- [x] **FDBK-04**: Feedback UI is visible and discoverable (not hidden in a collapsed accordion)
 - [x] **FDBK-05**: Regeneration has rate limiting to prevent cost abuse
 
 ### Visual Polish
@@ -123,10 +123,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CATL-02 | Phase 4: Public Catalog & Sharing | Complete |
 | CATL-03 | Phase 4: Public Catalog & Sharing | Complete |
 | CATL-04 | Phase 4: Public Catalog & Sharing | Complete |
-| FDBK-01 | Phase 5: Inline Feedback | Pending |
+| FDBK-01 | Phase 5: Inline Feedback | Complete |
 | FDBK-02 | Phase 5: Inline Feedback | Complete |
 | FDBK-03 | Phase 5: Inline Feedback | Complete |
-| FDBK-04 | Phase 5: Inline Feedback | Pending |
+| FDBK-04 | Phase 5: Inline Feedback | Complete |
 | FDBK-05 | Phase 5: Inline Feedback | Complete |
 | VISL-01 | Phase 6: Visual Polish | Pending |
 | VISL-02 | Phase 6: Visual Polish | Pending |

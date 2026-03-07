@@ -127,6 +127,37 @@ export async function enforceAIRateLimit(
 }
 
 /**
+ * Read-only check of remaining AI credits without consuming any.
+ */
+export async function getAICreditsRemaining(
+  userId: string,
+  tier: SubscriptionTier,
+  category: AIUsageCategory = "credits"
+): Promise<{ remaining: number; limit: number; resetAt: string }> {
+  const limit = DAILY_LIMITS[category][tier];
+
+  const tomorrow = new Date();
+  tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+  tomorrow.setUTCHours(0, 0, 0, 0);
+  const resetAt = tomorrow.toISOString();
+
+  if (!env.AI_RATE_LIMIT_ENABLED || !isFinite(limit)) {
+    return { remaining: Infinity, limit, resetAt };
+  }
+
+  await dbConnect();
+
+  const doc = await AIUsage.findOne({
+    user: userId,
+    category,
+    dateKey: getDateKey(),
+  });
+
+  const used = doc?.count ?? 0;
+  return { remaining: Math.max(0, limit - used), limit, resetAt };
+}
+
+/**
  * Sets standard rate limit headers on a response.
  */
 export function addRateLimitHeaders(

@@ -127,5 +127,5 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 | 2. Role Simplification & Course Generation | 3/3 | Complete   | 2026-03-06 |
 | 3. Stabilization & Bug Fixes | 6/6 | Complete   | 2026-03-06 |
 | 4. Public Catalog & Sharing | 0/3 | Not started | - |
-| 5. Inline Feedback | 0/2 | Not started | - |
+| 5. Inline Feedback | 1/2 | In Progress|  |
 | 6. Visual Polish | 0/1 | Not started | - |

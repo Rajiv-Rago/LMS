@@ -111,10 +111,14 @@ Plans:
   1. Every page that loads data shows a skeleton loading screen (no blank pages or mismatched spinners)
   2. All dashboard pages render correctly on mobile with no content overflow, horizontal scrolling, or broken layouts
   3. Spacing, font sizes, and visual weight are consistent across dashboard pages (no jarring transitions between pages)
-**Plans**: TBD
+**Plans**: 5 plans
 
 Plans:
-- [ ] 06-01: TBD
+- [ ] 06-01-PLAN.md — Foundation: install lucide-react, create Button/EmptyState/BottomNav components, update dashboard layout
+- [ ] 06-02-PLAN.md — Polish dashboard, courses, profile, settings pages (skeletons, typography, spacing, buttons)
+- [ ] 06-03-PLAN.md — Polish assignment and grade pages (skeletons, typography, spacing, buttons, empty states)
+- [ ] 06-04-PLAN.md — Polish lesson, AI, and course creation pages (skeletons, typography, spacing, mobile layout)
+- [ ] 06-05-PLAN.md — Polish public, home, and auth pages (skeletons, typography, spacing, final sweep)
 
 ## Progress
 
@@ -128,4 +132,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 | 3. Stabilization & Bug Fixes | 6/6 | Complete   | 2026-03-06 |
 | 4. Public Catalog & Sharing | 0/3 | Not started | - |
 | 5. Inline Feedback | 1/2 | In Progress|  |
-| 6. Visual Polish | 0/1 | Not started | - |
+| 6. Visual Polish | 0/5 | Not started | - |

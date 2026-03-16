@@ -39,6 +39,7 @@ interface Lesson {
   generationStatus?: "skeleton" | "generating" | "completed" | "failed";
   lessonOutline?: string;
   keyTakeaways?: string[];
+  sources?: { title: string; url: string }[];
   youtubeMetadata?: YouTubeMetadata;
 }
 
@@ -759,6 +760,29 @@ export default function LessonDetailPage({
                               className="text-sm text-indigo-800 dark:text-indigo-300"
                             >
                               &bull; {t}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {/* Sources & Further Reading */}
+                    {lesson.sources && lesson.sources.length > 0 && (
+                      <div className="mt-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-lg p-4">
+                        <h3 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-2">
+                          Sources &amp; Further Reading
+                        </h3>
+                        <ul className="space-y-1">
+                          {lesson.sources.map((source, i) => (
+                            <li key={i} className="text-sm">
+                              <a
+                                href={source.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-indigo-600 dark:text-indigo-400 hover:underline"
+                              >
+                                {source.title}
+                              </a>
                             </li>
                           ))}
                         </ul>

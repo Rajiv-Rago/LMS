@@ -1,12 +1,16 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import {
+  GoogleGenerativeAI,
+  type EnhancedGenerateContentResponse,
+} from "@google/generative-ai";
 import {
   AIProvider,
   AIMessage,
   AICompletionOptions,
   AICompletionResponse,
+  AISource,
 } from "../types";
 
-const DEFAULT_MODEL = "gemini-1.5-flash";
+const DEFAULT_MODEL = "gemini-2.5-flash";
 
 export class GeminiProvider implements AIProvider {
   name = "gemini" as const;
@@ -22,9 +26,14 @@ export class GeminiProvider implements AIProvider {
     messages: AIMessage[],
     options?: AICompletionOptions
   ): Promise<AICompletionResponse> {
+    const tools = options?.googleSearch
+      ? [{ googleSearchRetrieval: {} }]
+      : undefined;
+
     const model = this.client.getGenerativeModel({
       model: this.model,
       systemInstruction: options?.systemPrompt,
+      tools,
     });
 
     const history = messages.slice(0, -1).map((msg) => ({
@@ -45,6 +54,7 @@ export class GeminiProvider implements AIProvider {
     const response = result.response;
 
     const usageMetadata = response.usageMetadata;
+    const sources = this.extractSources(response);
 
     return {
       content: response.text(),
@@ -56,6 +66,7 @@ export class GeminiProvider implements AIProvider {
             totalTokens: usageMetadata.totalTokenCount || 0,
           }
         : undefined,
+      sources: sources.length > 0 ? sources : undefined,
     };
   }
 
@@ -64,5 +75,28 @@ export class GeminiProvider implements AIProvider {
     options?: AICompletionOptions
   ): Promise<AICompletionResponse> {
     return this.chat([{ role: "user", content: prompt }], options);
+  }
+
+  private extractSources(
+    response: EnhancedGenerateContentResponse
+  ): AISource[] {
+    const chunks =
+      response.candidates?.[0]?.groundingMetadata?.groundingChunks;
+    if (!chunks) return [];
+
+    const seen = new Set<string>();
+    const sources: AISource[] = [];
+
+    for (const chunk of chunks) {
+      const uri = chunk.web?.uri;
+      if (!uri || seen.has(uri)) continue;
+      seen.add(uri);
+      sources.push({
+        title: chunk.web?.title || uri,
+        url: uri,
+      });
+    }
+
+    return sources;
   }
 }

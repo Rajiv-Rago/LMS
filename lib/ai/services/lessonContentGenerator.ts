@@ -1,4 +1,4 @@
-import { AIProvider, AIProviderName, AITier } from "../types";
+import { AIProvider, AIProviderName, AISource, AITier } from "../types";
 import { createAIProvider } from "../index";
 import { parseAIJsonResponse } from "../utils/jsonParser";
 import { TargetLevel } from "../utils/promptUtils";
@@ -19,6 +19,7 @@ export interface LessonContentRequest {
 export interface GeneratedLessonContent {
   content: string;
   keyTakeaways: string[];
+  sources: AISource[];
 }
 
 export interface LessonContentGeneratorConfig {
@@ -34,7 +35,8 @@ IMPORTANT: You must respond ONLY with a valid JSON object. Do not include any ma
 The JSON must follow this exact structure:
 {
   "content": "string (the full lesson content in markdown format)",
-  "keyTakeaways": ["string", "string", ...] (3-5 key points students should remember)
+  "keyTakeaways": ["string", "string", ...] (3-5 key points students should remember),
+  "sources": [{"title": "string", "url": "string"}, ...] (3-8 references used)
 }
 
 Guidelines for the content:
@@ -45,11 +47,18 @@ Guidelines for the content:
 - If code examples are relevant, include them with proper formatting
 - Build upon previously covered material when provided
 - Follow the content depth instructions provided in the user prompt
+- Weave inline hyperlinks into the content where they add value (e.g. linking to official docs, Wikipedia, or authoritative references)
 
 Guidelines for key takeaways:
 - Summarize the most important concepts
 - Keep each takeaway concise (1-2 sentences)
-- Make them actionable where possible`;
+- Make them actionable where possible
+
+Guidelines for sources:
+- Include 3-8 real, authoritative references related to the lesson topic
+- Prefer official documentation, reputable educational sites, Wikipedia, and well-known publications
+- Each source should be genuinely relevant to the lesson content
+- Use the actual title of the page or article`;
 
 export class LessonContentGeneratorService {
   private provider: AIProvider;
@@ -67,14 +76,27 @@ export class LessonContentGeneratorService {
     usage?: { promptTokens: number; completionTokens: number; totalTokens: number };
   }> {
     const userPrompt = this.buildUserPrompt(request);
+    const useGoogleSearch = this.provider.name === "gemini";
 
     const response = await this.provider.generateText(userPrompt, {
       systemPrompt: LESSON_SYSTEM_PROMPT,
       maxTokens: 4096,
       temperature: 0.7,
+      googleSearch: useGoogleSearch,
     });
 
     const content = this.parseResponse(response.content);
+
+    // Merge prompt-based sources with grounding sources from the provider
+    if (response.sources?.length) {
+      const existingUrls = new Set(content.sources.map((s) => s.url));
+      for (const gs of response.sources) {
+        if (!existingUrls.has(gs.url)) {
+          content.sources.push(gs);
+          existingUrls.add(gs.url);
+        }
+      }
+    }
 
     return {
       content,
@@ -150,9 +172,20 @@ Please regenerate the lesson content addressing this feedback while maintaining 
         throw new Error("Invalid lesson content structure: missing required fields");
       }
 
+      const sources: AISource[] = [];
+      if (Array.isArray(data.sources)) {
+        for (const s of data.sources) {
+          const src = s as Record<string, unknown>;
+          if (typeof src.title === "string" && typeof src.url === "string" && src.url.startsWith("http")) {
+            sources.push({ title: src.title, url: src.url });
+          }
+        }
+      }
+
       return {
         content: data.content as string,
         keyTakeaways: data.keyTakeaways as string[],
+        sources,
       };
     });
   }

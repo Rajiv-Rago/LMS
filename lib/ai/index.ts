@@ -1,15 +1,13 @@
 import { AIProvider, AIProviderConfig, AIProviderName } from "./types";
 import { OpenAIProvider } from "./providers/openai";
 import { AnthropicProvider } from "./providers/anthropic";
-import { GroqProvider } from "./providers/groq";
 import { CerebrasProvider } from "./providers/cerebras";
 import { GeminiProvider } from "./providers/gemini";
 import { API_KEY_ENV_MAP } from "./utils/apiKeys";
 
-export type { AIProvider, AIMessage, AICompletionOptions, AICompletionResponse, AIProviderConfig, AIProviderName, AITier, UserAIPreferences } from "./types";
+export type { AIProvider, AIMessage, AICompletionOptions, AICompletionResponse, AIProviderConfig, AIProviderName, AITier, UserAIPreferences, AISource } from "./types";
 export { OpenAIProvider } from "./providers/openai";
 export { AnthropicProvider } from "./providers/anthropic";
-export { GroqProvider } from "./providers/groq";
 export { CerebrasProvider } from "./providers/cerebras";
 export { GeminiProvider } from "./providers/gemini";
 
@@ -27,8 +25,6 @@ export function createAIProvider(config: AIProviderConfig): AIProvider {
       return new OpenAIProvider(config.apiKey, config.model);
     case "anthropic":
       return new AnthropicProvider(config.apiKey, config.model);
-    case "groq":
-      return new GroqProvider(config.apiKey, config.model);
     case "cerebras":
       return new CerebrasProvider(config.apiKey, config.model);
     case "gemini":

@@ -82,7 +82,7 @@ const aiGenerationLogSchema = new mongoose.Schema<
     },
     provider: {
       type: String,
-      enum: ["openai", "anthropic", "groq", "cerebras", "gemini"],
+      enum: ["openai", "anthropic", "cerebras", "gemini"],
       required: [true, "Provider is required"],
     },
     aiModel: {

@@ -3,7 +3,6 @@ import { AIProviderName } from "../types";
 export const API_KEY_ENV_MAP: Record<AIProviderName, string> = {
   openai: "OPENAI_API_KEY",
   anthropic: "ANTHROPIC_API_KEY",
-  groq: "GROQ_API_KEY",
   cerebras: "CEREBRAS_API_KEY",
   gemini: "GEMINI_API_KEY",
 };

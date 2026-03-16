@@ -23,11 +23,8 @@ export const MODEL_REGISTRY: ModelInfo[] = [
   { id: "claude-opus-4-20250514", displayName: "Claude Opus 4", provider: "anthropic", tiers: ["thorough"] },
 
   // Gemini
-  { id: "gemini-2.0-flash", displayName: "Gemini 2.0 Flash", provider: "gemini", tiers: ["concise"] },
+  { id: "gemini-2.5-flash", displayName: "Gemini 2.5 Flash", provider: "gemini", tiers: ["concise"] },
   { id: "gemini-2.5-pro", displayName: "Gemini 2.5 Pro", provider: "gemini", tiers: ["balanced", "thorough"] },
-
-  // Groq
-  { id: "llama-3.3-70b-versatile", displayName: "Llama 3.3 70B", provider: "groq", tiers: ["concise"] },
 
   // Cerebras
   { id: "llama-3.3-70b", displayName: "Llama 3.3 70B", provider: "cerebras", tiers: ["concise"] },
@@ -57,7 +54,6 @@ const PROVIDER_DISPLAY_NAMES: Record<AIProviderName, string> = {
   openai: "OpenAI",
   anthropic: "Anthropic",
   gemini: "Google Gemini",
-  groq: "Groq",
   cerebras: "Cerebras",
 };
 

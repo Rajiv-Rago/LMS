@@ -7,6 +7,12 @@ export interface AICompletionOptions {
   maxTokens?: number;
   temperature?: number;
   systemPrompt?: string;
+  googleSearch?: boolean;
+}
+
+export interface AISource {
+  title: string;
+  url: string;
 }
 
 export interface AICompletionResponse {
@@ -17,9 +23,10 @@ export interface AICompletionResponse {
     completionTokens: number;
     totalTokens: number;
   };
+  sources?: AISource[];
 }
 
-export type AIProviderName = "openai" | "anthropic" | "groq" | "cerebras" | "gemini";
+export type AIProviderName = "openai" | "anthropic" | "cerebras" | "gemini";
 
 export interface AIProvider {
   name: AIProviderName;

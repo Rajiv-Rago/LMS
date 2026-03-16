@@ -517,6 +517,7 @@ registerHandler(
       }
       lesson.content = content.content;
       lesson.keyTakeaways = content.keyTakeaways;
+      lesson.sources = content.sources?.length ? content.sources : undefined;
       lesson.generationStatus = "completed";
       await lesson.save();
 

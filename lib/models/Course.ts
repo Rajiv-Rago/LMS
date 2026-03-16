@@ -106,7 +106,7 @@ const courseSchema = new mongoose.Schema<ICourse, CourseModel>(
     aiPreferences: {
       defaultProvider: {
         type: String,
-        enum: ["openai", "anthropic", "groq", "cerebras", "gemini"],
+        enum: ["openai", "anthropic", "cerebras", "gemini"],
       },
       defaultModel: {
         type: String,

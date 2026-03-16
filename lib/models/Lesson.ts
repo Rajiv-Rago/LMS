@@ -27,6 +27,7 @@ export interface ILesson extends Document {
   previousContent?: string;
   previousKeyTakeaways?: string[];
   keyTakeaways?: string[];
+  sources?: { title: string; url: string }[];
   youtubeMetadata?: {
     videoId: string;
     channelName: string;
@@ -103,7 +104,7 @@ const lessonSchema = new mongoose.Schema<ILesson, LessonModel>(
     generationConfig: {
       provider: {
         type: String,
-        enum: ["openai", "anthropic", "groq", "cerebras", "gemini"],
+        enum: ["openai", "anthropic", "cerebras", "gemini"],
       },
       model: {
         type: String,
@@ -119,6 +120,10 @@ const lessonSchema = new mongoose.Schema<ILesson, LessonModel>(
     keyTakeaways: [{
       type: String,
       maxlength: [500, "Key takeaway cannot exceed 500 characters"],
+    }],
+    sources: [{
+      title: { type: String, required: true },
+      url: { type: String, required: true },
     }],
     youtubeMetadata: {
       videoId: { type: String },

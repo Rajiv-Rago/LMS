@@ -72,7 +72,7 @@ afterAll(async () => {
 const LEAKED_PATTERNS = [
   /API key not configured/i,
   /provider.*not configured/i,
-  /groq|openai|anthropic|gemini|cerebras/i,
+  /openai|anthropic|gemini|cerebras/i,
   /YOUTUBE_API_KEY/,
 ];
 

@@ -19,7 +19,7 @@ export interface TierMetadata {
  * when building the candidate list from the registry.
  */
 const TIER_PROVIDER_ORDER: Record<AITier, AIProviderName[]> = {
-  concise: ["groq", "cerebras", "gemini", "openai", "anthropic"],
+  concise: ["gemini", "cerebras", "openai", "anthropic"],
   balanced: ["openai", "anthropic", "gemini"],
   thorough: ["anthropic", "openai", "gemini"],
 };
@@ -114,7 +114,6 @@ export function getConfiguredProviders(): AIProviderName[] {
   const providers: AIProviderName[] = [
     "openai",
     "anthropic",
-    "groq",
     "cerebras",
     "gemini",
   ];

@@ -10,7 +10,6 @@ describe("providerResolver", () => {
     delete process.env.AI_MODEL;
     delete process.env.OPENAI_API_KEY;
     delete process.env.ANTHROPIC_API_KEY;
-    delete process.env.GROQ_API_KEY;
     delete process.env.CEREBRAS_API_KEY;
     delete process.env.GEMINI_API_KEY;
   });
@@ -49,14 +48,14 @@ describe("providerResolver", () => {
     });
 
     it("falls back to course preferences when no request provider", () => {
-      process.env.GROQ_API_KEY = "gsk-test";
+      process.env.GEMINI_API_KEY = "gem-test";
 
       const result = resolveProvider({
-        coursePreferences: { defaultProvider: "groq", defaultModel: "mixtral-8x7b" },
+        coursePreferences: { defaultProvider: "gemini", defaultModel: "gemini-2.5-flash" },
       });
 
-      expect(result!.provider).toBe("groq");
-      expect(result!.model).toBe("mixtral-8x7b");
+      expect(result!.provider).toBe("gemini");
+      expect(result!.model).toBe("gemini-2.5-flash");
     });
 
     it("falls back to env AI_PROVIDER when no request or course prefs", () => {
@@ -93,17 +92,17 @@ describe("providerResolver", () => {
     });
 
     it("falls through to env vars when request tier has no configured provider", () => {
-      // Only groq key set — balanced tier only tries openai/anthropic/gemini
-      process.env.GROQ_API_KEY = "gsk-test";
-      process.env.AI_PROVIDER = "groq";
+      // Only gemini key set — balanced tier tries openai/anthropic/gemini
+      process.env.GEMINI_API_KEY = "gem-test";
+      process.env.AI_PROVIDER = "gemini";
 
       const result = resolveProvider({
         requestTier: "balanced",
       });
 
       expect(result).not.toBeNull();
-      expect(result!.provider).toBe("groq");
-      expect(result!.apiKey).toBe("gsk-test");
+      expect(result!.provider).toBe("gemini");
+      expect(result!.apiKey).toBe("gem-test");
     });
 
     it("returns null when request provider has no API key", () => {
@@ -134,11 +133,6 @@ describe("providerResolver", () => {
     it("returns the API key for anthropic", () => {
       process.env.ANTHROPIC_API_KEY = "sk-ant-456";
       expect(getApiKey("anthropic")).toBe("sk-ant-456");
-    });
-
-    it("returns the API key for groq", () => {
-      process.env.GROQ_API_KEY = "gsk-789";
-      expect(getApiKey("groq")).toBe("gsk-789");
     });
 
     it("returns the API key for cerebras", () => {

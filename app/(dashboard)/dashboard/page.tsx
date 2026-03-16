@@ -63,14 +63,19 @@ export default function DashboardPage() {
           fetch("/api/courses?enrolled=true"),
         ]);
 
+        let myCourseList: Course[] = [];
         if (myRes.ok) {
           const data = await myRes.json();
-          setMyCourses(data.courses || []);
+          myCourseList = data.courses || [];
+          setMyCourses(myCourseList);
         }
 
         if (enrolledRes.ok) {
           const data = await enrolledRes.json();
-          setEnrolledCourses(data.courses || []);
+          const myIds = new Set(myCourseList.map((c) => c._id));
+          setEnrolledCourses(
+            (data.courses || []).filter((c: Course) => !myIds.has(c._id))
+          );
         }
       } catch {
         // Handled by error boundary

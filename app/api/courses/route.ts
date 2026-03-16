@@ -88,6 +88,15 @@ export async function GET(request: NextRequest) {
     const total = await Course.countDocuments(query);
     const courses = await Course.find(query)
       .populate("instructor", "name email")
+      .populate({
+        path: "modules",
+        select: "title order",
+        populate: {
+          path: "lessons",
+          model: "Lesson",
+          select: "title order",
+        },
+      })
       .sort(sort)
       .skip(skip)
       .limit(limit);

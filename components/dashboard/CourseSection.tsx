@@ -51,7 +51,7 @@ export default function CourseSection({
             return (
               <Link
                 key={course._id}
-                href={`/courses/${course._id}`}
+                href={`/courses/${course._id}/overview`}
                 className="block rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 hover:border-indigo-500 dark:hover:border-indigo-500 transition-colors"
               >
                 <h3 className="font-semibold text-zinc-900 dark:text-white truncate">

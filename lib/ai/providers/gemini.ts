@@ -26,7 +26,24 @@ export class GeminiProvider implements AIProvider {
     messages: AIMessage[],
     options?: AICompletionOptions
   ): Promise<AICompletionResponse> {
-    const tools = options?.googleSearch
+    if (options?.googleSearch) {
+      try {
+        return await this.doChat(messages, options, true);
+      } catch {
+        // Google Search grounding may not be available (free tier, model incompatibility).
+        // Fall back to generation without it.
+        return await this.doChat(messages, options, false);
+      }
+    }
+    return this.doChat(messages, options, false);
+  }
+
+  private async doChat(
+    messages: AIMessage[],
+    options: AICompletionOptions | undefined,
+    useSearch: boolean
+  ): Promise<AICompletionResponse> {
+    const tools = useSearch
       ? [{ googleSearchRetrieval: {} }]
       : undefined;
 

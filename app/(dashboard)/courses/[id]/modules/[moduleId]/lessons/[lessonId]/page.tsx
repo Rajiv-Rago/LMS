@@ -392,10 +392,10 @@ export default function LessonDetailPage({
 
   if (loading) {
     return (
-      <div className="max-w-4xl mx-auto space-y-6">
+      <div className="max-w-6xl mx-auto space-y-6">
         <Skeleton className="h-4 w-24" />
         <div className="flex flex-col lg:flex-row gap-6">
-          <div className="hidden lg:block w-64 shrink-0 rounded-lg border border-zinc-200 dark:border-zinc-800 p-4 space-y-2">
+          <div className="hidden lg:block w-52 shrink-0 rounded-lg border border-zinc-200 dark:border-zinc-800 p-4 space-y-2">
             <Skeleton className="h-6 w-32" />
             {Array.from({ length: 6 }).map((_, i) => (
               <Skeleton key={i} className="h-8 w-full" />
@@ -448,7 +448,7 @@ export default function LessonDetailPage({
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-6xl mx-auto space-y-6">
       <div>
         <Link
           href={`/courses/${id}/overview`}
@@ -483,7 +483,7 @@ export default function LessonDetailPage({
 
         {/* Module sidebar - desktop */}
         {currentModule && (
-          <div className="hidden lg:block w-64 shrink-0">
+          <div className="hidden lg:block w-52 shrink-0">
             <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 space-y-3 sticky top-6">
               <h3 className="text-sm font-semibold text-zinc-900 dark:text-white truncate">
                 {currentModule.title}

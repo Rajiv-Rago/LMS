@@ -2,12 +2,12 @@ import { getHandler, handlersReady } from "./handlers";
 import type { QueueAdapter, EnqueueOptions, JobStatusResult } from "./index";
 
 interface SyncJobResult {
-  status: "completed" | "failed";
+  status: "pending" | "completed" | "failed";
   result?: Record<string, unknown>;
   error?: string;
   userId?: string;
   createdAt: Date;
-  completedAt: Date;
+  completedAt?: Date;
 }
 
 const results = new Map<string, SyncJobResult>();
@@ -28,11 +28,16 @@ export class SyncShim implements QueueAdapter {
 
     const now = new Date();
 
-    try {
-      const result = await handler({
-        ...options.data,
-        userId: options.userId,
-      });
+    results.set(id, {
+      status: "pending",
+      userId: options.userId,
+      createdAt: now,
+    });
+
+    handler({
+      ...options.data,
+      userId: options.userId,
+    }).then((result) => {
       results.set(id, {
         status: "completed",
         result,
@@ -40,7 +45,7 @@ export class SyncShim implements QueueAdapter {
         createdAt: now,
         completedAt: new Date(),
       });
-    } catch (error) {
+    }).catch((error) => {
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error";
       results.set(id, {
@@ -50,8 +55,7 @@ export class SyncShim implements QueueAdapter {
         createdAt: now,
         completedAt: new Date(),
       });
-      throw error;
-    }
+    });
 
     return id;
   }

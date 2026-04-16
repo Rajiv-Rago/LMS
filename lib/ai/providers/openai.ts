@@ -5,6 +5,7 @@ import {
   AICompletionOptions,
   AICompletionResponse,
 } from "../types";
+import { AIProviderError, classifyProviderError } from "../errors";
 
 const DEFAULT_MODEL = "gpt-4o-mini";
 
@@ -22,38 +23,42 @@ export class OpenAIProvider implements AIProvider {
     messages: AIMessage[],
     options?: AICompletionOptions
   ): Promise<AICompletionResponse> {
-    const systemMessages: OpenAI.Chat.ChatCompletionMessageParam[] =
-      options?.systemPrompt
-        ? [{ role: "system", content: options.systemPrompt }]
-        : [];
+    try {
+      const systemMessages: OpenAI.Chat.ChatCompletionMessageParam[] =
+        options?.systemPrompt
+          ? [{ role: "system", content: options.systemPrompt }]
+          : [];
 
-    const chatMessages: OpenAI.Chat.ChatCompletionMessageParam[] = messages.map(
-      (msg) => ({
-        role: msg.role,
-        content: msg.content,
-      })
-    );
+      const chatMessages: OpenAI.Chat.ChatCompletionMessageParam[] = messages.map(
+        (msg) => ({
+          role: msg.role,
+          content: msg.content,
+        })
+      );
 
-    const response = await this.client.chat.completions.create({
-      model: this.model,
-      messages: [...systemMessages, ...chatMessages],
-      max_tokens: options?.maxTokens || 2048,
-      temperature: options?.temperature ?? 0.7,
-    });
+      const response = await this.client.chat.completions.create({
+        model: this.model,
+        messages: [...systemMessages, ...chatMessages],
+        max_tokens: options?.maxTokens || 2048,
+        temperature: options?.temperature ?? 0.7,
+      });
 
-    const choice = response.choices[0];
+      const choice = response.choices[0];
 
-    return {
-      content: choice.message.content || "",
-      finishReason: choice.finish_reason || undefined,
-      usage: response.usage
-        ? {
-            promptTokens: response.usage.prompt_tokens,
-            completionTokens: response.usage.completion_tokens,
-            totalTokens: response.usage.total_tokens,
-          }
-        : undefined,
-    };
+      return {
+        content: choice.message.content || "",
+        finishReason: choice.finish_reason || undefined,
+        usage: response.usage
+          ? {
+              promptTokens: response.usage.prompt_tokens,
+              completionTokens: response.usage.completion_tokens,
+              totalTokens: response.usage.total_tokens,
+            }
+          : undefined,
+      };
+    } catch (error) {
+      throw this.wrapError(error, "chat");
+    }
   }
 
   async generateText(
@@ -61,5 +66,17 @@ export class OpenAIProvider implements AIProvider {
     options?: AICompletionOptions
   ): Promise<AICompletionResponse> {
     return this.chat([{ role: "user", content: prompt }], options);
+  }
+
+  private wrapError(error: unknown, operation: "chat" | "generateText" | "chatStream"): AIProviderError {
+    if (error instanceof AIProviderError) return error;
+    const classified = classifyProviderError(error, "openai");
+    return new AIProviderError({
+      provider: "openai",
+      model: this.model,
+      operation,
+      originalError: error,
+      ...classified,
+    });
   }
 }

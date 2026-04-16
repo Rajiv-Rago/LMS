@@ -28,12 +28,24 @@ export interface AICompletionResponse {
 
 export type AIProviderName = "openai" | "anthropic" | "cerebras" | "gemini";
 
+export interface AIStreamResult {
+  stream: AsyncIterable<string>;
+  response: Promise<{
+    sources: AISource[];
+    usage?: { promptTokens: number; completionTokens: number; totalTokens: number };
+  }>;
+}
+
 export interface AIProvider {
   name: AIProviderName;
   chat(
     messages: AIMessage[],
     options?: AICompletionOptions
   ): Promise<AICompletionResponse>;
+  chatStream?(
+    messages: AIMessage[],
+    options?: AICompletionOptions
+  ): Promise<AIStreamResult>;
   generateText(
     prompt: string,
     options?: AICompletionOptions

@@ -51,11 +51,11 @@ describe("providerResolver", () => {
       process.env.GEMINI_API_KEY = "gem-test";
 
       const result = resolveProvider({
-        coursePreferences: { defaultProvider: "gemini", defaultModel: "gemini-2.5-flash" },
+        coursePreferences: { defaultProvider: "gemini", defaultModel: "gemini-3-flash-preview" },
       });
 
       expect(result!.provider).toBe("gemini");
-      expect(result!.model).toBe("gemini-2.5-flash");
+      expect(result!.model).toBe("gemini-3-flash-preview");
     });
 
     it("falls back to env AI_PROVIDER when no request or course prefs", () => {

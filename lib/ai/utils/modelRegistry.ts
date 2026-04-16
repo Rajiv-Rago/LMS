@@ -23,7 +23,7 @@ export const MODEL_REGISTRY: ModelInfo[] = [
   { id: "claude-opus-4-20250514", displayName: "Claude Opus 4", provider: "anthropic", tiers: ["thorough"] },
 
   // Gemini
-  { id: "gemini-2.5-flash", displayName: "Gemini 2.5 Flash", provider: "gemini", tiers: ["concise", "balanced", "thorough"] },
+  { id: "gemini-3-flash-preview", displayName: "Gemini 3 Flash", provider: "gemini", tiers: ["concise", "balanced", "thorough"] },
 
   // Cerebras
   { id: "llama-3.3-70b", displayName: "Llama 3.3 70B", provider: "cerebras", tiers: ["concise"] },

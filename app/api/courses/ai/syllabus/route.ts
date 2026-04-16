@@ -8,6 +8,8 @@ import { aiTierSchema, aiProviderSchema } from "@/lib/validation/aiSchemas";
 import { enqueueJob } from "@/lib/queue";
 import { enforceAIRateLimit, addRateLimitHeaders } from "@/lib/ai/rateLimit";
 import { captureException } from "@/lib/logger";
+import { getCorrelationId, CORRELATION_HEADER } from "@/lib/telemetry/correlationId";
+import { ErrorCodes } from "@/lib/telemetry/errorCodes";
 
 const createSyllabusSchema = z
   .object({
@@ -26,6 +28,8 @@ const createSyllabusSchema = z
   });
 
 export async function POST(request: NextRequest) {
+  const correlationId = getCorrelationId(request);
+
   try {
     const csrfError = requireCsrf(request);
     if (csrfError) return csrfError;
@@ -68,9 +72,14 @@ export async function POST(request: NextRequest) {
       const requestedProvider = provider || process.env.AI_PROVIDER || "openai";
       captureException(new Error(`Provider not configured: ${requestedProvider}`), {
         operation: "resolve-provider",
+        correlationId,
       });
       return NextResponse.json(
-        { error: "AI service is temporarily unavailable. Please try again later." },
+        {
+          error: "AI service is temporarily unavailable. Please try again later.",
+          code: ErrorCodes.PROVIDER_RESOLUTION_FAILED,
+          correlationId,
+        },
         { status: 503 }
       );
     }
@@ -82,14 +91,13 @@ export async function POST(request: NextRequest) {
     });
 
     const jsonResponse = NextResponse.json({ jobId }, { status: 202 });
+    jsonResponse.headers.set(CORRELATION_HEADER, correlationId);
     addRateLimitHeaders(jsonResponse, rateCheck.result);
     return jsonResponse;
   } catch (error) {
-    captureException(error, { operation: "Create syllabus error" });
-    const message =
-      error instanceof Error ? error.message : "Something went wrong.";
+    captureException(error, { operation: "Create syllabus error", correlationId });
     return NextResponse.json(
-      { error: message },
+      { error: "Something went wrong. Please try again later.", correlationId },
       { status: 500 }
     );
   }

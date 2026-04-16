@@ -12,6 +12,8 @@ import { AITutorService } from "@/lib/ai/services/tutor";
 import { aiTierSchema, aiProviderSchema } from "@/lib/validation/aiSchemas";
 import { enforceAIRateLimit, addRateLimitHeaders } from "@/lib/ai/rateLimit";
 import { captureException } from "@/lib/logger";
+import { getCorrelationId, CORRELATION_HEADER } from "@/lib/telemetry/correlationId";
+import { ErrorCodes } from "@/lib/telemetry/errorCodes";
 
 const createChatSchema = z
   .object({
@@ -29,6 +31,8 @@ const createChatSchema = z
   });
 
 export async function POST(request: NextRequest) {
+  const correlationId = getCorrelationId(request);
+
   try {
     const csrfError = requireCsrf(request);
     if (csrfError) return csrfError;
@@ -89,9 +93,17 @@ export async function POST(request: NextRequest) {
     });
 
     if (!resolved) {
+      captureException(new Error("Provider not configured"), {
+        operation: "resolve-provider",
+        correlationId,
+      });
       return NextResponse.json(
-        { error: "No AI provider configured. Please set up an API key." },
-        { status: 500 }
+        {
+          error: "AI service is temporarily unavailable. Please try again later.",
+          code: ErrorCodes.PROVIDER_RESOLUTION_FAILED,
+          correlationId,
+        },
+        { status: 503 }
       );
     }
 
@@ -160,12 +172,13 @@ export async function POST(request: NextRequest) {
         content: response.content,
       },
     });
+    jsonResponse.headers.set(CORRELATION_HEADER, correlationId);
     addRateLimitHeaders(jsonResponse, rateCheck.result);
     return jsonResponse;
   } catch (error) {
-    captureException(error, { operation: "AI chat error" });
+    captureException(error, { operation: "AI chat error", correlationId });
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Something went wrong. Please try again later.", correlationId },
       { status: 500 }
     );
   }

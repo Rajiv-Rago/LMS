@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getClientIp } from "@/lib/utils/request";
+import { CORRELATION_HEADER, getCorrelationId } from "@/lib/telemetry/correlationId";
 
 // --- Rate Limiting (in-memory, per-instance) ---
 
@@ -95,6 +96,11 @@ function addSecurityHeaders(response: NextResponse): void {
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // 0. Correlation ID — read from incoming header or generate
+  const correlationId = getCorrelationId(request);
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set(CORRELATION_HEADER, correlationId);
+
   // 1. Rate Limiting (auth endpoints only)
   if (request.method === "POST" && RATE_LIMIT_CONFIG[pathname]) {
     const ip = getClientIp(request);
@@ -106,6 +112,7 @@ export function middleware(request: NextRequest) {
         { status: 429 }
       );
       response.headers.set("Retry-After", String(retryAfter));
+      response.headers.set(CORRELATION_HEADER, correlationId);
       addSecurityHeaders(response);
       return response;
     }
@@ -123,8 +130,11 @@ export function middleware(request: NextRequest) {
     }
   }
 
-  // 3. Add security headers to all responses
-  const response = NextResponse.next();
+  // 3. Add security headers + correlation ID to all responses
+  const response = NextResponse.next({
+    request: { headers: requestHeaders },
+  });
+  response.headers.set(CORRELATION_HEADER, correlationId);
   addSecurityHeaders(response);
   return response;
 }

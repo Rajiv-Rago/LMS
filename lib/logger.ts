@@ -81,6 +81,24 @@ export const logger = {
   },
 };
 
+export type Logger = typeof logger;
+
+export function createChildLogger(
+  boundContext: Record<string, unknown>
+): Logger {
+  return {
+    info(message: string, context?: Record<string, unknown>) {
+      log("info", message, { ...boundContext, ...context });
+    },
+    warn(message: string, context?: Record<string, unknown>) {
+      log("warn", message, { ...boundContext, ...context });
+    },
+    error(message: string, context?: Record<string, unknown>) {
+      log("error", message, { ...boundContext, ...context });
+    },
+  };
+}
+
 /**
  * Contract 6: Error Tracking Interface
  *

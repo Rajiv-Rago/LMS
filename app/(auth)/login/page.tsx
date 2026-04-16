@@ -134,14 +134,7 @@ function LoginForm() {
           </div>
         </div>
 
-        <div className="flex items-center justify-end">
-          <Link
-            href="/forgot-password"
-            className="text-sm font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400"
-          >
-            Forgot your password?
-          </Link>
-        </div>
+        {/* TODO: Re-enable when email provider is configured */}
 
         <Button
           type="submit"

@@ -4,11 +4,6 @@ import { useEffect, useState, useRef, useCallback, use } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ChevronDown } from "lucide-react";
-import {
-  ModelSelector,
-  type ModelSelectorValue,
-} from "@/components/ai/ModelSelector";
-import { useUserAIDefaults } from "@/lib/hooks/useUserAIDefaults";
 import MarkdownContent from "@/components/ui/MarkdownContent";
 import YouTubeVideoPicker from "@/components/lesson/YouTubeVideoPicker";
 import ContentGenerationSkeleton from "@/components/lesson/ContentGenerationSkeleton";
@@ -84,31 +79,23 @@ export default function LessonDetailPage({
 
   // AI generation state
   const [generating, setGenerating] = useState(false);
+  const [streamedContent, setStreamedContent] = useState("");
   const [genError, setGenError] = useState("");
-  const [modelValue, setModelValue] = useState<ModelSelectorValue>({
-    tier: "balanced",
-  });
+  const [genErrorTransient, setGenErrorTransient] = useState(true);
+  const [genCorrelationId, setGenCorrelationId] = useState("");
   const [showVideoPicker, setShowVideoPicker] = useState(false);
   const [swapping, setSwapping] = useState(false);
   const [creditsRemaining, setCreditsRemaining] = useState(0);
   const [undoAvailable, setUndoAvailable] = useState(false);
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const autoGenTriedRef = useRef(false);
+  const abortRef = useRef<AbortController | null>(null);
   const toast = useToast();
 
-  const { value: defaultModelValue, loading: defaultsLoading } =
-    useUserAIDefaults();
-
-  useEffect(() => {
-    if (!defaultsLoading) {
-      setModelValue(defaultModelValue);
-    }
-  }, [defaultModelValue, defaultsLoading]);
-
-  // Cleanup polling and undo timer on unmount
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (pollRef.current) clearInterval(pollRef.current);
+      abortRef.current?.abort();
       if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
     };
   }, []);
@@ -231,19 +218,20 @@ export default function LessonDetailPage({
     }
   };
 
-  const handleGenerate = async (
-    withFeedback?: string,
-    useModelSelector?: boolean
-  ) => {
+  const handleGenerate = async (withFeedback?: string) => {
     setGenError("");
+    setGenErrorTransient(true);
+    setGenCorrelationId("");
+    setStreamedContent("");
 
     const payload: Record<string, string> = {};
-    if (useModelSelector) {
-      if (modelValue.tier) payload.tier = modelValue.tier;
-      if (modelValue.provider) payload.provider = modelValue.provider;
-      if (modelValue.model) payload.model = modelValue.model;
-    }
     if (withFeedback) payload.feedback = withFeedback;
+
+    if (generating) return;
+    setGenerating(true);
+
+    const abort = new AbortController();
+    abortRef.current = abort;
 
     try {
       const res = await fetch(
@@ -255,65 +243,119 @@ export default function LessonDetailPage({
             "X-Requested-With": "XMLHttpRequest",
           },
           body: JSON.stringify(payload),
+          signal: abort.signal,
         }
       );
 
       if (res.status === 429) {
         setCreditsRemaining(0);
         toast.error("No credits left -- resets tomorrow");
+        setGenerating(false);
         return;
       }
 
-      const data = await res.json();
-      if (!res.ok) {
-        toast.error("Regeneration failed. Try again later.");
-        setGenError(data.error || "Generation request failed");
+      if (res.status === 409) {
+        toast.info("This lesson is already being generated");
+        setGenerating(false);
         return;
       }
-
-      // Show skeleton only after 202 accepted
-      setGenerating(true);
 
       const rateLimitHeader = res.headers.get("X-RateLimit-Remaining");
       if (rateLimitHeader != null) {
         setCreditsRemaining(Number(rateLimitHeader));
       }
 
-      // Poll for job completion
-      pollRef.current = setInterval(async () => {
-        try {
-          const jobRes = await fetch(`/api/jobs/${data.jobId}`);
-          const jobData = await jobRes.json();
-          if (jobData.job?.status === "completed") {
-            clearInterval(pollRef.current!);
-            pollRef.current = null;
-            await fetchLesson();
-            setCreditsRemaining((prev) => Math.max(0, prev - 1));
-            setUndoAvailable(true);
-            if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
-            undoTimerRef.current = setTimeout(
-              () => setUndoAvailable(false),
-              30000
-            );
-            setGenerating(false);
-          } else if (jobData.job?.status === "failed") {
-            clearInterval(pollRef.current!);
-            pollRef.current = null;
-            toast.error("Regeneration failed. Try again later.");
-            setGenError(jobData.job.error || "Generation failed");
-            setGenerating(false);
+      if (!res.ok || !res.body) {
+        const data = await res.json().catch(() => ({}));
+        toast.error("Generation failed. Try again later.");
+        setGenError(data.error || "Generation request failed");
+        setGenErrorTransient(res.status >= 500 && res.status !== 503);
+        if (data.correlationId) setGenCorrelationId(data.correlationId);
+        setGenerating(false);
+        return;
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+
+        let eventType = "";
+        for (const line of lines) {
+          if (line.startsWith("event: ")) {
+            eventType = line.slice(7);
+          } else if (line.startsWith("data: ") && eventType) {
+            try {
+              const data = JSON.parse(line.slice(6));
+
+              if (eventType === "chunk") {
+                setStreamedContent((prev) => prev + data.text);
+              } else if (eventType === "done") {
+                await fetchLesson();
+                setCreditsRemaining((prev) => Math.max(0, prev - 1));
+                setUndoAvailable(true);
+                if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
+                undoTimerRef.current = setTimeout(() => setUndoAvailable(false), 30000);
+                setGenerating(false);
+                setStreamedContent("");
+              } else if (eventType === "error") {
+                const msg = data.message || "Generation failed";
+                toast.error(msg);
+                setGenError(msg);
+                setGenErrorTransient(data.isTransient !== false);
+                if (data.correlationId) setGenCorrelationId(data.correlationId);
+                setGenerating(false);
+                setStreamedContent("");
+              }
+            } catch {
+              // ignore malformed JSON
+            }
+            eventType = "";
           }
-        } catch {
-          clearInterval(pollRef.current!);
-          pollRef.current = null;
-          toast.error("Failed to check generation status");
-          setGenerating(false);
         }
-      }, 2000);
-    } catch {
+      }
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") return;
       toast.error("Failed to start generation");
+      setGenerating(false);
+      setStreamedContent("");
     }
   };
+
+  // Reset auto-gen flag when navigating to a different lesson
+  useEffect(() => {
+    autoGenTriedRef.current = false;
+  }, [lessonId]);
+
+  // Auto-trigger generation for skeleton AI lessons on first load
+  useEffect(() => {
+    if (loading || !lesson) return;
+    if (autoGenTriedRef.current) return;
+    if (generating || genError) return;
+
+    const canGenerateNow = isOwnedCourse && permissions?.canEdit;
+    const isAITextLesson = lesson.contentType === "text" && isOwnedCourse;
+    const needsGeneration =
+      isAITextLesson &&
+      canGenerateNow &&
+      lesson.generationStatus !== "generating" &&
+      lesson.generationStatus !== "completed" &&
+      !lesson.content;
+
+    if (needsGeneration) {
+      autoGenTriedRef.current = true;
+      handleGenerate();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, lesson, permissions, isOwnedCourse, generating, genError]);
 
   const handleUndo = async () => {
     try {
@@ -638,59 +680,53 @@ export default function LessonDetailPage({
                   )}
                 </div>
 
-                {/* Generating skeleton */}
-                {generating && <ContentGenerationSkeleton />}
+                {/* Streaming content or skeleton */}
+                {generating && (
+                  streamedContent
+                    ? <MarkdownContent content={streamedContent} />
+                    : <ContentGenerationSkeleton />
+                )}
 
                 {/* Generation error */}
                 {genError && (
                   <div className="mb-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 px-4 py-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-red-700 dark:text-red-300">
-                        {genError}
-                      </span>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setGenError("");
-                          handleGenerate();
-                        }}
-                        className="ml-4 text-red-700 dark:text-red-300"
-                      >
-                        Try Again
-                      </Button>
+                      <div>
+                        <span className="text-sm text-red-700 dark:text-red-300">
+                          {genError}
+                        </span>
+                        {genCorrelationId && (
+                          <p className="text-xs text-red-400 dark:text-red-500 mt-1 font-mono">
+                            Reference: {genCorrelationId}
+                          </p>
+                        )}
+                      </div>
+                      {genErrorTransient && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setGenError("");
+                            handleGenerate();
+                          }}
+                          className="ml-4 text-red-700 dark:text-red-300"
+                        >
+                          Retry
+                        </Button>
+                      )}
                     </div>
                   </div>
                 )}
 
-                {/* Skeleton state: no content generated yet */}
-                {canGenerate && isSkeleton && !generating && (
-                  <div className="space-y-4">
-                    {lesson.lessonOutline && (
-                      <div className="rounded-lg bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 p-4">
-                        <h3 className="text-sm font-semibold text-zinc-900 dark:text-white mb-2">
-                          Lesson Outline
-                        </h3>
-                        <p className="text-sm text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap">
-                          {lesson.lessonOutline}
-                        </p>
-                      </div>
-                    )}
-
-                    <div className="space-y-3">
-                      <ModelSelector
-                        value={modelValue}
-                        onChange={setModelValue}
-                        disabled={generating}
-                      />
-                      <Button
-                        onClick={() => handleGenerate(undefined, true)}
-                        disabled={generating}
-                        className="bg-violet-600 hover:bg-violet-500"
-                      >
-                        Generate Content
-                      </Button>
-                    </div>
+                {/* Skeleton state: outline placeholder while auto-generation kicks off */}
+                {canGenerate && isSkeleton && !generating && lesson.lessonOutline && (
+                  <div className="rounded-lg bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 p-4">
+                    <h3 className="text-sm font-semibold text-zinc-900 dark:text-white mb-2">
+                      Lesson Outline
+                    </h3>
+                    <p className="text-sm text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap">
+                      {lesson.lessonOutline}
+                    </p>
                   </div>
                 )}
 

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { BookOpen, Compass } from "lucide-react";
+import { BookOpen } from "lucide-react";
 import GenerationInput from "@/components/dashboard/GenerationInput";
 import GeneratingCard from "@/components/dashboard/GeneratingCard";
 import CourseSection from "@/components/dashboard/CourseSection";
@@ -27,11 +27,11 @@ type GenerationPhase = "idle" | "submitting" | "generating" | "complete";
 export default function DashboardPage() {
   const router = useRouter();
   const [myCourses, setMyCourses] = useState<Course[]>([]);
-  const [enrolledCourses, setEnrolledCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [generationPhase, setGenerationPhase] = useState<GenerationPhase>("idle");
   const [generatingTopic, setGeneratingTopic] = useState("");
   const [error, setError] = useState("");
+  const [courseLimit, setCourseLimit] = useState(5);
 
   const handleComplete = useCallback(
     (result: JobResult) => {
@@ -58,24 +58,20 @@ export default function DashboardPage() {
   useEffect(() => {
     async function fetchData() {
       try {
-        const [myRes, enrolledRes] = await Promise.all([
+        const [myRes, meRes] = await Promise.all([
           fetch("/api/courses/ai/my-courses"),
-          fetch("/api/courses?enrolled=true"),
+          fetch("/api/auth/me"),
         ]);
 
-        let myCourseList: Course[] = [];
         if (myRes.ok) {
           const data = await myRes.json();
-          myCourseList = data.courses || [];
-          setMyCourses(myCourseList);
+          setMyCourses(data.courses || []);
         }
 
-        if (enrolledRes.ok) {
-          const data = await enrolledRes.json();
-          const myIds = new Set(myCourseList.map((c) => c._id));
-          setEnrolledCourses(
-            (data.courses || []).filter((c: Course) => !myIds.has(c._id))
-          );
+        if (meRes.ok) {
+          const data = await meRes.json();
+          const tier = data.user?.role === "admin" ? "admin" : (data.user?.subscriptionTier || "free");
+          if (tier !== "free") setCourseLimit(Infinity);
         }
       } catch {
         // Handled by error boundary
@@ -131,9 +127,8 @@ export default function DashboardPage() {
     }
   }
 
-  const courseCount = myCourses.length;
-  const limitReached = courseCount >= 5;
-  const isEmpty = myCourses.length === 0 && enrolledCourses.length === 0;
+  const limitReached = isFinite(courseLimit) && myCourses.length >= courseLimit;
+  const isEmpty = myCourses.length === 0;
 
   if (loading) {
     return (
@@ -146,14 +141,6 @@ export default function DashboardPage() {
           <Skeleton className="h-5 w-32 mb-4" />
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 3 }).map((_, i) => (
-              <SkeletonCard key={i} />
-            ))}
-          </div>
-        </div>
-        <div>
-          <Skeleton className="h-5 w-32 mb-4" />
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {Array.from({ length: 2 }).map((_, i) => (
               <SkeletonCard key={i} />
             ))}
           </div>
@@ -209,17 +196,6 @@ export default function DashboardPage() {
         }
       />
 
-      <CourseSection
-        title="Enrolled Courses"
-        courses={enrolledCourses}
-        emptyState={
-          <EmptyState
-            icon={Compass}
-            title="No enrollments"
-            description="Browse the course catalog to find courses"
-          />
-        }
-      />
     </div>
   );
 }

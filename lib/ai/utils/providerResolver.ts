@@ -2,6 +2,7 @@ import { AIProviderName, AITier, UserAIPreferences } from "../types";
 import { getApiKey } from "./apiKeys";
 import { getModelDisplayName, getProviderDisplayName } from "./modelRegistry";
 import { resolveTier } from "./tierCatalog";
+import { logger } from "@/lib/logger";
 
 export { API_KEY_ENV_MAP, getApiKey } from "./apiKeys";
 
@@ -51,10 +52,24 @@ function withDisplayNames(
 export function resolveProvider(
   options: ResolveProviderOptions
 ): ResolvedProvider | null {
-  // 1. Request explicit provider+model
+  const skipped: string[] = [];
+
+  // 1. Request explicit provider+model — fail fast if user explicitly asked for it
   if (options.requestProvider) {
     const apiKey = getApiKey(options.requestProvider);
-    if (!apiKey) return null;
+    if (!apiKey) {
+      logger.error("Provider resolution failed: explicit provider not configured", {
+        source: "request-explicit",
+        provider: options.requestProvider,
+        reason: "API key not configured",
+      });
+      return null;
+    }
+    logger.info("Provider resolved", {
+      source: "request-explicit",
+      provider: options.requestProvider,
+      model: options.requestModel,
+    });
     return {
       provider: options.requestProvider,
       model: options.requestModel,
@@ -67,6 +82,11 @@ export function resolveProvider(
   if (options.requestTier) {
     const resolved = resolveTier(options.requestTier);
     if (resolved) {
+      logger.info("Provider resolved", {
+        source: "request-tier",
+        provider: resolved.provider,
+        model: resolved.model,
+      });
       return {
         provider: resolved.provider,
         model: resolved.model,
@@ -75,12 +95,18 @@ export function resolveProvider(
         providerDisplayName: resolved.providerDisplayName,
       };
     }
+    skipped.push(`request-tier:${options.requestTier}`);
   }
 
   // 3. Course preferences
   if (options.coursePreferences?.defaultProvider) {
     const apiKey = getApiKey(options.coursePreferences.defaultProvider);
     if (apiKey) {
+      logger.info("Provider resolved", {
+        source: "course-prefs",
+        provider: options.coursePreferences.defaultProvider,
+        model: options.coursePreferences.defaultModel,
+      });
       return {
         provider: options.coursePreferences.defaultProvider,
         model: options.coursePreferences.defaultModel,
@@ -91,12 +117,23 @@ export function resolveProvider(
         ),
       };
     }
+    logger.warn("Provider resolution: skipped", {
+      source: "course-prefs",
+      provider: options.coursePreferences.defaultProvider,
+      reason: "API key not configured",
+    });
+    skipped.push(`course-prefs:${options.coursePreferences.defaultProvider}`);
   }
 
   // 4. User preferences (tier takes precedence over explicit provider)
   if (options.userPreferences?.defaultTier) {
     const resolved = resolveTier(options.userPreferences.defaultTier);
     if (resolved) {
+      logger.info("Provider resolved", {
+        source: "user-prefs-tier",
+        provider: resolved.provider,
+        model: resolved.model,
+      });
       return {
         provider: resolved.provider,
         model: resolved.model,
@@ -105,10 +142,16 @@ export function resolveProvider(
         providerDisplayName: resolved.providerDisplayName,
       };
     }
+    skipped.push(`user-prefs-tier:${options.userPreferences.defaultTier}`);
   }
   if (options.userPreferences?.defaultProvider) {
     const apiKey = getApiKey(options.userPreferences.defaultProvider);
     if (apiKey) {
+      logger.info("Provider resolved", {
+        source: "user-prefs-provider",
+        provider: options.userPreferences.defaultProvider,
+        model: options.userPreferences.defaultModel,
+      });
       return {
         provider: options.userPreferences.defaultProvider,
         model: options.userPreferences.defaultModel,
@@ -119,6 +162,12 @@ export function resolveProvider(
         ),
       };
     }
+    logger.warn("Provider resolution: skipped", {
+      source: "user-prefs-provider",
+      provider: options.userPreferences.defaultProvider,
+      reason: "API key not configured",
+    });
+    skipped.push(`user-prefs-provider:${options.userPreferences.defaultProvider}`);
   }
 
   // 5. Environment variables
@@ -126,6 +175,11 @@ export function resolveProvider(
   if (envProvider) {
     const apiKey = getApiKey(envProvider);
     if (apiKey) {
+      logger.info("Provider resolved", {
+        source: "env-var",
+        provider: envProvider,
+        model: process.env.AI_MODEL,
+      });
       return {
         provider: envProvider,
         model: process.env.AI_MODEL,
@@ -133,12 +187,36 @@ export function resolveProvider(
         ...withDisplayNames(envProvider, process.env.AI_MODEL),
       };
     }
+    logger.warn("Provider resolution: skipped", {
+      source: "env-var",
+      provider: envProvider,
+      reason: "API key not configured",
+    });
+    skipped.push(`env-var:${envProvider}`);
   }
 
   // 6. Fallback → openai
   const apiKey = getApiKey("openai");
-  if (!apiKey) return null;
+  if (!apiKey) {
+    logger.error("Provider resolution failed: no configured provider", {
+      attemptedSources: skipped,
+      options: {
+        requestProvider: options.requestProvider,
+        requestTier: options.requestTier,
+        courseProvider: options.coursePreferences?.defaultProvider,
+        userTier: options.userPreferences?.defaultTier,
+        userProvider: options.userPreferences?.defaultProvider,
+        envProvider,
+      },
+    });
+    return null;
+  }
 
+  logger.info("Provider resolved", {
+    source: "fallback",
+    provider: "openai",
+    model: process.env.AI_MODEL,
+  });
   return {
     provider: "openai",
     model: process.env.AI_MODEL,

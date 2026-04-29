@@ -122,7 +122,7 @@ describe("Course Catalog", () => {
       });
       await createTestEnrollment(enrolledCourse._id, student._id);
 
-      const { course: ownedCourse } = await createTestCourse(student._id, {
+      await createTestCourse(student._id, {
         title: "Owned",
         accessLevel: "published",
         owner: student._id,

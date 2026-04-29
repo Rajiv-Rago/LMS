@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef, useCallback } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Search } from "lucide-react";
@@ -162,10 +163,11 @@ export default function ExplorePage() {
               >
                 {course.coverImage ? (
                   <div className="aspect-video relative">
-                    <img
+                    <Image
                       src={course.coverImage}
                       alt=""
-                      className="w-full h-full object-cover"
+                      fill
+                      className="object-cover"
                     />
                   </div>
                 ) : (

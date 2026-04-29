@@ -4,7 +4,6 @@ import { dbConnect, withTransaction } from "@/lib/db";
 import { authenticate, clearAuthCookie, requireCsrf } from "@/lib/auth";
 import {
   User,
-  Course,
   Submission,
   AIChatSession,
   Notification,

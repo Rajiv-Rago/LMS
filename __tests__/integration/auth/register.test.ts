@@ -92,6 +92,7 @@ describe("POST /api/auth/register", () => {
   });
 
   it("returns 400 for missing email", async () => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { email: _email, ...noEmail } = validBody;
     const request = buildRequest("POST", "/api/auth/register", {
       body: noEmail,
@@ -113,6 +114,7 @@ describe("POST /api/auth/register", () => {
   });
 
   it("returns 400 for missing name", async () => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { name: _name, ...noName } = validBody;
     const request = buildRequest("POST", "/api/auth/register", {
       body: noName,

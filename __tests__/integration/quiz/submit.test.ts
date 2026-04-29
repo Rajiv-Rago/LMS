@@ -85,7 +85,7 @@ describe("POST /api/courses/[id]/assignments/[assignmentId]/quiz/submit", () => 
   });
 
   it("returns 400 when attempt already submitted", async () => {
-    const { student, studentToken, course, assignment } = await setupQuiz();
+    const { studentToken, course, assignment } = await setupQuiz();
 
     // Submit once
     const req1 = buildRequest(

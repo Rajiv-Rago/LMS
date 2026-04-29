@@ -97,7 +97,7 @@ describe("Course accessLevel", () => {
   describe("Permissions with authenticated user", () => {
     it("allows any authenticated user to view published courses", async () => {
       const { user: teacher } = await createTestUser({ role: "teacher" });
-      const { user: student, token } = await createTestUser({ role: "student" });
+      const { user: student } = await createTestUser({ role: "student" });
       const { course } = await createTestCourse(teacher._id, { accessLevel: "published" });
       const perms = await getCoursePermissions(course, {
         userId: student._id.toString(),

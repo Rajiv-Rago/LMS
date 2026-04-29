@@ -133,7 +133,8 @@ export default function AITutorPage({
           },
         ]);
       }
-    } catch (_error) {      setMessages((prev) => [
+    } catch {
+      setMessages((prev) => [
         ...prev,
         {
           role: "assistant",

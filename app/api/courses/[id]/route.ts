@@ -170,9 +170,7 @@ export async function DELETE(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Soft-delete: mark as deleted instead of removing
-    course.deletedAt = new Date();
-    await course.save();
+    await Course.findByIdAndUpdate(id, { deletedAt: new Date() });
 
     cache.invalidate(`course:${id}`);
     cache.invalidatePrefix("courses:published");

@@ -9,6 +9,8 @@ import CourseSection from "@/components/dashboard/CourseSection";
 import EmptyState from "@/components/ui/EmptyState";
 import { useJobPoller, JobResult } from "@/lib/hooks/useJobPoller";
 import { Skeleton, SkeletonCard } from "@/components/ui/Skeleton";
+import { useConfirm } from "@/lib/hooks/useConfirm";
+import { useToast } from "@/lib/hooks/useToast";
 
 interface CourseModule {
   lessons: unknown[];
@@ -26,6 +28,8 @@ type GenerationPhase = "idle" | "submitting" | "generating" | "complete";
 
 export default function DashboardPage() {
   const router = useRouter();
+  const confirm = useConfirm();
+  const toast = useToast();
   const [myCourses, setMyCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [generationPhase, setGenerationPhase] = useState<GenerationPhase>("idle");
@@ -81,6 +85,32 @@ export default function DashboardPage() {
     }
     fetchData();
   }, []);
+
+  async function handleDelete(courseId: string, courseTitle: string) {
+    const confirmed = await confirm({
+      title: "Delete Course",
+      message: `Are you sure you want to delete "${courseTitle}"? This action cannot be undone.`,
+      confirmLabel: "Delete",
+      destructive: true,
+    });
+    if (!confirmed) return;
+
+    try {
+      const res = await fetch(`/api/courses/${courseId}`, {
+        method: "DELETE",
+        headers: { "X-Requested-With": "XMLHttpRequest" },
+      });
+      if (res.ok) {
+        setMyCourses((prev) => prev.filter((c) => c._id !== courseId));
+        toast.success("Course deleted");
+      } else {
+        const data = await res.json();
+        toast.error(data.error || "Failed to delete course");
+      }
+    } catch {
+      toast.error("Failed to delete course");
+    }
+  }
 
   async function handleGenerate(topic: string, skillLevel: string) {
     setError("");
@@ -177,6 +207,7 @@ export default function DashboardPage() {
       <CourseSection
         title="My Courses"
         courses={myCourses}
+        onDelete={handleDelete}
         emptyState={
           <EmptyState
             icon={BookOpen}

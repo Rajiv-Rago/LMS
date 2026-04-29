@@ -683,7 +683,7 @@ export default function LessonDetailPage({
                 {/* Streaming content or skeleton */}
                 {generating && (
                   streamedContent
-                    ? <MarkdownContent content={streamedContent} />
+                    ? <MarkdownContent content={streamedContent.replace(/^#[^\n]*\n+/, "")} />
                     : <ContentGenerationSkeleton />
                 )}
 
@@ -778,7 +778,7 @@ export default function LessonDetailPage({
                     {/* Content */}
                     {lesson.content && (
                       <MarkdownContent
-                        content={lesson.content}
+                        content={lesson.content.replace(/^#[^\n]*\n+/, "")}
                         className={generating ? "opacity-50" : ""}
                       />
                     )}

@@ -12,7 +12,7 @@ import {
 } from "../types";
 import { AIProviderError, classifyProviderError } from "../errors";
 
-const DEFAULT_MODEL = "gemini-3-flash-preview";
+const DEFAULT_MODEL = "gemini-3.1-flash-lite";
 
 export class GeminiProvider implements AIProvider {
   name = "gemini" as const;

@@ -91,9 +91,9 @@ function addSecurityHeaders(response: NextResponse): void {
   }
 }
 
-// --- Middleware ---
+// --- Proxy (renamed from middleware in Next.js 16) ---
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // 0. Correlation ID — read from incoming header or generate

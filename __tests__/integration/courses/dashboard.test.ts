@@ -15,6 +15,21 @@ jest.mock("@/lib/hooks/useJobPoller", () => ({
   useJobPoller: () => ({ addJobs: mockAddJobs, activeCount: 0 }),
 }));
 
+const mockConfirm = jest.fn();
+jest.mock("@/lib/hooks/useConfirm", () => ({
+  useConfirm: () => mockConfirm,
+}));
+
+const mockToast = {
+  success: jest.fn(),
+  error: jest.fn(),
+  warning: jest.fn(),
+  info: jest.fn(),
+};
+jest.mock("@/lib/hooks/useToast", () => ({
+  useToast: () => mockToast,
+}));
+
 function mockFetchResponses(responses: Record<string, unknown>) {
   global.fetch = jest.fn((url: string | URL | Request) => {
     const urlStr = typeof url === "string" ? url : url.toString();
@@ -140,15 +155,13 @@ describe("DashboardPage", () => {
       });
     });
 
-    it("renders My Courses and Enrolled Courses sections", async () => {
+    it("renders My Courses section and generated course cards", async () => {
       mockFetchResponses(populatedGetResponses);
       render(React.createElement(DashboardPage));
       await waitFor(() => {
         expect(screen.getByText("My Courses")).toBeInTheDocument();
-        expect(screen.getByText("Enrolled Courses")).toBeInTheDocument();
       });
       expect(screen.getByText("Python Mastery")).toBeInTheDocument();
-      expect(screen.getByText("Web Dev 101")).toBeInTheDocument();
     });
 
     it("shows welcome message when no courses exist", async () => {
@@ -197,7 +210,7 @@ describe("DashboardPage", () => {
         screen.getByPlaceholderText("What do you want to learn?"),
         { target: { value: "Python basics" } }
       );
-      fireEvent.click(screen.getByRole("button", { name: /generate/i }));
+      fireEvent.click(screen.getByRole("button", { name: /^Generate$/ }));
 
       await waitFor(() => {
         expect(global.fetch).toHaveBeenCalledWith(
@@ -227,7 +240,7 @@ describe("DashboardPage", () => {
         screen.getByPlaceholderText("What do you want to learn?"),
         { target: { value: "Python basics" } }
       );
-      fireEvent.click(screen.getByRole("button", { name: /generate/i }));
+      fireEvent.click(screen.getByRole("button", { name: /^Generate$/ }));
 
       await waitFor(() => {
         expect(screen.getByText(/generating/i)).toBeInTheDocument();

@@ -39,6 +39,21 @@ jest.mock("@/lib/ai/utils/userPreferences", () => ({
   getUserAIPreferences: jest.fn().mockResolvedValue(null),
 }));
 
+jest.mock("@/lib/ai/services/lessonContentGenerator", () => ({
+  LessonContentGeneratorService: jest.fn().mockImplementation(() => ({
+    async *streamLessonContent() {
+      yield { type: "chunk", text: "Updated lesson content" };
+      yield {
+        type: "complete",
+        content: "Updated lesson content",
+        keyTakeaways: ["updated takeaway"],
+        sources: [],
+        usage: { promptTokens: 1, completionTokens: 1, totalTokens: 2 },
+      };
+    },
+  })),
+}));
+
 jest.mock("@/lib/logger", () => ({
   captureException: jest.fn(),
 }));
@@ -84,8 +99,16 @@ async function createLessonFixture(ownerId: string) {
   return { course, module, lesson };
 }
 
+async function parseSseResponse(response: Response) {
+  return {
+    status: response.status,
+    contentType: response.headers.get("Content-Type"),
+    body: await response.text(),
+  };
+}
+
 describe("POST /api/courses/ai/[courseId]/lessons/[lessonId]/generate", () => {
-  it("returns 202 for course owner", async () => {
+  it("streams generated lesson content for course owner", async () => {
     const { user, token } = await createTestUser({ role: "teacher" });
     const { course, lesson } = await createLessonFixture(
       user._id.toString()
@@ -102,13 +125,16 @@ describe("POST /api/courses/ai/[courseId]/lessons/[lessonId]/generate", () => {
         lessonId: lesson._id.toString(),
       }),
     });
-    const { status, data } = await parseResponse<{ jobId: string }>(response);
+    const { status, contentType, body } = await parseSseResponse(response);
 
-    expect(status).toBe(202);
-    expect(data.jobId).toBe("mock-job-id-123");
+    expect(status).toBe(200);
+    expect(contentType).toContain("text/event-stream");
+    expect(body).toContain("event: chunk");
+    expect(body).toContain("Updated lesson content");
+    expect(body).toContain("event: done");
   });
 
-  it("returns 202 for sharedWith user", async () => {
+  it("streams generated lesson content for sharedWith user", async () => {
     const { user: owner } = await createTestUser({ role: "teacher" });
     const { user: sharedUser, token: sharedToken } = await createTestUser({
       role: "student",
@@ -132,10 +158,13 @@ describe("POST /api/courses/ai/[courseId]/lessons/[lessonId]/generate", () => {
         lessonId: lesson._id.toString(),
       }),
     });
-    const { status, data } = await parseResponse<{ jobId: string }>(response);
+    const { status, contentType, body } = await parseSseResponse(response);
 
-    expect(status).toBe(202);
-    expect(data.jobId).toBe("mock-job-id-123");
+    expect(status).toBe(200);
+    expect(contentType).toContain("text/event-stream");
+    expect(body).toContain("event: chunk");
+    expect(body).toContain("Updated lesson content");
+    expect(body).toContain("event: done");
   });
 
   it("returns 403 for enrolled-only user", async () => {

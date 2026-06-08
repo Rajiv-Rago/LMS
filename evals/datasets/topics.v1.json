@@ -1,0 +1,173 @@
+{
+  "version": "v1",
+  "topics": [
+    {
+      "id": "python-basics",
+      "topic": "Python Programming",
+      "targetLevel": "beginner",
+      "estimatedDuration": "4 weeks",
+      "domain": "technical",
+      "mustCoverTopics": [
+        "variables and types",
+        "control flow",
+        "functions",
+        "data structures (list, dict, tuple)",
+        "file I/O"
+      ]
+    },
+    {
+      "id": "react-hooks",
+      "topic": "React Hooks",
+      "targetLevel": "intermediate",
+      "estimatedDuration": "2 weeks",
+      "domain": "technical",
+      "mustCoverTopics": [
+        "useState",
+        "useEffect",
+        "useContext",
+        "useMemo and useCallback",
+        "custom hooks"
+      ]
+    },
+    {
+      "id": "rust-ownership",
+      "topic": "Rust Ownership and Borrowing",
+      "targetLevel": "intermediate",
+      "estimatedDuration": "1 week",
+      "domain": "technical",
+      "mustCoverTopics": [
+        "ownership rules",
+        "references and borrowing",
+        "lifetimes",
+        "slices",
+        "the borrow checker"
+      ]
+    },
+    {
+      "id": "kubernetes-fundamentals",
+      "topic": "Kubernetes Fundamentals",
+      "targetLevel": "intermediate",
+      "estimatedDuration": "3 weeks",
+      "domain": "technical",
+      "mustCoverTopics": [
+        "pods and deployments",
+        "services and networking",
+        "ConfigMaps and Secrets",
+        "persistent volumes",
+        "kubectl basics"
+      ]
+    },
+    {
+      "id": "linear-algebra",
+      "topic": "Linear Algebra",
+      "targetLevel": "beginner",
+      "estimatedDuration": "6 weeks",
+      "domain": "stem",
+      "mustCoverTopics": [
+        "vectors and vector spaces",
+        "matrix operations",
+        "determinants",
+        "eigenvalues and eigenvectors",
+        "linear transformations"
+      ]
+    },
+    {
+      "id": "organic-chemistry-intro",
+      "topic": "Introduction to Organic Chemistry",
+      "targetLevel": "beginner",
+      "estimatedDuration": "8 weeks",
+      "domain": "stem",
+      "mustCoverTopics": [
+        "hybridization and bonding",
+        "functional groups",
+        "isomerism",
+        "alkanes alkenes alkynes",
+        "reaction mechanisms basics"
+      ]
+    },
+    {
+      "id": "deep-learning",
+      "topic": "Deep Learning Fundamentals",
+      "targetLevel": "advanced",
+      "estimatedDuration": "6 weeks",
+      "domain": "stem",
+      "mustCoverTopics": [
+        "neural network architecture",
+        "backpropagation",
+        "loss functions and optimizers",
+        "convolutional networks",
+        "regularization"
+      ]
+    },
+    {
+      "id": "world-war-ii",
+      "topic": "World War II",
+      "targetLevel": "beginner",
+      "estimatedDuration": "4 weeks",
+      "domain": "humanities",
+      "mustCoverTopics": [
+        "causes and origins",
+        "major theaters of war",
+        "the Holocaust",
+        "key turning points",
+        "aftermath and reconstruction"
+      ]
+    },
+    {
+      "id": "philosophy-of-mind",
+      "topic": "Philosophy of Mind",
+      "targetLevel": "intermediate",
+      "estimatedDuration": "5 weeks",
+      "domain": "humanities",
+      "mustCoverTopics": [
+        "the mind-body problem",
+        "dualism",
+        "functionalism",
+        "consciousness and qualia",
+        "the Chinese Room argument"
+      ]
+    },
+    {
+      "id": "personal-finance",
+      "topic": "Personal Finance",
+      "targetLevel": "beginner",
+      "estimatedDuration": "3 weeks",
+      "domain": "practical",
+      "mustCoverTopics": [
+        "budgeting",
+        "saving and emergency funds",
+        "investing basics",
+        "credit and debt",
+        "retirement planning"
+      ]
+    },
+    {
+      "id": "home-cooking",
+      "topic": "Home Cooking Fundamentals",
+      "targetLevel": "beginner",
+      "estimatedDuration": "4 weeks",
+      "domain": "practical",
+      "mustCoverTopics": [
+        "knife skills",
+        "heat and cooking methods",
+        "seasoning and flavor",
+        "common techniques (saute, braise, roast)",
+        "meal planning"
+      ]
+    },
+    {
+      "id": "public-speaking",
+      "topic": "Public Speaking",
+      "targetLevel": "beginner",
+      "estimatedDuration": "3 weeks",
+      "domain": "practical",
+      "mustCoverTopics": [
+        "structuring a talk",
+        "managing nerves",
+        "vocal delivery",
+        "body language",
+        "handling questions"
+      ]
+    }
+  ]
+}

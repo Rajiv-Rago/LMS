@@ -1,0 +1,2 @@
+{"_format": "v1", "_note": "One JSON object per line. Delete this header before populating. See evals/calibration/README.md."}
+{"_template": true, "exampleId": "<run-dir>/<topicId>", "rubric": "syllabus", "likert": {"coverage": 3, "progression": 4, "levelAppropriateness": 5}, "notes": "free text"}

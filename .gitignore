@@ -41,6 +41,10 @@ yarn-error.log*
 # uploads
 /data/uploads/
 
+# eval runs (kept ignored; keep .gitkeep)
+/evals/runs/*
+!/evals/runs/.gitkeep
+
 # vercel
 .vercel
 

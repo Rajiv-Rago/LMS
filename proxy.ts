@@ -17,6 +17,7 @@ const rateLimitMap = new Map<string, RateLimitEntry>();
 // use an edge rate limiter or move to a shared store (Redis/MongoDB).
 const RATE_LIMIT_CONFIG: Record<string, { maxAttempts: number; windowMs: number }> = {
   "/api/auth/login": { maxAttempts: 10, windowMs: 15 * 60 * 1000 },      // 10 per 15 min
+  "/api/auth/callback/credentials": { maxAttempts: 10, windowMs: 15 * 60 * 1000 },
   "/api/auth/register": { maxAttempts: 5, windowMs: 60 * 60 * 1000 },    // 5 per hour
   "/api/auth/forgot-password": { maxAttempts: 5, windowMs: 15 * 60 * 1000 }, // 5 per 15 min
   "/api/auth/reset-password": { maxAttempts: 5, windowMs: 15 * 60 * 1000 }, // 5 per 15 min
@@ -91,6 +92,20 @@ function addSecurityHeaders(response: NextResponse): void {
   }
 }
 
+function hasAuthCookie(request: NextRequest): boolean {
+  if (request.cookies.get("token")?.value) return true;
+
+  return request.cookies.getAll().some(({ name, value }) => {
+    if (!value) return false;
+    return (
+      name === "authjs.session-token" ||
+      name.startsWith("authjs.session-token.") ||
+      name === "__Secure-authjs.session-token" ||
+      name.startsWith("__Secure-authjs.session-token.")
+    );
+  });
+}
+
 // --- Proxy (renamed from middleware in Next.js 16) ---
 
 export function proxy(request: NextRequest) {
@@ -120,10 +135,9 @@ export function proxy(request: NextRequest) {
 
   // 2. Auth redirect for dashboard routes (edge-level)
   if (pathname.startsWith("/dashboard") || pathname.startsWith("/courses") || pathname.startsWith("/profile")) {
-    const token = request.cookies.get("token")?.value;
-    if (!token) {
+    if (!hasAuthCookie(request)) {
       const loginUrl = new URL("/login", request.url);
-      loginUrl.searchParams.set("redirect", pathname);
+      loginUrl.searchParams.set("callbackUrl", pathname);
       const response = NextResponse.redirect(loginUrl);
       addSecurityHeaders(response);
       return response;

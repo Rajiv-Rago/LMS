@@ -2,6 +2,7 @@
 
 import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { signIn } from "next-auth/react";
 import Link from "next/link";
 import Button from "@/components/ui/Button";
 
@@ -9,6 +10,7 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const enrollCourseId = searchParams.get("enroll");
+  const requestedRedirect = searchParams.get("callbackUrl") || searchParams.get("redirect");
 
   const [formData, setFormData] = useState({
     email: "",
@@ -23,16 +25,17 @@ function LoginForm() {
     setLoading(true);
 
     try {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "X-Requested-With": "XMLHttpRequest" },
-        body: JSON.stringify(formData),
+      const redirectTo = enrollCourseId
+        ? `/courses/${enrollCourseId}`
+        : getSafeRedirect(requestedRedirect);
+      const result = await signIn("credentials", {
+        ...formData,
+        redirect: false,
+        redirectTo,
       });
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || "Login failed");
+      if (!result?.ok) {
+        throw new Error("Invalid email or password");
       }
 
       if (enrollCourseId) {
@@ -44,10 +47,9 @@ function LoginForm() {
         } catch {
           // Enrollment failure is non-blocking
         }
-        router.push(`/courses/${enrollCourseId}`);
-      } else {
-        router.push("/dashboard");
       }
+
+      router.push(redirectTo);
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");
@@ -147,6 +149,14 @@ function LoginForm() {
       </form>
     </>
   );
+}
+
+function getSafeRedirect(redirect: string | null): string {
+  if (!redirect || !redirect.startsWith("/") || redirect.startsWith("//")) {
+    return "/dashboard";
+  }
+
+  return redirect;
 }
 
 export default function LoginPage() {

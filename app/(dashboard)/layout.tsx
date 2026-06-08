@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
+import { signOut } from "next-auth/react";
 import Link from "next/link";
 import { NotificationBell } from "@/components/ui/NotificationBell";
 import ThemeToggle from "@/components/ui/ThemeToggle";
@@ -51,7 +52,11 @@ export default function DashboardLayout({
   }, [router]);
 
   const handleLogout = async () => {
-    await fetch("/api/auth/logout", { method: "POST", headers: { "X-Requested-With": "XMLHttpRequest" } });
+    await fetch("/api/auth/logout", {
+      method: "POST",
+      headers: { "X-Requested-With": "XMLHttpRequest" },
+    }).catch(() => undefined);
+    await signOut({ redirect: false, redirectTo: "/login" });
     router.push("/login");
     router.refresh();
   };

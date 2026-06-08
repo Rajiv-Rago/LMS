@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import type { JWT } from "next-auth/jwt";
 import { verifyToken, JWTPayload } from "./jwt";
 import { dbConnect } from "@/lib/db";
 import User, { IUser } from "@/lib/models/User";
@@ -8,6 +9,13 @@ export interface AuthenticatedRequest extends NextRequest {
 }
 
 const MUTATION_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+const AUTHJS_SESSION_COOKIE_NAMES = [
+  "authjs.session-token",
+  "__Secure-authjs.session-token",
+];
+
+type UserRole = JWTPayload["role"];
+type SubscriptionTier = JWTPayload["subscriptionTier"];
 
 export function requireCsrf(request: NextRequest): NextResponse | null {
   if (!MUTATION_METHODS.has(request.method)) return null;
@@ -36,10 +44,70 @@ export async function authenticate(
   request: NextRequest
 ): Promise<JWTPayload | null> {
   const token = getTokenFromRequest(request);
-  if (!token) return null;
+  if (token) {
+    const payload = verifyToken(token);
+    if (payload) return payload;
+  }
 
-  const payload = verifyToken(token);
-  return payload;
+  const authJsToken = await getAuthJsSessionToken(request);
+  if (!authJsToken) return null;
+
+  return mapAuthJsToken(authJsToken);
+}
+
+async function getAuthJsSessionToken(request: NextRequest): Promise<JWT | null> {
+  const secret = process.env.AUTH_SECRET || process.env.JWT_SECRET;
+  if (!secret || !hasAuthJsSessionCookie(request)) return null;
+
+  const { getToken } = await import("next-auth/jwt");
+
+  for (const cookieName of AUTHJS_SESSION_COOKIE_NAMES) {
+    const token = await getToken({
+      req: request,
+      secret,
+      cookieName,
+      salt: cookieName,
+    });
+
+    if (token) return token;
+  }
+
+  return null;
+}
+
+function hasAuthJsSessionCookie(request: NextRequest): boolean {
+  return request.cookies.getAll().some(({ name, value }) => {
+    if (!value) return false;
+    return AUTHJS_SESSION_COOKIE_NAMES.some(
+      (cookieName) => name === cookieName || name.startsWith(`${cookieName}.`)
+    );
+  });
+}
+
+function mapAuthJsToken(token: JWT): JWTPayload | null {
+  if (
+    typeof token.id !== "string" ||
+    typeof token.email !== "string" ||
+    !isUserRole(token.role) ||
+    !isSubscriptionTier(token.subscriptionTier)
+  ) {
+    return null;
+  }
+
+  return {
+    userId: token.id,
+    email: token.email,
+    role: token.role,
+    subscriptionTier: token.subscriptionTier,
+  };
+}
+
+function isUserRole(value: unknown): value is UserRole {
+  return value === "student" || value === "teacher" || value === "admin";
+}
+
+function isSubscriptionTier(value: unknown): value is SubscriptionTier {
+  return value === "free" || value === "plus" || value === "admin";
 }
 
 export async function getAuthenticatedUser(

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { JWT } from "next-auth/jwt";
-import { verifyToken, JWTPayload } from "./jwt";
+import { JWTPayload } from "./jwt";
 import { dbConnect } from "@/lib/db";
 import User, { IUser } from "@/lib/models/User";
 
@@ -43,16 +43,10 @@ export function getTokenFromRequest(request: NextRequest): string | null {
 export async function authenticate(
   request: NextRequest
 ): Promise<JWTPayload | null> {
-  const token = getTokenFromRequest(request);
-  if (token) {
-    const payload = verifyToken(token);
-    if (payload) return payload;
-  }
-
   const authJsToken = await getAuthJsSessionToken(request);
   if (!authJsToken) return null;
 
-  return mapAuthJsToken(authJsToken);
+  return getActiveUserPayload(authJsToken);
 }
 
 async function getAuthJsSessionToken(request: NextRequest): Promise<JWT | null> {
@@ -84,21 +78,20 @@ function hasAuthJsSessionCookie(request: NextRequest): boolean {
   });
 }
 
-function mapAuthJsToken(token: JWT): JWTPayload | null {
-  if (
-    typeof token.id !== "string" ||
-    typeof token.email !== "string" ||
-    !isUserRole(token.role) ||
-    !isSubscriptionTier(token.subscriptionTier)
-  ) {
+async function getActiveUserPayload(token: JWT): Promise<JWTPayload | null> {
+  if (typeof token.id !== "string") return null;
+
+  await dbConnect();
+  const user = await User.findById(token.id);
+  if (!user || !isUserRole(user.role) || !isSubscriptionTier(user.subscriptionTier)) {
     return null;
   }
 
   return {
-    userId: token.id,
-    email: token.email,
-    role: token.role,
-    subscriptionTier: token.subscriptionTier,
+    userId: user._id.toString(),
+    email: user.email,
+    role: user.role,
+    subscriptionTier: user.subscriptionTier,
   };
 }
 

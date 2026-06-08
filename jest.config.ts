@@ -11,6 +11,7 @@ const customJestConfig = {
   forceExit: true,
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/$1",
+    "^next-auth/jwt$": "<rootDir>/__tests__/helpers/nextAuthJwt.ts",
     "^@youtube-core/(.*)$": "<rootDir>/packages/youtube-learning-path/src/core/$1",
   },
   testMatch: [

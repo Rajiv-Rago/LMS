@@ -5,10 +5,12 @@ import Module, { IModule } from "@/lib/models/Module";
 import Assignment, { IAssignment } from "@/lib/models/Assignment";
 import Enrollment, { IEnrollment } from "@/lib/models/Enrollment";
 import { signToken } from "@/lib/auth/jwt";
+import { encodeAuthJsSessionToken } from "./authjsToken";
 
 interface TestUserResult {
   user: IUser;
   token: string;
+  legacyToken: string;
 }
 
 interface TestCourseResult {
@@ -30,7 +32,7 @@ interface TestEnrollmentResult {
 let userCounter = 0;
 
 /**
- * Create a test user with a JWT token.
+ * Create a test user with an Auth.js session token.
  */
 export async function createTestUser(
   overrides: Partial<{
@@ -51,9 +53,16 @@ export async function createTestUser(
   const data = { ...defaults, ...overrides };
   const user = await User.create(data);
 
-  const token = signToken(user);
+  const legacyToken = signToken(user);
+  const token = await encodeAuthJsSessionToken({
+    id: user._id.toString(),
+    email: user.email,
+    name: user.name,
+    role: user.role,
+    subscriptionTier: user.subscriptionTier,
+  });
 
-  return { user, token };
+  return { user, token, legacyToken };
 }
 
 /**

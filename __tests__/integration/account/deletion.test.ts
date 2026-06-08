@@ -5,6 +5,7 @@ import { parseResponse } from "../../helpers/api";
 import { DELETE } from "@/app/api/users/me/delete/route";
 import User from "@/lib/models/User";
 import Enrollment from "@/lib/models/Enrollment";
+import { AUTHJS_SESSION_COOKIE } from "../../helpers/authjsToken";
 
 beforeAll(async () => {
   await connectTestDb();
@@ -23,7 +24,7 @@ function buildDeleteRequest(token: string, body: Record<string, unknown>): NextR
   const headers = new Headers({
     "Content-Type": "application/json",
     "X-Requested-With": "XMLHttpRequest",
-    Authorization: `Bearer ${token}`,
+    Cookie: `${AUTHJS_SESSION_COOKIE}=${token}`,
   });
   return new NextRequest(url, {
     method: "DELETE",

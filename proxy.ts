@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import type { Session } from "next-auth";
+import { auth } from "./auth";
 import { getClientIp } from "@/lib/utils/request";
 import { CORRELATION_HEADER, getCorrelationId } from "@/lib/telemetry/correlationId";
 
@@ -92,23 +94,13 @@ function addSecurityHeaders(response: NextResponse): void {
   }
 }
 
-function hasAuthCookie(request: NextRequest): boolean {
-  if (request.cookies.get("token")?.value) return true;
-
-  return request.cookies.getAll().some(({ name, value }) => {
-    if (!value) return false;
-    return (
-      name === "authjs.session-token" ||
-      name.startsWith("authjs.session-token.") ||
-      name === "__Secure-authjs.session-token" ||
-      name.startsWith("__Secure-authjs.session-token.")
-    );
-  });
+interface AuthenticatedProxyRequest extends NextRequest {
+  auth: Session | null;
 }
 
 // --- Proxy (renamed from middleware in Next.js 16) ---
 
-export function proxy(request: NextRequest) {
+export const proxy = auth((request: AuthenticatedProxyRequest) => {
   const { pathname } = request.nextUrl;
 
   // 0. Correlation ID — read from incoming header or generate
@@ -134,11 +126,17 @@ export function proxy(request: NextRequest) {
   }
 
   // 2. Auth redirect for dashboard routes (edge-level)
-  if (pathname.startsWith("/dashboard") || pathname.startsWith("/courses") || pathname.startsWith("/profile")) {
-    if (!hasAuthCookie(request)) {
+  if (
+    pathname.startsWith("/dashboard") ||
+    pathname.startsWith("/courses") ||
+    pathname.startsWith("/profile") ||
+    pathname.startsWith("/settings")
+  ) {
+    if (!request.auth) {
       const loginUrl = new URL("/login", request.url);
       loginUrl.searchParams.set("callbackUrl", pathname);
       const response = NextResponse.redirect(loginUrl);
+      response.headers.set(CORRELATION_HEADER, correlationId);
       addSecurityHeaders(response);
       return response;
     }
@@ -151,7 +149,7 @@ export function proxy(request: NextRequest) {
   response.headers.set(CORRELATION_HEADER, correlationId);
   addSecurityHeaders(response);
   return response;
-}
+});
 
 export const config = {
   matcher: [

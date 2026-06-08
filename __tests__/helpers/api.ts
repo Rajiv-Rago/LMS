@@ -1,8 +1,10 @@
 import { NextRequest } from "next/server";
+import { AUTHJS_SESSION_COOKIE } from "./authjsToken";
 
 interface ApiRequestOptions {
   body?: Record<string, unknown>;
   token?: string;
+  legacyBearerToken?: string;
   searchParams?: Record<string, string>;
 }
 
@@ -32,7 +34,11 @@ export function buildRequest(
   }
 
   if (options.token) {
-    headers.set("Authorization", `Bearer ${options.token}`);
+    headers.set("Cookie", `${AUTHJS_SESSION_COOKIE}=${options.token}`);
+  }
+
+  if (options.legacyBearerToken) {
+    headers.set("Authorization", `Bearer ${options.legacyBearerToken}`);
   }
 
   const init: { method: string; headers: Headers; body?: string } = {

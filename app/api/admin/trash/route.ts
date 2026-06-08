@@ -16,7 +16,11 @@ export async function GET(request: NextRequest) {
   try {
     const user = await authenticate(request);
 
-    if (!user || user.role !== "admin") {
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    if (user.role !== "admin") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -57,7 +61,11 @@ export async function PATCH(request: NextRequest) {
 
     const user = await authenticate(request);
 
-    if (!user || user.role !== "admin") {
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    if (user.role !== "admin") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -102,7 +110,11 @@ export async function DELETE(request: NextRequest) {
 
     const user = await authenticate(request);
 
-    if (!user || user.role !== "admin") {
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    if (user.role !== "admin") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

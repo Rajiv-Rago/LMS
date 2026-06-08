@@ -74,7 +74,7 @@ describe("GET /api/auth/me", () => {
     expect(status).toBe(401);
   });
 
-  it("returns 404 if the user was deleted after token was issued", async () => {
+  it("returns 401 if the user was deleted after the session was issued", async () => {
     const { user, token } = await createTestUser({
       email: "deleted@example.com",
     });
@@ -87,7 +87,7 @@ describe("GET /api/auth/me", () => {
     const response = await GET(request);
     const { status, data } = await parseResponse<{ error: string }>(response);
 
-    expect(status).toBe(404);
-    expect(data.error).toBe("User not found");
+    expect(status).toBe(401);
+    expect(data.error).toBe("Unauthorized");
   });
 });

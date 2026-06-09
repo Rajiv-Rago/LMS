@@ -3,6 +3,7 @@ import type { JWT } from "next-auth/jwt";
 import { JWTPayload } from "./jwt";
 import { dbConnect } from "@/lib/db";
 import User, { IUser } from "@/lib/models/User";
+import { validateAuthSession } from "./sessionRegistry";
 
 export interface AuthenticatedRequest extends NextRequest {
   user?: JWTPayload;
@@ -79,9 +80,13 @@ function hasAuthJsSessionCookie(request: NextRequest): boolean {
 }
 
 async function getActiveUserPayload(token: JWT): Promise<JWTPayload | null> {
-  if (typeof token.id !== "string") return null;
+  if (typeof token.id !== "string" || typeof token.sessionId !== "string") {
+    return null;
+  }
 
   await dbConnect();
+  if (!(await validateAuthSession(token.sessionId, token.id, true))) return null;
+
   const user = await User.findById(token.id);
   if (!user || !isUserRole(user.role) || !isSubscriptionTier(user.subscriptionTier)) {
     return null;
@@ -92,6 +97,7 @@ async function getActiveUserPayload(token: JWT): Promise<JWTPayload | null> {
     email: user.email,
     role: user.role,
     subscriptionTier: user.subscriptionTier,
+    sessionId: token.sessionId,
   };
 }
 

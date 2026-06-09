@@ -4,6 +4,7 @@ import { buildRequest } from "../../__tests__/helpers/api";
 import { authorizeCredentials } from "./credentials";
 import AuditLog from "@/lib/models/AuditLog";
 import User from "@/lib/models/User";
+import AuthSession from "@/lib/models/AuthSession";
 
 beforeAll(async () => {
   await connectTestDb();
@@ -27,6 +28,7 @@ describe("authorizeCredentials", () => {
     });
 
     await User.updateOne({ _id: user._id }, { $set: { subscriptionTier: "plus" } });
+    await AuthSession.deleteMany({ userId: user._id });
 
     const request = buildRequest("POST", "/api/auth/callback/credentials");
     const result = await authorizeCredentials(
@@ -34,13 +36,15 @@ describe("authorizeCredentials", () => {
       request
     );
 
-    expect(result).toEqual({
+    expect(result).toMatchObject({
       id: user._id.toString(),
       email: "authjs@example.com",
       name: "Auth User",
       role: "teacher",
       subscriptionTier: "plus",
     });
+    expect(result?.sessionId).toEqual(expect.any(String));
+    expect(await AuthSession.countDocuments({ userId: user._id })).toBe(1);
 
     const auditLog = await AuditLog.findOne({ action: "login.success" });
     expect(auditLog?.userId.toString()).toBe(user._id.toString());

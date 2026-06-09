@@ -15,6 +15,7 @@ declare module "next-auth" {
   interface User {
     role: UserRole;
     subscriptionTier: SubscriptionTier;
+    sessionId: string;
   }
 }
 
@@ -23,5 +24,6 @@ declare module "next-auth/jwt" {
     id?: string;
     role?: UserRole;
     subscriptionTier?: SubscriptionTier;
+    sessionId?: string;
   }
 }

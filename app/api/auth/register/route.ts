@@ -1,12 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import crypto from "crypto";
 import { dbConnect, DatabaseConnectionError } from "@/lib/db";
 import User from "@/lib/models/User";
-import Session from "@/lib/models/Session";
-import { signToken, setAuthCookie, requireCsrf } from "@/lib/auth";
+import { requireCsrf } from "@/lib/auth";
 import { logAuditEvent } from "@/lib/auth/auditLog";
 import { registerSchema } from "@/lib/validation/authSchemas";
-import { getClientIp } from "@/lib/utils/request";
 import { captureException } from "@/lib/logger";
 
 export async function POST(request: NextRequest) {
@@ -43,18 +40,6 @@ export async function POST(request: NextRequest) {
       role: "student",
     });
 
-    const token = signToken(user);
-
-    // Create session record
-    const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
-    await Session.create({
-      userId: user._id,
-      tokenHash,
-      ip: getClientIp(request),
-      userAgent: request.headers.get("user-agent") || "unknown",
-      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-    });
-
     const response = NextResponse.json(
       {
         user: {
@@ -67,8 +52,6 @@ export async function POST(request: NextRequest) {
       },
       { status: 201 }
     );
-
-    setAuthCookie(response, token);
 
     await logAuditEvent(request, {
       userId: user._id.toString(),

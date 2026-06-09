@@ -94,12 +94,19 @@ The migration should happen in sprints. Each sprint must leave the app in a work
 
 ### Scope
 
-- Decide final session strategy.
-- Recommended final strategy: Auth.js database sessions in Mongo.
-- Add the Mongo adapter if database sessions are selected.
+- Final session strategy: Auth.js JWT sessions with a Mongo-backed session registry.
+- Store an opaque session ID in each Auth.js JWT and require its active registry row.
+- Use the registry for server-side expiration, session listing, and revocation.
 - Replace or remove the current custom `Session` model.
-- Rebuild session listing and session revocation against Auth.js-managed sessions, if still needed.
-- Add "sign out everywhere" behavior if product scope requires it.
+- Rebuild session listing and session revocation against the Auth.js session registry.
+- Add "sign out everywhere" behavior and session controls in Settings.
+
+### Decision
+
+Auth.js v5 credentials authentication requires JWT sessions, so database sessions
+cannot be used without breaking the existing email/password flow. The Mongo
+registry supplies database-backed revocation while Auth.js continues to own the
+JWT cookie and sign-in/sign-out flow.
 
 ### Acceptance Checks
 

@@ -17,6 +17,7 @@ export interface JWTPayload {
   email: string;
   role: "student" | "teacher" | "admin";
   subscriptionTier: SubscriptionTier;
+  sessionId?: string;
   iat?: number;
   exp?: number;
 }

@@ -54,6 +54,9 @@ export type { IAuditLog, AuditAction } from "./AuditLog";
 export { default as Session } from "./Session";
 export type { ISession } from "./Session";
 
+export { default as AuthSession } from "./AuthSession";
+export type { IAuthSession } from "./AuthSession";
+
 export { default as Notification } from "./Notification";
 export type { INotification } from "./Notification";
 

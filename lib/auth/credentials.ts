@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { dbConnect } from "@/lib/db";
 import User from "@/lib/models/User";
 import { logAuditEvent } from "@/lib/auth/auditLog";
+import { createAuthSession } from "@/lib/auth/sessionRegistry";
 
 export interface AuthJsUser {
   id: string;
@@ -9,6 +10,7 @@ export interface AuthJsUser {
   name: string;
   role: "student" | "teacher" | "admin";
   subscriptionTier: "free" | "plus" | "admin";
+  sessionId: string;
 }
 
 interface Credentials {
@@ -85,11 +87,14 @@ export async function authorizeCredentials(
     resourceId: user._id.toString(),
   });
 
+  const sessionId = await createAuthSession(user._id.toString(), request);
+
   return {
     id: user._id.toString(),
     email: user.email,
     name: user.name,
     role: user.role,
     subscriptionTier: user.subscriptionTier,
+    sessionId,
   };
 }

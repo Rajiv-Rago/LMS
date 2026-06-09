@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import mongoose from "mongoose";
 import { dbConnect } from "@/lib/db";
-import Session from "@/lib/models/Session";
+import AuthSession from "@/lib/models/AuthSession";
 import { authenticate, requireCsrf } from "@/lib/auth";
 import { logAuditEvent } from "@/lib/auth/auditLog";
 import { captureException } from "@/lib/logger";
@@ -30,7 +30,7 @@ export async function DELETE(
 
     await dbConnect();
 
-    const session = await Session.findOneAndDelete({
+    const session = await AuthSession.findOneAndDelete({
       _id: id,
       userId: user.userId,
     });
@@ -49,7 +49,10 @@ export async function DELETE(
       resourceId: id,
     });
 
-    return NextResponse.json({ message: "Session revoked" });
+    return NextResponse.json({
+      message: "Session revoked",
+      revokedCurrent: session.sessionId === user.sessionId,
+    });
   } catch (error) {
     captureException(error, { operation: "Revoke session error" });
     return NextResponse.json(

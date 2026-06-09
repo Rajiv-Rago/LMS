@@ -8,6 +8,7 @@ import {
   AIChatSession,
   Notification,
   Session,
+  AuthSession,
 } from "@/lib/models";
 import Enrollment from "@/lib/models/Enrollment";
 import { captureException } from "@/lib/logger";
@@ -78,6 +79,7 @@ export async function DELETE(request: NextRequest) {
 
       // Delete all sessions
       await Session.deleteMany({ userId: user.userId }, { session });
+      await AuthSession.deleteMany({ userId: user.userId }, { session });
 
       // Anonymize user record
       userDoc.email = `deleted-${user.userId}@deleted.invalid`;

@@ -4,6 +4,7 @@ import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Button from "@/components/ui/Button";
+import { signIn } from "next-auth/react";
 
 function RegisterForm() {
   const router = useRouter();
@@ -50,6 +51,19 @@ function RegisterForm() {
 
       if (!res.ok) {
         throw new Error(data.error || "Registration failed");
+      }
+
+      const signInResult = await signIn("credentials", {
+        email: formData.email,
+        password: formData.password,
+        redirect: false,
+        redirectTo: enrollCourseId
+          ? `/courses/${enrollCourseId}`
+          : "/dashboard",
+      });
+
+      if (!signInResult?.ok) {
+        throw new Error("Account created, but sign in failed. Please sign in.");
       }
 
       if (enrollCourseId) {

@@ -1,4 +1,13 @@
 import { authCallbacks } from "./authjsCallbacks";
+import { validateAuthSession } from "./sessionRegistry";
+
+jest.mock("./sessionRegistry", () => ({
+  validateAuthSession: jest.fn(),
+}));
+
+beforeEach(() => {
+  jest.mocked(validateAuthSession).mockResolvedValue(true);
+});
 
 describe("authCallbacks", () => {
   it("adds id, role, and subscription tier to JWTs", async () => {
@@ -10,6 +19,7 @@ describe("authCallbacks", () => {
         name: "User",
         role: "teacher",
         subscriptionTier: "plus",
+        sessionId: "session-id",
       },
       account: null,
       profile: undefined,
@@ -20,6 +30,7 @@ describe("authCallbacks", () => {
       id: "user-id",
       role: "teacher",
       subscriptionTier: "plus",
+      sessionId: "session-id",
     });
   });
 
@@ -48,5 +59,20 @@ describe("authCallbacks", () => {
       role: "teacher",
       subscriptionTier: "plus",
     });
+  });
+
+  it("rejects a revoked JWT session", async () => {
+    jest.mocked(validateAuthSession).mockResolvedValue(false);
+
+    const token = await authCallbacks.jwt!({
+      token: { id: "user-id", sessionId: "revoked-session" },
+      user: undefined,
+      account: null,
+      profile: undefined,
+      trigger: "update",
+      session: undefined,
+    });
+
+    expect(token).toBeNull();
   });
 });

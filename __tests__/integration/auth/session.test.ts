@@ -4,6 +4,7 @@ import { buildRequest, parseResponse } from "../../helpers/api";
 import { POST as loginPOST } from "@/app/api/auth/login/route";
 import { GET as meGET } from "@/app/api/auth/me/route";
 import { POST as logoutPOST } from "@/app/api/auth/logout/route";
+import AuthSession from "@/lib/models/AuthSession";
 
 beforeAll(async () => {
   await connectTestDb();
@@ -56,7 +57,7 @@ describe("Auth session flow", () => {
   });
 
   it("POST /logout clears auth cookie", async () => {
-    const { token } = await createTestUser(credentials);
+    const { user, token } = await createTestUser(credentials);
 
     const request = buildRequest("POST", "/api/auth/logout", { token });
     const response = await logoutPOST(request);
@@ -70,6 +71,7 @@ describe("Auth session flow", () => {
       (c: string) => c.startsWith("token=") && c.includes("Max-Age=0")
     );
     expect(clearCookie).toBeDefined();
+    expect(await AuthSession.countDocuments({ userId: user._id })).toBe(0);
   });
 
   it("GET /me without token returns 401", async () => {

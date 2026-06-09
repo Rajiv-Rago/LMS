@@ -4,6 +4,7 @@ import { authenticate } from "./middleware";
 import { signToken } from "./jwt";
 import { dbConnect } from "@/lib/db";
 import User from "@/lib/models/User";
+import { validateAuthSession } from "./sessionRegistry";
 
 const SESSION_COOKIE = "authjs.session-token";
 
@@ -22,6 +23,10 @@ jest.mock("@/lib/models/User", () => ({
   },
 }));
 
+jest.mock("./sessionRegistry", () => ({
+  validateAuthSession: jest.fn(),
+}));
+
 function buildRequest(cookie: string): NextRequest {
   return new NextRequest("http://localhost:3000/api/test", {
     headers: { cookie },
@@ -33,6 +38,7 @@ describe("authenticate", () => {
     jest.mocked(getToken).mockResolvedValue(null);
     jest.mocked(dbConnect).mockResolvedValue(undefined as never);
     jest.mocked(User.findById).mockResolvedValue(null);
+    jest.mocked(validateAuthSession).mockResolvedValue(true);
   });
 
   it("does not accept legacy JWT cookies for protected routes", async () => {
@@ -67,12 +73,14 @@ describe("authenticate", () => {
       email: "authjs@example.com",
       role: "student",
       subscriptionTier: "free",
+      sessionId: "session-id",
     });
     jest.mocked(User.findById).mockResolvedValue({
       _id: { toString: () => "authjs-user" },
       email: "authjs@example.com",
       role: "teacher",
       subscriptionTier: "plus",
+      sessionId: "session-id",
     } as never);
 
     await expect(authenticate(buildRequest(`${SESSION_COOKIE}=encrypted-token`))).resolves.toEqual({
@@ -80,6 +88,7 @@ describe("authenticate", () => {
       email: "authjs@example.com",
       role: "teacher",
       subscriptionTier: "plus",
+      sessionId: "session-id",
     });
   });
 
@@ -89,9 +98,22 @@ describe("authenticate", () => {
       email: "deleted@example.com",
       role: "student",
       subscriptionTier: "free",
+      sessionId: "session-id",
     });
 
     await expect(authenticate(buildRequest(`${SESSION_COOKIE}=encrypted-token`))).resolves.toBeNull();
+  });
+
+  it("returns null when the Auth.js session registry row was revoked", async () => {
+    jest.mocked(getToken).mockResolvedValue({
+      id: "authjs-user",
+      sessionId: "revoked-session",
+    });
+    jest.mocked(validateAuthSession).mockResolvedValue(false);
+
+    await expect(
+      authenticate(buildRequest(`${SESSION_COOKIE}=encrypted-token`))
+    ).resolves.toBeNull();
   });
 
   it("returns null when no supported session exists", async () => {

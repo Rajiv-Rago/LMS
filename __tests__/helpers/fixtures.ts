@@ -6,6 +6,8 @@ import Assignment, { IAssignment } from "@/lib/models/Assignment";
 import Enrollment, { IEnrollment } from "@/lib/models/Enrollment";
 import { signToken } from "@/lib/auth/jwt";
 import { encodeAuthJsSessionToken } from "./authjsToken";
+import AuthSession from "@/lib/models/AuthSession";
+import crypto from "crypto";
 
 interface TestUserResult {
   user: IUser;
@@ -54,12 +56,21 @@ export async function createTestUser(
   const user = await User.create(data);
 
   const legacyToken = signToken(user);
+  const sessionId = crypto.randomUUID();
+  await AuthSession.create({
+    sessionId,
+    userId: user._id,
+    ip: "127.0.0.1",
+    userAgent: "jest",
+    expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+  });
   const token = await encodeAuthJsSessionToken({
     id: user._id.toString(),
     email: user.email,
     name: user.name,
     role: user.role,
     subscriptionTier: user.subscriptionTier,
+    sessionId,
   });
 
   return { user, token, legacyToken };

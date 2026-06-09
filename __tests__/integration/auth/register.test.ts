@@ -38,7 +38,7 @@ describe("POST /api/auth/register", () => {
     expect(data.message).toBe("Registration successful");
   });
 
-  it("sets an auth cookie on success", async () => {
+  it("does not create a legacy auth cookie on success", async () => {
     const request = buildRequest("POST", "/api/auth/register", {
       body: validBody,
     });
@@ -46,7 +46,7 @@ describe("POST /api/auth/register", () => {
 
     const setCookie = response.headers.getSetCookie?.() || [];
     const tokenCookie = setCookie.find((c: string) => c.startsWith("token="));
-    expect(tokenCookie).toBeDefined();
+    expect(tokenCookie).toBeUndefined();
   });
 
   it("ignores role field in registration body", async () => {

@@ -1,4 +1,5 @@
 import type { NextAuthConfig } from "next-auth";
+import { validateAuthSession } from "./sessionRegistry";
 
 type UserRole = "student" | "teacher" | "admin";
 type SubscriptionTier = "free" | "plus" | "admin";
@@ -9,6 +10,15 @@ export const authCallbacks = {
       token.id = user.id;
       token.role = user.role;
       token.subscriptionTier = user.subscriptionTier;
+      token.sessionId = user.sessionId;
+    }
+
+    if (
+      typeof token.id !== "string" ||
+      typeof token.sessionId !== "string" ||
+      !(await validateAuthSession(token.sessionId, token.id))
+    ) {
+      return null;
     }
 
     return token;

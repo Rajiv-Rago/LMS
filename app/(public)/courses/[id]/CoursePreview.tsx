@@ -113,8 +113,8 @@ export default function CoursePreview({ courseId }: { courseId: string }) {
     async function loadCourse() {
       try {
         const [courseRes, modulesRes] = await Promise.all([
-          fetch(`/api/courses/${courseId}`),
-          fetch(`/api/courses/${courseId}/modules`),
+          fetch(`/api/courses/${courseId}`, { cache: "no-store" }),
+          fetch(`/api/courses/${courseId}/modules`, { cache: "no-store" }),
         ]);
 
         if (!courseRes.ok) {

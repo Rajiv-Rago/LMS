@@ -42,6 +42,7 @@ export default function DashboardPage() {
       setGenerationPhase("complete");
       const courseId = (result.result as { courseId?: string })?.courseId;
       if (courseId) {
+        router.refresh();
         router.push(`/courses/${courseId}/overview`);
       }
     },

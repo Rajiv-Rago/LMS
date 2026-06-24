@@ -278,6 +278,7 @@ export default function LessonDetailPage({
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let buffer = "";
+      let receivedTerminalEvent = false;
 
       while (true) {
         const { done, value } = await reader.read();
@@ -299,6 +300,7 @@ export default function LessonDetailPage({
               if (eventType === "chunk") {
                 setStreamedContent((prev) => prev + data.text);
               } else if (eventType === "done") {
+                receivedTerminalEvent = true;
                 await fetchLesson();
                 setCreditsRemaining((prev) => Math.max(0, prev - 1));
                 setUndoAvailable(true);
@@ -307,6 +309,7 @@ export default function LessonDetailPage({
                 setGenerating(false);
                 setStreamedContent("");
               } else if (eventType === "error") {
+                receivedTerminalEvent = true;
                 const msg = data.message || "Generation failed";
                 toast.error(msg);
                 setGenError(msg);
@@ -321,6 +324,12 @@ export default function LessonDetailPage({
             eventType = "";
           }
         }
+      }
+
+      if (!receivedTerminalEvent && !abort.signal.aborted) {
+        await fetchLesson();
+        setGenerating(false);
+        setStreamedContent("");
       }
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") return;

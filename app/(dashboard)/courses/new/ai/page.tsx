@@ -99,6 +99,7 @@ export default function NewAICoursePage() {
             setPhase("complete");
             const courseId = job.result?.courseId;
             if (courseId) {
+              router.refresh();
               setTimeout(() => router.push(`/courses/${courseId}/overview`), 500);
             }
           } else if (job.status === "failed") {
@@ -160,6 +161,7 @@ export default function NewAICoursePage() {
       } else if (data.course) {
         // Sync mode (SyncShim completed inline)
         setPhase("complete");
+        router.refresh();
         setTimeout(() => router.push(`/courses/${data.course._id}/overview`), 500);
       }
     } catch (err) {

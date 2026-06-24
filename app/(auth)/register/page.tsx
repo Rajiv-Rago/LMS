@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Button from "@/components/ui/Button";
 import { signIn } from "next-auth/react";
+import OAuthButtons from "../OAuthButtons";
 
 function RegisterForm() {
   const router = useRouter();
@@ -19,6 +20,9 @@ function RegisterForm() {
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const redirectTo = enrollCourseId
+    ? `/courses/${enrollCourseId}`
+    : "/dashboard";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,9 +61,7 @@ function RegisterForm() {
         email: formData.email,
         password: formData.password,
         redirect: false,
-        redirectTo: enrollCourseId
-          ? `/courses/${enrollCourseId}`
-          : "/dashboard",
+        redirectTo,
       });
 
       if (!signInResult?.ok) {
@@ -103,6 +105,8 @@ function RegisterForm() {
           </Link>
         </p>
       </div>
+
+      <OAuthButtons redirectTo={redirectTo} />
 
       <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
         {enrollCourseId && (

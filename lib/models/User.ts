@@ -5,7 +5,7 @@ export interface IUser extends Document {
   _id: mongoose.Types.ObjectId;
   email: string;
   name: string;
-  password: string;
+  password?: string;
   role: "student" | "teacher" | "admin";
   subscriptionTier: "free" | "plus" | "admin";
   resetPasswordToken?: string;
@@ -50,7 +50,6 @@ const userSchema = new mongoose.Schema<IUser, UserModel, IUserMethods>(
     },
     password: {
       type: String,
-      required: [true, "Password is required"],
       minlength: [8, "Password must be at least 8 characters"],
       select: false,
     },
@@ -109,16 +108,18 @@ const userSchema = new mongoose.Schema<IUser, UserModel, IUserMethods>(
 );
 
 userSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) return next();
+  if (!this.password || !this.isModified("password")) return next();
 
   const salt = await bcrypt.genSalt(12);
-  this.password = await bcrypt.hash(this.password, salt);
+  const hashedPassword = await bcrypt.hash(this.password, salt);
+  this.password = hashedPassword;
   next();
 });
 
 userSchema.methods.comparePassword = async function (
   candidatePassword: string
 ): Promise<boolean> {
+  if (!this.password) return false;
   return bcrypt.compare(candidatePassword, this.password);
 };
 

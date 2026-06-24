@@ -10,17 +10,32 @@ const ACTIVITY_UPDATE_INTERVAL_MS = 5 * 60 * 1000;
 export async function createAuthSession(
   userId: string,
   request: NextRequest
+): Promise<string>;
+export async function createAuthSession(
+  userId: string,
+  metadata: { ip: string; userAgent: string }
+): Promise<string>;
+export async function createAuthSession(
+  userId: string,
+  source: NextRequest | { ip: string; userAgent: string }
 ): Promise<string> {
   await dbConnect();
 
   const sessionId = crypto.randomUUID();
   const now = new Date();
+  const metadata =
+    source instanceof NextRequest
+      ? {
+          ip: getClientIp(source),
+          userAgent: source.headers.get("user-agent") || "unknown",
+        }
+      : source;
 
   await AuthSession.create({
     sessionId,
     userId,
-    ip: getClientIp(request),
-    userAgent: request.headers.get("user-agent") || "unknown",
+    ip: metadata.ip,
+    userAgent: metadata.userAgent,
     lastActiveAt: now,
     expiresAt: new Date(now.getTime() + AUTH_SESSION_MAX_AGE_SECONDS * 1000),
   });

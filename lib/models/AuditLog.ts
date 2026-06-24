@@ -10,6 +10,10 @@ export type AuditAction =
   | "role.change"
   | "account.locked"
   | "account.created"
+  | "oauth.login.success"
+  | "oauth.account.created"
+  | "oauth.account.linked"
+  | "oauth.login.rejected"
   | "session.revoked"
   | "course.permission.change";
 

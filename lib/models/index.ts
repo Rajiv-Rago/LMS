@@ -57,6 +57,9 @@ export type { ISession } from "./Session";
 export { default as AuthSession } from "./AuthSession";
 export type { IAuthSession } from "./AuthSession";
 
+export { default as OAuthAccount } from "./OAuthAccount";
+export type { IOAuthAccount, OAuthProvider } from "./OAuthAccount";
+
 export { default as Notification } from "./Notification";
 export type { INotification } from "./Notification";
 

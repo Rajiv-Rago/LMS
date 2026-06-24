@@ -61,6 +61,12 @@ beforeEach(() => {
         json: async () => ({ data: [currentSession] }),
       } as Response);
     }
+    if (url === "/api/auth/providers/linked") {
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({ data: [{ provider: "google", displayName: "Google" }] }),
+      } as Response);
+    }
     return Promise.resolve({ ok: true, json: async () => ({}) } as Response);
   }) as jest.Mock;
 });
@@ -87,5 +93,13 @@ describe("SettingsPage active sessions", () => {
       expect(signOut).toHaveBeenCalled();
       expect(mockPush).toHaveBeenCalledWith("/login");
     });
+  });
+
+  it("shows linked OAuth providers without disconnect controls", async () => {
+    render(<SettingsPage />);
+
+    expect(await screen.findByText("Connected Accounts")).toBeInTheDocument();
+    expect(screen.getByText("Google")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /disconnect/i })).not.toBeInTheDocument();
   });
 });

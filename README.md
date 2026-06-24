@@ -22,7 +22,7 @@ A full-stack learning management system with AI-powered content generation. Teac
 | Framework | Next.js 16 (App Router) |
 | UI | React 19, Tailwind CSS 4 |
 | Database | MongoDB with Mongoose 8 |
-| Auth | JWT (httpOnly cookies) + bcryptjs |
+| Auth | Auth.js credentials/OAuth sessions + bcryptjs |
 | Validation | Zod 4 |
 | AI Providers | OpenAI, Anthropic, Google Gemini, Groq, Cerebras |
 | Testing | Jest 30, MongoDB Memory Server |
@@ -47,7 +47,7 @@ npm install
 
 # Configure environment
 cp .env.example .env
-# Edit .env — set MONGODB_URI, JWT_SECRET, and at least one AI provider key
+# Edit .env — set MONGODB_URI, JWT_SECRET or AUTH_SECRET, and at least one AI provider key
 
 # Seed demo data (optional)
 npm run seed
@@ -83,7 +83,11 @@ See [`.env.example`](.env.example) for all options. Key variables:
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `MONGODB_URI` | Yes | MongoDB connection string |
-| `JWT_SECRET` | Yes | Secret for signing JWT tokens |
+| `JWT_SECRET` | Yes | Legacy fallback secret; keep set until auth cleanup is complete |
+| `AUTH_SECRET` | No | Auth.js session secret; falls back to `JWT_SECRET` when unset |
+| `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` | No | Google OAuth credentials |
+| `AUTH_GITHUB_ID` / `AUTH_GITHUB_SECRET` | No | GitHub OAuth credentials |
+| `AUTH_FACEBOOK_ID` / `AUTH_FACEBOOK_SECRET` | No | Facebook OAuth credentials |
 | `AI_PROVIDER` | No | Default AI provider (`openai`, `anthropic`, `groq`, `cerebras`, `gemini`) |
 | `OPENAI_API_KEY` | No* | OpenAI API key |
 | `ANTHROPIC_API_KEY` | No* | Anthropic API key |
@@ -120,7 +124,7 @@ app/
 components/            # Reusable UI components
 lib/
   ai/                  # AI providers, services, tier system
-  auth/                # JWT, middleware, course ownership
+  auth/                # Auth.js callbacks, middleware, course ownership
   models/              # Mongoose schemas
   hooks/               # React hooks
   validation/          # Zod schemas

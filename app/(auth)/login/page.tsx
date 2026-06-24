@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
 import Button from "@/components/ui/Button";
+import OAuthButtons from "../OAuthButtons";
 
 function LoginForm() {
   const router = useRouter();
@@ -18,6 +19,9 @@ function LoginForm() {
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const redirectTo = enrollCourseId
+    ? `/courses/${enrollCourseId}`
+    : getSafeRedirect(requestedRedirect);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,9 +29,6 @@ function LoginForm() {
     setLoading(true);
 
     try {
-      const redirectTo = enrollCourseId
-        ? `/courses/${enrollCourseId}`
-        : getSafeRedirect(requestedRedirect);
       const result = await signIn("credentials", {
         ...formData,
         redirect: false,
@@ -74,6 +75,8 @@ function LoginForm() {
           </Link>
         </p>
       </div>
+
+      <OAuthButtons redirectTo={redirectTo} />
 
       <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
         {enrollCourseId && (

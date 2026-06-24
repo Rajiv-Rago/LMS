@@ -5,6 +5,12 @@ const envSchema = z.object({
   MONGODB_URI: z.string().min(1, "MONGODB_URI is required"),
   JWT_SECRET: z.string().min(32, "JWT_SECRET must be at least 32 characters"),
   AUTH_SECRET: z.string().min(32, "AUTH_SECRET must be at least 32 characters").optional(),
+  AUTH_GOOGLE_ID: z.string().optional(),
+  AUTH_GOOGLE_SECRET: z.string().optional(),
+  AUTH_GITHUB_ID: z.string().optional(),
+  AUTH_GITHUB_SECRET: z.string().optional(),
+  AUTH_FACEBOOK_ID: z.string().optional(),
+  AUTH_FACEBOOK_SECRET: z.string().optional(),
 
   // Optional with defaults
   NODE_ENV: z

@@ -134,4 +134,26 @@ describe("LoginPage", () => {
       expect(mockPush).toHaveBeenCalledWith("/courses/course-123");
     });
   });
+
+  it("starts OAuth sign-in with the safe post-login destination", async () => {
+    searchParams = new URLSearchParams({ callbackUrl: "/settings" });
+
+    render(React.createElement(LoginPage));
+    fireEvent.click(screen.getByRole("button", { name: /continue with google/i }));
+
+    expect(signIn).toHaveBeenCalledWith("google", {
+      redirectTo: "/settings",
+    });
+  });
+
+  it("uses the enrollment course as the OAuth destination", async () => {
+    searchParams = new URLSearchParams({ enroll: "course-123" });
+
+    render(React.createElement(LoginPage));
+    fireEvent.click(screen.getByRole("button", { name: /continue with github/i }));
+
+    expect(signIn).toHaveBeenCalledWith("github", {
+      redirectTo: "/courses/course-123",
+    });
+  });
 });

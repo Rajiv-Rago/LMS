@@ -67,4 +67,24 @@ describe("RegisterPage", () => {
       expect(mockPush).toHaveBeenCalledWith("/dashboard");
     });
   });
+
+  it("starts OAuth sign-in from registration", () => {
+    render(<RegisterPage />);
+    fireEvent.click(screen.getByRole("button", { name: /continue with facebook/i }));
+
+    expect(signIn).toHaveBeenCalledWith("facebook", {
+      redirectTo: "/dashboard",
+    });
+  });
+
+  it("preserves enrollment destination for OAuth registration", () => {
+    searchParams = new URLSearchParams({ enroll: "course-123" });
+
+    render(<RegisterPage />);
+    fireEvent.click(screen.getByRole("button", { name: /continue with google/i }));
+
+    expect(signIn).toHaveBeenCalledWith("google", {
+      redirectTo: "/courses/course-123",
+    });
+  });
 });

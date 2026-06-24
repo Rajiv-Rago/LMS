@@ -1,5 +1,8 @@
 import NextAuth, { type NextAuthConfig } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
+import Facebook from "next-auth/providers/facebook";
+import GitHub from "next-auth/providers/github";
+import Google from "next-auth/providers/google";
 import { NextRequest } from "next/server";
 import { authCallbacks } from "@/lib/auth/authjsCallbacks";
 import { authorizeCredentials } from "@/lib/auth/credentials";
@@ -18,6 +21,20 @@ export const authConfig = {
       authorize(credentials, request) {
         return authorizeCredentials(credentials, request as NextRequest);
       },
+    }),
+    Google({
+      clientId: process.env.AUTH_GOOGLE_ID,
+      clientSecret: process.env.AUTH_GOOGLE_SECRET,
+    }),
+    GitHub({
+      clientId: process.env.AUTH_GITHUB_ID,
+      clientSecret: process.env.AUTH_GITHUB_SECRET,
+      authorization: { params: { scope: "read:user user:email" } },
+    }),
+    Facebook({
+      clientId: process.env.AUTH_FACEBOOK_ID,
+      clientSecret: process.env.AUTH_FACEBOOK_SECRET,
+      authorization: { params: { scope: "email" } },
     }),
   ],
   session: { strategy: "jwt", maxAge: AUTH_SESSION_MAX_AGE_SECONDS },

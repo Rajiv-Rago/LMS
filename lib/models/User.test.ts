@@ -74,6 +74,13 @@ describe("User Model", () => {
       const isMatch = await user!.comparePassword("wrongpassword");
       expect(isMatch).toBe(false);
     });
+
+    it("comparePassword returns false when no password is set", async () => {
+      await User.create({ email: "oauth@example.com", name: "OAuth User" });
+      const user = await User.findOne({ email: "oauth@example.com" }).select("+password");
+      const isMatch = await user!.comparePassword("password123");
+      expect(isMatch).toBe(false);
+    });
   });
 
   describe("validation", () => {
@@ -106,10 +113,9 @@ describe("User Model", () => {
       ).rejects.toThrow("at least 2 characters");
     });
 
-    it("requires password", async () => {
-      await expect(
-        User.create({ email: "t@t.com", name: "Test" })
-      ).rejects.toThrow("Password is required");
+    it("allows passwordless users", async () => {
+      const user = await User.create({ email: "t@t.com", name: "Test" });
+      expect(user.email).toBe("t@t.com");
     });
 
     it("requires password min 8 characters", async () => {

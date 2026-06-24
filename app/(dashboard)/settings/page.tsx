@@ -20,6 +20,11 @@ interface ActiveSession {
   isCurrent: boolean;
 }
 
+interface LinkedProvider {
+  provider: string;
+  displayName: string;
+}
+
 export default function SettingsPage() {
   const toast = useToast();
   const confirm = useConfirm();
@@ -31,6 +36,9 @@ export default function SettingsPage() {
   const [loadingSessions, setLoadingSessions] = useState(true);
   const [sessionLoadError, setSessionLoadError] = useState(false);
   const [revokingSessionId, setRevokingSessionId] = useState<string | null>(null);
+  const [linkedProviders, setLinkedProviders] = useState<LinkedProvider[]>([]);
+  const [loadingProviders, setLoadingProviders] = useState(true);
+  const [providerLoadError, setProviderLoadError] = useState(false);
 
   useEffect(() => {
     async function fetchPreferences() {
@@ -72,6 +80,23 @@ export default function SettingsPage() {
     }
 
     fetchSessions();
+  }, []);
+
+  useEffect(() => {
+    async function fetchLinkedProviders() {
+      try {
+        const res = await fetch("/api/auth/providers/linked");
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+        setLinkedProviders(data.data);
+      } catch {
+        setProviderLoadError(true);
+      } finally {
+        setLoadingProviders(false);
+      }
+    }
+
+    fetchLinkedProviders();
   }, []);
 
   const finishSignOut = async () => {
@@ -226,6 +251,45 @@ export default function SettingsPage() {
             {saving ? "Saving..." : "Save Preferences"}
           </Button>
         </div>
+      </div>
+
+      <div className="bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800 p-4">
+        <h2 className="text-lg font-semibold text-zinc-900 dark:text-white mb-1">
+          Connected Accounts
+        </h2>
+        <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-4">
+          OAuth providers currently linked to your account.
+        </p>
+
+        {loadingProviders ? (
+          <div className="space-y-2" aria-label="Loading connected accounts">
+            <Skeleton className="h-10 w-full" />
+          </div>
+        ) : providerLoadError ? (
+          <p className="text-sm text-red-600 dark:text-red-400">
+            Failed to load connected accounts.
+          </p>
+        ) : linkedProviders.length === 0 ? (
+          <p className="text-sm text-zinc-500 dark:text-zinc-400">
+            No connected accounts.
+          </p>
+        ) : (
+          <div className="divide-y divide-zinc-200 dark:divide-zinc-800">
+            {linkedProviders.map((provider) => (
+              <div
+                key={provider.provider}
+                className="py-3 first:pt-0 last:pb-0 flex items-center justify-between"
+              >
+                <span className="text-sm font-medium text-zinc-900 dark:text-white">
+                  {provider.displayName}
+                </span>
+                <span className="text-xs text-zinc-500 dark:text-zinc-400">
+                  Connected
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800 p-4">

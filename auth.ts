@@ -3,7 +3,6 @@ import Credentials from "next-auth/providers/credentials";
 import Facebook from "next-auth/providers/facebook";
 import GitHub from "next-auth/providers/github";
 import Google from "next-auth/providers/google";
-import { NextRequest } from "next/server";
 import { authCallbacks } from "@/lib/auth/authjsCallbacks";
 import { authorizeCredentials } from "@/lib/auth/credentials";
 import {
@@ -19,7 +18,7 @@ export const authConfig = {
         password: {},
       },
       authorize(credentials, request) {
-        return authorizeCredentials(credentials, request as NextRequest);
+        return authorizeCredentials(credentials, request);
       },
     }),
     Google({

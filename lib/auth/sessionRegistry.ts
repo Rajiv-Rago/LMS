@@ -1,5 +1,4 @@
 import crypto from "crypto";
-import { NextRequest } from "next/server";
 import { dbConnect } from "@/lib/db";
 import AuthSession from "@/lib/models/AuthSession";
 import { getClientIp } from "@/lib/utils/request";
@@ -9,7 +8,7 @@ const ACTIVITY_UPDATE_INTERVAL_MS = 5 * 60 * 1000;
 
 export async function createAuthSession(
   userId: string,
-  request: NextRequest
+  request: Request
 ): Promise<string>;
 export async function createAuthSession(
   userId: string,
@@ -17,14 +16,14 @@ export async function createAuthSession(
 ): Promise<string>;
 export async function createAuthSession(
   userId: string,
-  source: NextRequest | { ip: string; userAgent: string }
+  source: Request | { ip: string; userAgent: string }
 ): Promise<string> {
   await dbConnect();
 
   const sessionId = crypto.randomUUID();
   const now = new Date();
   const metadata =
-    source instanceof NextRequest
+    "headers" in source
       ? {
           ip: getClientIp(source),
           userAgent: source.headers.get("user-agent") || "unknown",

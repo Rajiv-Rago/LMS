@@ -44,6 +44,21 @@ describe("sessionRegistry", () => {
     );
   });
 
+  it("creates a session from a standard Request without forwarded IP headers", async () => {
+    const { user } = await createTestUser();
+
+    const sessionId = await createAuthSession(
+      user._id.toString(),
+      new Request("http://localhost/api/auth/callback/credentials", {
+        headers: { "user-agent": "Test Browser" },
+      })
+    );
+
+    const session = await AuthSession.findOne({ sessionId });
+    expect(session?.ip).toBe("unknown");
+    expect(session?.userAgent).toBe("Test Browser");
+  });
+
   it("rejects missing and expired sessions", async () => {
     const { user } = await createTestUser();
     const session = await AuthSession.findOne({ userId: user._id });

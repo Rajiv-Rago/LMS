@@ -1,4 +1,3 @@
-import { NextRequest } from "next/server";
 import { dbConnect } from "@/lib/db";
 import User from "@/lib/models/User";
 import { logAuditEvent } from "@/lib/auth/auditLog";
@@ -23,7 +22,7 @@ const MAX_FAILED_LOGIN_ATTEMPTS = 5;
 
 export async function authorizeCredentials(
   credentials: Credentials | undefined,
-  request: NextRequest
+  request: Request
 ): Promise<AuthJsUser | null> {
   if (
     !credentials ||

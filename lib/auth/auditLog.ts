@@ -1,9 +1,8 @@
-import { NextRequest } from "next/server";
 import AuditLog, { AuditAction } from "@/lib/models/AuditLog";
 import { getClientIp } from "@/lib/utils/request";
 
 export async function logAuditEvent(
-  request: NextRequest,
+  request: Request,
   params: {
     userId: string;
     action: AuditAction;

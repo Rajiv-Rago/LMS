@@ -19,6 +19,7 @@ export interface OAuthAppUser {
 interface OAuthSignInParams {
   account: Account;
   profile?: Profile;
+  linkUserId?: string;
 }
 
 interface TrustedOAuthEmail {
@@ -32,16 +33,18 @@ const SYSTEM_USER_ID = new mongoose.Types.ObjectId("000000000000000000000000");
 export async function resolveOAuthSignIn({
   account,
   profile,
+  linkUserId,
 }: OAuthSignInParams): Promise<OAuthAppUser | null> {
   if (!isOAuthProvider(account.provider) || !account.providerAccountId) {
     return null;
   }
+  const provider = account.provider;
 
   await dbConnect();
 
   const trustedEmail = await getTrustedEmail(account, profile);
   if (!trustedEmail) {
-    await logOAuthAudit("oauth.login.rejected", SYSTEM_USER_ID, account.provider, {
+    await logOAuthAudit("oauth.login.rejected", SYSTEM_USER_ID, provider, {
       reason: "untrusted_email",
     });
     return null;
@@ -53,9 +56,16 @@ export async function resolveOAuthSignIn({
   });
 
   if (existingLink) {
+    if (linkUserId && existingLink.userId.toString() !== linkUserId) {
+      await logOAuthAudit("oauth.login.rejected", existingLink.userId, provider, {
+        reason: "provider_linked_to_other_user",
+      });
+      return null;
+    }
+
     const user = await User.findById(existingLink.userId);
     if (!user) {
-      await logOAuthAudit("oauth.login.rejected", existingLink.userId, account.provider, {
+      await logOAuthAudit("oauth.login.rejected", existingLink.userId, provider, {
         reason: "linked_user_missing",
       });
       return null;
@@ -68,8 +78,18 @@ export async function resolveOAuthSignIn({
     existingLink.lastLoginAt = new Date();
     await existingLink.save();
 
-    await logOAuthAudit("oauth.login.success", user._id, account.provider);
+    await logOAuthAudit("oauth.login.success", user._id, provider);
     return buildOAuthAppUser(user);
+  }
+
+  if (linkUserId) {
+    return linkOAuthAccount({
+      account,
+      provider,
+      profile,
+      trustedEmail,
+      userId: linkUserId,
+    });
   }
 
   const userByEmail = await User.findOne({ email: trustedEmail.email }).setOptions({
@@ -77,34 +97,28 @@ export async function resolveOAuthSignIn({
   });
 
   if (userByEmail?.deletedAt) {
-    await logOAuthAudit("oauth.login.rejected", userByEmail._id, account.provider, {
+    await logOAuthAudit("oauth.login.rejected", userByEmail._id, provider, {
       reason: "deleted_user",
     });
     return null;
   }
 
-  const user =
-    userByEmail ||
-    (await User.create({
-      email: trustedEmail.email,
-      name: getProfileName(profile) || trustedEmail.email.split("@")[0],
-      role: "student",
-      subscriptionTier: "free",
-    }));
-
-  const existingProviderForUser = await OAuthAccount.findOne({
-    userId: user._id,
-    provider: account.provider,
-  });
-  if (existingProviderForUser) {
-    await logOAuthAudit("oauth.login.rejected", user._id, account.provider, {
-      reason: "provider_already_linked",
+  if (userByEmail) {
+    await logOAuthAudit("oauth.login.rejected", userByEmail._id, provider, {
+      reason: "email_already_registered",
     });
     return null;
   }
 
+  const user = await User.create({
+    email: trustedEmail.email,
+    name: getProfileName(profile) || trustedEmail.email.split("@")[0],
+    role: "student",
+    subscriptionTier: "free",
+  });
+
   await OAuthAccount.create({
-    provider: account.provider,
+    provider,
     providerAccountId: account.providerAccountId,
     userId: user._id,
     email: trustedEmail.email,
@@ -116,11 +130,64 @@ export async function resolveOAuthSignIn({
   });
 
   await logOAuthAudit(
-    userByEmail ? "oauth.account.linked" : "oauth.account.created",
+    "oauth.account.created",
     user._id,
-    account.provider
+    provider
   );
-  await logOAuthAudit("oauth.login.success", user._id, account.provider);
+  await logOAuthAudit("oauth.login.success", user._id, provider);
+
+  return buildOAuthAppUser(user);
+}
+
+async function linkOAuthAccount({
+  account,
+  provider,
+  profile,
+  trustedEmail,
+  userId,
+}: {
+  account: Account;
+  provider: OAuthProvider;
+  profile?: Profile;
+  trustedEmail: TrustedOAuthEmail;
+  userId: string;
+}): Promise<OAuthAppUser | null> {
+  const user = await User.findById(userId);
+  if (!user) {
+    await logOAuthAudit(
+      "oauth.login.rejected",
+      new mongoose.Types.ObjectId(userId),
+      provider,
+      { reason: "link_user_missing" }
+    );
+    return null;
+  }
+
+  const existingProviderForUser = await OAuthAccount.findOne({
+    userId: user._id,
+    provider,
+  });
+  if (existingProviderForUser) {
+    await logOAuthAudit("oauth.login.rejected", user._id, provider, {
+      reason: "provider_already_linked",
+    });
+    return null;
+  }
+
+  await OAuthAccount.create({
+    provider,
+    providerAccountId: account.providerAccountId,
+    userId: user._id,
+    email: trustedEmail.email,
+    emailVerified: trustedEmail.verified,
+    name: getProfileName(profile),
+    image: getProfileImage(profile),
+    linkedAt: new Date(),
+    lastLoginAt: new Date(),
+  });
+
+  await logOAuthAudit("oauth.account.linked", user._id, provider);
+  await logOAuthAudit("oauth.login.success", user._id, provider);
 
   return buildOAuthAppUser(user);
 }

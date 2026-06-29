@@ -1,6 +1,9 @@
 import type { NextAuthConfig } from "next-auth";
+import { AccessDenied } from "@auth/core/errors";
 import { validateAuthSession } from "./sessionRegistry";
 import { resolveOAuthSignIn } from "./oauth";
+import { clearOAuthLinkIntent, getOAuthLinkIntent } from "./oauthLinkIntent";
+import { OAuthProvider } from "@/lib/models/OAuthAccount";
 
 type UserRole = "student" | "teacher" | "admin";
 type SubscriptionTier = "free" | "plus" | "admin";
@@ -8,8 +11,17 @@ type SubscriptionTier = "free" | "plus" | "admin";
 export const authCallbacks = {
   async jwt({ token, user, account, profile }) {
     if (account?.type === "oauth") {
-      const oauthUser = await resolveOAuthSignIn({ account, profile });
-      if (!oauthUser) return null;
+      const linkIntent = isOAuthProvider(account.provider)
+        ? await getOAuthLinkIntent(account.provider)
+        : null;
+      const oauthUser = await resolveOAuthSignIn({
+        account,
+        profile,
+        linkUserId: linkIntent?.userId,
+      });
+
+      if (linkIntent) await clearOAuthLinkIntent();
+      if (!oauthUser) throw new AccessDenied("OAuth sign-in rejected");
 
       token.id = oauthUser.id;
       token.email = oauthUser.email;
@@ -47,3 +59,7 @@ export const authCallbacks = {
     return session;
   },
 } satisfies NextAuthConfig["callbacks"];
+
+function isOAuthProvider(provider: string): provider is OAuthProvider {
+  return provider === "google" || provider === "github" || provider === "facebook";
+}

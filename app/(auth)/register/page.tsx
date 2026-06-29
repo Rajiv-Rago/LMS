@@ -11,6 +11,7 @@ function RegisterForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const enrollCourseId = searchParams.get("enroll");
+  const oauthError = getOAuthErrorMessage(searchParams.get("error"));
 
   const [formData, setFormData] = useState({
     name: "",
@@ -117,9 +118,11 @@ function RegisterForm() {
           </div>
         )}
 
-        {error && (
+        {(error || oauthError) && (
           <div className="rounded-md bg-red-50 dark:bg-red-900/50 p-4">
-            <p className="text-sm text-red-700 dark:text-red-200">{error}</p>
+            <p className="text-sm text-red-700 dark:text-red-200">
+              {error || oauthError}
+            </p>
           </div>
         )}
 
@@ -232,4 +235,9 @@ export default function RegisterPage() {
       <RegisterForm />
     </Suspense>
   );
+}
+
+function getOAuthErrorMessage(error: string | null): string {
+  if (!error) return "";
+  return "Sign in first to connect this provider.";
 }

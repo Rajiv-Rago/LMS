@@ -77,6 +77,14 @@ describe("RegisterPage", () => {
     });
   });
 
+  it("shows a generic OAuth conflict error", () => {
+    searchParams = new URLSearchParams({ error: "AccessDenied" });
+
+    render(<RegisterPage />);
+
+    expect(screen.getByText("Sign in first to connect this provider.")).toBeInTheDocument();
+  });
+
   it("preserves enrollment destination for OAuth registration", () => {
     searchParams = new URLSearchParams({ enroll: "course-123" });
 

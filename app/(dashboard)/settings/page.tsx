@@ -7,7 +7,7 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import Button from "@/components/ui/Button";
 import type { UserAIPreferences } from "@/lib/ai/types";
 import { useConfirm } from "@/lib/hooks/useConfirm";
-import { signOut } from "next-auth/react";
+import { signIn, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 
 interface ActiveSession {
@@ -24,6 +24,12 @@ interface LinkedProvider {
   provider: string;
   displayName: string;
 }
+
+const OAUTH_PROVIDERS = [
+  { provider: "google", displayName: "Google" },
+  { provider: "github", displayName: "GitHub" },
+  { provider: "facebook", displayName: "Facebook" },
+] as const;
 
 export default function SettingsPage() {
   const toast = useToast();
@@ -161,6 +167,46 @@ export default function SettingsPage() {
     }
   };
 
+  const connectProvider = async (provider: string) => {
+    try {
+      const res = await fetch("/api/auth/providers/link-intent", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Requested-With": "XMLHttpRequest",
+        },
+        body: JSON.stringify({ provider }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to connect provider");
+
+      await signIn(provider, { redirectTo: data.redirectTo || "/settings" });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to connect provider");
+    }
+  };
+
+  const disconnectProvider = async (provider: string, displayName: string) => {
+    const confirmed = await confirm({
+      title: `Disconnect ${displayName}?`,
+      message: "You won't be able to sign in with this provider until you reconnect it.",
+    });
+    if (!confirmed) return;
+
+    try {
+      const res = await fetch(`/api/auth/providers/${provider}`, {
+        method: "DELETE",
+        headers: { "X-Requested-With": "XMLHttpRequest" },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to disconnect provider");
+
+      setLinkedProviders((prev) => prev.filter((item) => item.provider !== provider));
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to disconnect provider");
+    }
+  };
+
   const handleSave = async () => {
     setSaving(true);
     try {
@@ -269,25 +315,50 @@ export default function SettingsPage() {
           <p className="text-sm text-red-600 dark:text-red-400">
             Failed to load connected accounts.
           </p>
-        ) : linkedProviders.length === 0 ? (
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">
-            No connected accounts.
-          </p>
         ) : (
           <div className="divide-y divide-zinc-200 dark:divide-zinc-800">
-            {linkedProviders.map((provider) => (
-              <div
-                key={provider.provider}
-                className="py-3 first:pt-0 last:pb-0 flex items-center justify-between"
-              >
-                <span className="text-sm font-medium text-zinc-900 dark:text-white">
-                  {provider.displayName}
-                </span>
-                <span className="text-xs text-zinc-500 dark:text-zinc-400">
-                  Connected
-                </span>
-              </div>
-            ))}
+            {OAUTH_PROVIDERS.map((provider) => {
+              const linked = linkedProviders.some(
+                (item) => item.provider === provider.provider
+              );
+
+              return (
+                <div
+                  key={provider.provider}
+                  className="py-3 first:pt-0 last:pb-0 flex items-center justify-between"
+                >
+                  <span className="text-sm font-medium text-zinc-900 dark:text-white">
+                    {provider.displayName}
+                  </span>
+                  {linked ? (
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs text-zinc-500 dark:text-zinc-400">
+                        Connected
+                      </span>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={() =>
+                          disconnectProvider(provider.provider, provider.displayName)
+                        }
+                      >
+                        Disconnect
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => connectProvider(provider.provider)}
+                    >
+                      Connect {provider.displayName}
+                    </Button>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
@@ -335,7 +406,7 @@ export default function SettingsPage() {
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     <p className="text-sm font-medium text-zinc-900 dark:text-white truncate">
-                      {session.userAgent}
+                      {session.ip === "oauth" ? "OAuth sign-in" : session.userAgent}
                     </p>
                     {session.isCurrent && (
                       <span className="rounded-full bg-green-100 dark:bg-green-900/50 px-2 py-0.5 text-xs font-medium text-green-700 dark:text-green-200">
@@ -344,7 +415,7 @@ export default function SettingsPage() {
                     )}
                   </div>
                   <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-                    {session.ip} · Last active{" "}
+                    {session.ip !== "oauth" && `${session.ip} · `}Last active{" "}
                     {new Date(session.lastActiveAt).toLocaleString()}
                   </p>
                 </div>

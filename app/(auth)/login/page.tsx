@@ -12,6 +12,7 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const enrollCourseId = searchParams.get("enroll");
   const requestedRedirect = searchParams.get("callbackUrl") || searchParams.get("redirect");
+  const oauthError = getOAuthErrorMessage(searchParams.get("error"));
 
   const [formData, setFormData] = useState({
     email: "",
@@ -87,9 +88,11 @@ function LoginForm() {
           </div>
         )}
 
-        {error && (
+        {(error || oauthError) && (
           <div className="rounded-md bg-red-50 dark:bg-red-900/50 p-4">
-            <p className="text-sm text-red-700 dark:text-red-200">{error}</p>
+            <p className="text-sm text-red-700 dark:text-red-200">
+              {error || oauthError}
+            </p>
           </div>
         )}
 
@@ -160,6 +163,14 @@ function getSafeRedirect(redirect: string | null): string {
   }
 
   return redirect;
+}
+
+function getOAuthErrorMessage(error: string | null): string {
+  if (!error) return "";
+  if (error === "AccessDenied") {
+    return "We couldn't sign you in with that provider. If you already have an account, sign in first, then connect it from Settings.";
+  }
+  return "Sign in failed. Please try again.";
 }
 
 export default function LoginPage() {

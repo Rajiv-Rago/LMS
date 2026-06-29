@@ -110,6 +110,16 @@ describe("LoginPage", () => {
     });
   });
 
+  it("shows a generic OAuth conflict error", () => {
+    searchParams = new URLSearchParams({ error: "AccessDenied" });
+
+    render(React.createElement(LoginPage));
+
+    expect(
+      screen.getByText(/We couldn't sign you in with that provider/)
+    ).toBeInTheDocument();
+  });
+
   it("preserves the enrollment flow after Auth.js sign-in", async () => {
     searchParams = new URLSearchParams({ enroll: "course-123" });
     jest.mocked(signIn).mockResolvedValue({ ok: true, status: 200, error: null, url: null });

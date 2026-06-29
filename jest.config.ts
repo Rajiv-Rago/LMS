@@ -12,6 +12,7 @@ const customJestConfig = {
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/$1",
     "^next-auth/jwt$": "<rootDir>/__tests__/helpers/nextAuthJwt.ts",
+    "^@auth/core/errors$": "<rootDir>/__tests__/helpers/authCoreErrors.ts",
     "^@youtube-core/(.*)$": "<rootDir>/packages/youtube-learning-path/src/core/$1",
   },
   testMatch: [

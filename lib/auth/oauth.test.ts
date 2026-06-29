@@ -51,7 +51,7 @@ describe("resolveOAuthSignIn", () => {
     expect(await AuditLog.exists({ action: "oauth.account.created" })).toBeTruthy();
   });
 
-  it("links a trusted matching email to an existing account", async () => {
+  it("rejects a trusted matching email without an explicit link intent", async () => {
     const { user } = await createTestUser({
       email: "teacher@example.com",
       role: "teacher",
@@ -71,12 +71,38 @@ describe("resolveOAuthSignIn", () => {
       },
     });
 
+    expect(result).toBeNull();
+    expect(await User.countDocuments({ email: "teacher@example.com" })).toBe(1);
+    expect(await OAuthAccount.countDocuments()).toBe(0);
+    expect(await AuditLog.exists({ action: "oauth.login.rejected" })).toBeTruthy();
+  });
+
+  it("links a trusted matching email with an explicit link intent", async () => {
+    const { user } = await createTestUser({
+      email: "teacher@example.com",
+      role: "teacher",
+    });
+    await User.updateOne({ _id: user._id }, { $set: { subscriptionTier: "plus" } });
+
+    const result = await resolveOAuthSignIn({
+      account: {
+        provider: "google",
+        providerAccountId: "google-teacher",
+        type: "oauth",
+      },
+      profile: {
+        email: "teacher@example.com",
+        email_verified: true,
+        name: "Teacher Name",
+      },
+      linkUserId: user._id.toString(),
+    });
+
     expect(result).toMatchObject({
       id: user._id.toString(),
       role: "teacher",
       subscriptionTier: "plus",
     });
-    expect(await User.countDocuments({ email: "teacher@example.com" })).toBe(1);
     expect(await OAuthAccount.exists({ provider: "google", userId: user._id })).toBeTruthy();
     expect(await AuditLog.exists({ action: "oauth.account.linked" })).toBeTruthy();
   });
@@ -131,7 +157,7 @@ describe("resolveOAuthSignIn", () => {
     expect(await AuditLog.exists({ action: "oauth.login.rejected" })).toBeTruthy();
   });
 
-  it("rejects linking a second account for the same provider", async () => {
+  it("rejects linking a second account for the same provider with a link intent", async () => {
     const { user } = await createTestUser({ email: "provider@example.com" });
     await OAuthAccount.create({
       provider: "google",
@@ -150,9 +176,10 @@ describe("resolveOAuthSignIn", () => {
         type: "oauth",
       },
       profile: {
-        email: "provider@example.com",
+        email: "new-provider@example.com",
         email_verified: true,
       },
+      linkUserId: user._id.toString(),
     });
 
     expect(result).toBeNull();

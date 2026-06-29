@@ -13,6 +13,7 @@ export type AuditAction =
   | "oauth.login.success"
   | "oauth.account.created"
   | "oauth.account.linked"
+  | "oauth.account.unlinked"
   | "oauth.login.rejected"
   | "session.revoked"
   | "course.permission.change";

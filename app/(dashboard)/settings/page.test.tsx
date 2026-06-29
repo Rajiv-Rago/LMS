@@ -4,7 +4,7 @@
 
 import React from "react";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { signOut } from "next-auth/react";
+import { signIn, signOut } from "next-auth/react";
 
 const mockConfirm = jest.fn();
 const mockPush = jest.fn();
@@ -17,6 +17,7 @@ jest.mock("next/navigation", () => ({
 }));
 
 jest.mock("next-auth/react", () => ({
+  signIn: jest.fn(),
   signOut: jest.fn(),
 }));
 
@@ -47,6 +48,7 @@ const currentSession = {
 beforeEach(() => {
   jest.clearAllMocks();
   mockConfirm.mockResolvedValue(true);
+  jest.mocked(signIn).mockResolvedValue(undefined);
   jest.mocked(signOut).mockResolvedValue({ url: "/login" });
   global.fetch = jest.fn((url: string | URL | Request) => {
     if (url === "/api/users/preferences") {
@@ -65,6 +67,12 @@ beforeEach(() => {
       return Promise.resolve({
         ok: true,
         json: async () => ({ data: [{ provider: "google", displayName: "Google" }] }),
+      } as Response);
+    }
+    if (url === "/api/auth/providers/link-intent") {
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({ provider: "github", redirectTo: "/settings" }),
       } as Response);
     }
     return Promise.resolve({ ok: true, json: async () => ({}) } as Response);
@@ -95,11 +103,68 @@ describe("SettingsPage active sessions", () => {
     });
   });
 
-  it("shows linked OAuth providers without disconnect controls", async () => {
+  it("shows a disconnect control for linked OAuth providers", async () => {
     render(<SettingsPage />);
 
     expect(await screen.findByText("Connected Accounts")).toBeInTheDocument();
     expect(screen.getByText("Google")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /disconnect/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /disconnect/i })).toBeInTheDocument();
+  });
+
+  it("disconnects a linked provider and flips it back to connectable", async () => {
+    render(<SettingsPage />);
+
+    fireEvent.click(await screen.findByRole("button", { name: /disconnect/i }));
+
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledWith("/api/auth/providers/google", {
+        method: "DELETE",
+        headers: { "X-Requested-With": "XMLHttpRequest" },
+      });
+    });
+    expect(
+      await screen.findByRole("button", { name: /connect google/i })
+    ).toBeInTheDocument();
+  });
+
+  it("labels OAuth sessions without showing placeholder device or IP", async () => {
+    global.fetch = jest.fn((url: string | URL | Request) => {
+      if (url === "/api/auth/sessions") {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            data: [{ ...currentSession, ip: "oauth", userAgent: "Auth.js OAuth" }],
+          }),
+        } as Response);
+      }
+      if (url === "/api/auth/providers/linked") {
+        return Promise.resolve({ ok: true, json: async () => ({ data: [] }) } as Response);
+      }
+      return Promise.resolve({ ok: true, json: async () => ({ aiPreferences: {} }) } as Response);
+    }) as jest.Mock;
+
+    render(<SettingsPage />);
+
+    expect(await screen.findByText("OAuth sign-in")).toBeInTheDocument();
+    expect(screen.queryByText("Auth.js OAuth")).not.toBeInTheDocument();
+    expect(screen.queryByText(/^oauth ·/)).not.toBeInTheDocument();
+  });
+
+  it("starts provider linking for unlinked providers", async () => {
+    render(<SettingsPage />);
+
+    fireEvent.click(await screen.findByRole("button", { name: /connect github/i }));
+
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledWith("/api/auth/providers/link-intent", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Requested-With": "XMLHttpRequest",
+        },
+        body: JSON.stringify({ provider: "github" }),
+      });
+      expect(signIn).toHaveBeenCalledWith("github", { redirectTo: "/settings" });
+    });
   });
 });

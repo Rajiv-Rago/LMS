@@ -52,10 +52,6 @@ export default function DashboardLayout({
   }, [router]);
 
   const handleLogout = async () => {
-    await fetch("/api/auth/logout", {
-      method: "POST",
-      headers: { "X-Requested-With": "XMLHttpRequest" },
-    }).catch(() => undefined);
     await signOut({ redirect: false, redirectTo: "/login" });
     router.push("/login");
     router.refresh();

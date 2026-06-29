@@ -5,7 +5,7 @@ import {
 } from "@/__tests__/helpers/db";
 import { createTestUser, createTestCourse } from "@/__tests__/helpers/fixtures";
 import Enrollment from "@/lib/models/Enrollment";
-import { JWTPayload } from "@/lib/auth/jwt";
+import { JWTPayload } from "@/lib/auth/types";
 import { getCoursePermissions } from "./coursePermissions";
 
 beforeAll(async () => {

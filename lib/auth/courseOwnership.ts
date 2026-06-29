@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import { Course } from "@/lib/models";
 import Enrollment from "@/lib/models/Enrollment";
-import { JWTPayload } from "./jwt";
+import { JWTPayload } from "./types";
 
 export interface CourseOwnershipResult {
   isOwner: boolean;

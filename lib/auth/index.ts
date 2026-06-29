@@ -1,13 +1,9 @@
-export { signToken, verifyToken, verifyTokenForRefresh } from "./jwt";
-export type { JWTPayload, SubscriptionTier } from "./jwt";
+export type { JWTPayload, SubscriptionTier } from "./types";
 export {
   authenticate,
   getAuthenticatedUser,
   requireAuth,
   requireRole,
-  setAuthCookie,
-  clearAuthCookie,
-  getTokenFromRequest,
   requireCsrf,
 } from "./middleware";
 export type { AuthenticatedRequest } from "./middleware";

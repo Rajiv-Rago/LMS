@@ -23,7 +23,7 @@ npm run lint             # Run ESLint
 
 Required in `.env`:
 - `MONGODB_URI` - MongoDB connection string
-- `JWT_SECRET` - Secret for JWT token signing
+- `AUTH_SECRET` - Auth.js session secret (min 32 chars), signs sessions/`me`/OAuth link intents
 
 AI provider keys (at least one required for AI features):
 - `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, `GROQ_API_KEY`, `CEREBRAS_API_KEY`

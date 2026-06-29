@@ -69,7 +69,7 @@ beforeEach(() => {
 });
 
 describe("DashboardLayout", () => {
-  it("clears legacy and Auth.js sessions on logout", async () => {
+  it("clears the Auth.js session on logout", async () => {
     render(
       <DashboardLayout>
         <div>Dashboard content</div>
@@ -80,10 +80,6 @@ describe("DashboardLayout", () => {
     fireEvent.click(screen.getByRole("button", { name: /sign out/i }));
 
     await waitFor(() => {
-      expect(global.fetch).toHaveBeenCalledWith("/api/auth/logout", {
-        method: "POST",
-        headers: { "X-Requested-With": "XMLHttpRequest" },
-      });
       expect(signOut).toHaveBeenCalledWith({
         redirect: false,
         redirectTo: "/login",

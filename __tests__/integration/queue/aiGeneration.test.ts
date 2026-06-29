@@ -22,7 +22,7 @@ jest.mock("@/lib/env", () => ({
   env: {
     YOUTUBE_API_KEY: "test-youtube-key",
     MONGODB_URI: "test",
-    JWT_SECRET: "a]32charminimumtestsecretkey!!!!!",
+    AUTH_SECRET: "a]32charminimumtestsecretkey!!!!!",
   },
 }));
 

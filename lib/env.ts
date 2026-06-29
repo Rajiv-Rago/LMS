@@ -3,8 +3,7 @@ import { z } from "zod";
 const envSchema = z.object({
   // Required
   MONGODB_URI: z.string().min(1, "MONGODB_URI is required"),
-  JWT_SECRET: z.string().min(32, "JWT_SECRET must be at least 32 characters"),
-  AUTH_SECRET: z.string().min(32, "AUTH_SECRET must be at least 32 characters").optional(),
+  AUTH_SECRET: z.string().min(32, "AUTH_SECRET must be at least 32 characters"),
   AUTH_GOOGLE_ID: z.string().optional(),
   AUTH_GOOGLE_SECRET: z.string().optional(),
   AUTH_GITHUB_ID: z.string().optional(),
@@ -17,7 +16,6 @@ const envSchema = z.object({
     .enum(["development", "production", "test"])
     .default("development"),
   AI_PROVIDER: z.string().default("openai"),
-  JWT_EXPIRES_IN: z.string().default("7d"),
 
   // Optional AI keys (no default)
   OPENAI_API_KEY: z.string().optional(),

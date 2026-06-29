@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import AIUsage, { AIUsageCategory } from "@/lib/models/AIUsage";
 import { dbConnect } from "@/lib/db";
 import { env } from "@/lib/env";
-import type { SubscriptionTier } from "@/lib/auth/jwt";
+import type { SubscriptionTier } from "@/lib/auth/types";
 
 /**
  * Daily limits by category and subscription tier.

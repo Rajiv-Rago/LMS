@@ -9,7 +9,7 @@ import { resolveProvider } from "@/lib/ai/utils/providerResolver";
 import { captureException } from "@/lib/logger";
 import { getCorrelationId, CORRELATION_HEADER } from "@/lib/telemetry/correlationId";
 import { ErrorCodes } from "@/lib/telemetry/errorCodes";
-import type { SubscriptionTier } from "@/lib/auth/jwt";
+import type { SubscriptionTier } from "@/lib/auth/types";
 
 const MAX_GENERATED_COURSES: Record<SubscriptionTier, number> = {
   free: 5,

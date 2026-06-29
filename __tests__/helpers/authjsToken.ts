@@ -39,7 +39,7 @@ function base64UrlEncode(value: Record<string, unknown>): string {
 
 function sign(payload: string): string {
   return crypto
-    .createHmac("sha256", process.env.AUTH_SECRET || process.env.JWT_SECRET!)
+    .createHmac("sha256", process.env.AUTH_SECRET!)
     .update(payload)
     .digest("base64url");
 }

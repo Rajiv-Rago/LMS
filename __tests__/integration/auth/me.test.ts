@@ -2,7 +2,6 @@ import { connectTestDb, clearTestDb, disconnectTestDb } from "../../helpers/db";
 import { createTestUser } from "../../helpers/fixtures";
 import { buildRequest, parseResponse } from "../../helpers/api";
 import { GET } from "@/app/api/auth/me/route";
-import jwt from "jsonwebtoken";
 
 beforeAll(async () => {
   await connectTestDb();
@@ -43,25 +42,6 @@ describe("GET /api/auth/me", () => {
 
     expect(status).toBe(401);
     expect(data.error).toBe("Unauthorized");
-  });
-
-  it("returns 401 for an expired token", async () => {
-    const { user } = await createTestUser({ email: "expired@example.com" });
-
-    // Create a token that expires immediately
-    const expiredToken = jwt.sign(
-      { userId: user._id.toString(), email: user.email, role: user.role },
-      process.env.JWT_SECRET!,
-      { expiresIn: "0s" }
-    );
-
-    const request = buildRequest("GET", "/api/auth/me", {
-      token: expiredToken,
-    });
-    const response = await GET(request);
-    const { status } = await parseResponse<{ error: string }>(response);
-
-    expect(status).toBe(401);
   });
 
   it("returns 401 for an invalid token", async () => {

@@ -1,5 +1,5 @@
 import Enrollment from "@/lib/models/Enrollment";
-import { JWTPayload } from "./jwt";
+import { JWTPayload } from "./types";
 import { ICourse } from "@/lib/models/Course";
 
 export interface CoursePermissions {

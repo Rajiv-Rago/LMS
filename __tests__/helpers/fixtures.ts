@@ -4,7 +4,6 @@ import Course, { ICourse } from "@/lib/models/Course";
 import Module, { IModule } from "@/lib/models/Module";
 import Assignment, { IAssignment } from "@/lib/models/Assignment";
 import Enrollment, { IEnrollment } from "@/lib/models/Enrollment";
-import { signToken } from "@/lib/auth/jwt";
 import { encodeAuthJsSessionToken } from "./authjsToken";
 import AuthSession from "@/lib/models/AuthSession";
 import crypto from "crypto";
@@ -12,7 +11,6 @@ import crypto from "crypto";
 interface TestUserResult {
   user: IUser;
   token: string;
-  legacyToken: string;
 }
 
 interface TestCourseResult {
@@ -55,7 +53,6 @@ export async function createTestUser(
   const data = { ...defaults, ...overrides };
   const user = await User.create(data);
 
-  const legacyToken = signToken(user);
   const sessionId = crypto.randomUUID();
   await AuthSession.create({
     sessionId,
@@ -73,7 +70,7 @@ export async function createTestUser(
     sessionId,
   });
 
-  return { user, token, legacyToken };
+  return { user, token };
 }
 
 /**

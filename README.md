@@ -47,7 +47,7 @@ npm install
 
 # Configure environment
 cp .env.example .env
-# Edit .env — set MONGODB_URI, JWT_SECRET or AUTH_SECRET, and at least one AI provider key
+# Edit .env — set MONGODB_URI, AUTH_SECRET, and at least one AI provider key
 
 # Seed demo data (optional)
 npm run seed
@@ -83,8 +83,7 @@ See [`.env.example`](.env.example) for all options. Key variables:
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `MONGODB_URI` | Yes | MongoDB connection string |
-| `JWT_SECRET` | Yes | Legacy fallback secret; keep set until auth cleanup is complete |
-| `AUTH_SECRET` | No | Auth.js session secret; falls back to `JWT_SECRET` when unset |
+| `AUTH_SECRET` | Yes | Auth.js session secret (min 32 chars); signs credentials login, `/api/auth/me`, and OAuth link intents |
 | `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` | No | Google OAuth credentials |
 | `AUTH_GITHUB_ID` / `AUTH_GITHUB_SECRET` | No | GitHub OAuth credentials |
 | `AUTH_FACEBOOK_ID` / `AUTH_FACEBOOK_SECRET` | No | Facebook OAuth credentials |

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { JWT } from "next-auth/jwt";
-import { JWTPayload } from "./jwt";
+import { JWTPayload } from "./types";
 import { dbConnect } from "@/lib/db";
 import User, { IUser } from "@/lib/models/User";
 import { validateAuthSession } from "./sessionRegistry";
@@ -31,16 +31,6 @@ export function requireCsrf(request: NextRequest): NextResponse | null {
   return null;
 }
 
-export function getTokenFromRequest(request: NextRequest): string | null {
-  const authHeader = request.headers.get("authorization");
-  if (authHeader?.startsWith("Bearer ")) {
-    return authHeader.slice(7);
-  }
-
-  const cookieToken = request.cookies.get("token")?.value;
-  return cookieToken || null;
-}
-
 export async function authenticate(
   request: NextRequest
 ): Promise<JWTPayload | null> {
@@ -51,7 +41,7 @@ export async function authenticate(
 }
 
 async function getAuthJsSessionToken(request: NextRequest): Promise<JWT | null> {
-  const secret = process.env.AUTH_SECRET || process.env.JWT_SECRET;
+  const secret = process.env.AUTH_SECRET;
   if (!secret || !hasAuthJsSessionCookie(request)) return null;
 
   const { getToken } = await import("next-auth/jwt");
@@ -172,24 +162,4 @@ export function requireRole(...roles: ("student" | "teacher" | "admin")[]) {
       return handler(request, context, user);
     };
   };
-}
-
-export function setAuthCookie(response: NextResponse, token: string): void {
-  response.cookies.set("token", token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    maxAge: 60 * 60 * 24 * 7, // 7 days
-    path: "/",
-  });
-}
-
-export function clearAuthCookie(response: NextResponse): void {
-  response.cookies.set("token", "", {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    maxAge: 0,
-    path: "/",
-  });
 }

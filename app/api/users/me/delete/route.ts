@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { dbConnect, withTransaction } from "@/lib/db";
-import { authenticate, clearAuthCookie, requireCsrf } from "@/lib/auth";
+import { authenticate, requireCsrf } from "@/lib/auth";
 import {
   User,
   Submission,
@@ -92,12 +92,11 @@ export async function DELETE(request: NextRequest) {
       await userDoc.save({ session });
     });
 
-    // Clear auth cookie
-    const response = NextResponse.json({
+    // The account is soft-deleted, so authenticate()'s User lookup now fails
+    // and the Auth.js session dies on its own — no cookie to clear.
+    return NextResponse.json({
       message: "Account deleted successfully",
     });
-    clearAuthCookie(response);
-    return response;
   } catch (error) {
     captureException(error, { operation: "Delete user account error" });
     return NextResponse.json(

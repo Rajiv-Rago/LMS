@@ -25,7 +25,7 @@ interface Course {
   owner?: string;
 }
 
-type Filter = "all" | "teaching" | "learning";
+type Filter = "all" | "created" | "enrolled";
 
 export default function CoursesPage() {
   const router = useRouter();
@@ -80,8 +80,8 @@ export default function CoursesPage() {
 
   const filteredCourses = courses
     .filter((course) => {
-      if (filter === "teaching") return isOwner(course);
-      if (filter === "learning") return !isOwner(course);
+      if (filter === "created") return isOwner(course);
+      if (filter === "enrolled") return !isOwner(course);
       return true;
     })
     .filter(
@@ -119,8 +119,8 @@ export default function CoursesPage() {
 
   const filters: { key: Filter; label: string }[] = [
     { key: "all", label: "All" },
-    { key: "teaching", label: "Teaching" },
-    { key: "learning", label: "Learning" },
+    { key: "created", label: "Created" },
+    { key: "enrolled", label: "Enrolled" },
   ];
 
   if (loading) {

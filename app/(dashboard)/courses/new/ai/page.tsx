@@ -6,7 +6,6 @@ import Link from "next/link";
 import { ModelSelector, ModelSelectorValue } from "@/components/ai/ModelSelector";
 import { useUserAIDefaults } from "@/lib/hooks/useUserAIDefaults";
 import Button from "@/components/ui/Button";
-import { Skeleton } from "@/components/ui/Skeleton";
 
 type TargetLevel = "beginner" | "intermediate" | "advanced";
 type GenerationPhase = "idle" | "submitting" | "generating" | "complete";
@@ -20,8 +19,6 @@ const phaseMessages: Record<GenerationPhase, string> = {
 
 export default function NewAICoursePage() {
   const router = useRouter();
-  const [authorized, setAuthorized] = useState(false);
-  const [checkingAuth, setCheckingAuth] = useState(true);
   const [formData, setFormData] = useState({
     topic: "",
     targetLevel: "beginner" as TargetLevel,
@@ -30,30 +27,6 @@ export default function NewAICoursePage() {
     includeVideos: false,
   });
 
-  useEffect(() => {
-    async function checkAdmin() {
-      try {
-        const res = await fetch("/api/auth/me");
-        if (res.ok) {
-          const data = await res.json();
-          if (data.user?.role === "admin") {
-            setAuthorized(true);
-          } else {
-            router.push("/dashboard");
-            return;
-          }
-        } else {
-          router.push("/login");
-          return;
-        }
-      } catch {
-        router.push("/dashboard");
-      } finally {
-        setCheckingAuth(false);
-      }
-    }
-    checkAdmin();
-  }, [router]);
   const userDefaults = useUserAIDefaults();
   const [modelValue, setModelValue] = useState<ModelSelectorValue>({
     tier: "balanced",
@@ -178,25 +151,6 @@ export default function NewAICoursePage() {
       default: return 0;
     }
   };
-
-  if (checkingAuth || !authorized) {
-    return (
-      <div className="max-w-2xl mx-auto space-y-6">
-        <Skeleton className="h-4 w-24" />
-        <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 overflow-hidden">
-          <Skeleton className="h-20 w-full" />
-          <div className="p-6 space-y-4">
-            <Skeleton className="h-4 w-32" />
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-4 w-32" />
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-4 w-32" />
-            <Skeleton className="h-10 w-full" />
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">

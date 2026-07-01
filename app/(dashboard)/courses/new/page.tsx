@@ -1,64 +1,20 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useToast } from "@/lib/hooks/useToast";
 import Button from "@/components/ui/Button";
-import { Skeleton } from "@/components/ui/Skeleton";
 
 export default function NewCoursePage() {
   const router = useRouter();
   const toast = useToast();
-  const [authorized, setAuthorized] = useState(false);
-  const [checkingAuth, setCheckingAuth] = useState(true);
   const [formData, setFormData] = useState({
     title: "",
     description: "",
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    async function checkAdmin() {
-      try {
-        const res = await fetch("/api/auth/me");
-        if (res.ok) {
-          const data = await res.json();
-          if (data.user?.role === "admin") {
-            setAuthorized(true);
-          } else {
-            router.push("/dashboard");
-            return;
-          }
-        } else {
-          router.push("/login");
-          return;
-        }
-      } catch {
-        router.push("/dashboard");
-      } finally {
-        setCheckingAuth(false);
-      }
-    }
-    checkAdmin();
-  }, [router]);
-
-  if (checkingAuth || !authorized) {
-    return (
-      <div className="max-w-2xl mx-auto space-y-6">
-        <Skeleton className="h-4 w-24" />
-        <Skeleton className="h-8 w-48" />
-        <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 p-4 space-y-4">
-          <Skeleton className="h-4 w-24" />
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-4 w-24" />
-          <Skeleton className="h-24 w-full" />
-        </div>
-        <Skeleton className="h-10 w-32" />
-      </div>
-    );
-  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -141,18 +141,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (user.role !== "admin") {
-      return NextResponse.json(
-        { error: "Only admins can create courses" },
-        { status: 403 }
-      );
-    }
-
     await dbConnect();
 
     const courseData: Record<string, unknown> = {
       ...validation.data,
       instructor: user.userId,
+      owner: user.userId,
     };
 
     const course = await Course.create(courseData);

@@ -5,7 +5,7 @@ export type SubscriptionTier = "free" | "plus" | "admin";
 export interface JWTPayload {
   userId: string;
   email: string;
-  role: "student" | "teacher" | "admin";
+  role: "user" | "admin";
   subscriptionTier: SubscriptionTier;
   sessionId?: string;
   iat?: number;

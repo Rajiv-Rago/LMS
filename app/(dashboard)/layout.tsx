@@ -13,7 +13,7 @@ interface User {
   id: string;
   name: string;
   email: string;
-  role: "student" | "teacher" | "admin";
+  role: "user" | "admin";
   aiPreferences?: {
     defaultTier?: "concise" | "balanced" | "thorough";
     defaultProvider?: string;

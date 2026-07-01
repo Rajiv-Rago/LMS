@@ -31,7 +31,7 @@ afterAll(async () => {
 describe("Assignment CRUD", () => {
   describe("GET /api/courses/[id]/assignments", () => {
     it("returns assignments for the course instructor", async () => {
-      const { user: teacher, token } = await createTestUser({ role: "teacher" });
+      const { user: teacher, token } = await createTestUser({ role: "user" });
       const { course } = await createTestCourse(teacher._id, { isPublished: true });
       await createTestAssignment(course._id, { title: "HW 1", isPublished: true });
       await createTestAssignment(course._id, { title: "HW 2", isPublished: false });
@@ -47,8 +47,8 @@ describe("Assignment CRUD", () => {
     });
 
     it("returns only published assignments for enrolled students", async () => {
-      const { user: teacher } = await createTestUser({ role: "teacher" });
-      const { user: student, token: studentToken } = await createTestUser({ role: "student" });
+      const { user: teacher } = await createTestUser({ role: "user" });
+      const { user: student, token: studentToken } = await createTestUser({ role: "user" });
       const { course } = await createTestCourse(teacher._id, { isPublished: true });
       await createTestAssignment(course._id, { title: "Published", isPublished: true });
       await createTestAssignment(course._id, { title: "Draft", isPublished: false });
@@ -70,8 +70,8 @@ describe("Assignment CRUD", () => {
     });
 
     it("returns 200 for non-enrolled users on published course", async () => {
-      const { user: teacher } = await createTestUser({ role: "teacher" });
-      const { token: outsiderToken } = await createTestUser({ role: "student" });
+      const { user: teacher } = await createTestUser({ role: "user" });
+      const { token: outsiderToken } = await createTestUser({ role: "user" });
       const { course } = await createTestCourse(teacher._id, { isPublished: true });
 
       const request = buildRequest("GET", `/api/courses/${course._id}/assignments`, {
@@ -86,7 +86,7 @@ describe("Assignment CRUD", () => {
     });
 
     it("returns 404 for non-existent course", async () => {
-      const { token } = await createTestUser({ role: "teacher" });
+      const { token } = await createTestUser({ role: "user" });
       const fakeId = "000000000000000000000000";
 
       const request = buildRequest("GET", `/api/courses/${fakeId}/assignments`, { token });
@@ -101,7 +101,7 @@ describe("Assignment CRUD", () => {
 
   describe("POST /api/courses/[id]/assignments", () => {
     it("creates a standard assignment", async () => {
-      const { user: teacher, token } = await createTestUser({ role: "teacher" });
+      const { user: teacher, token } = await createTestUser({ role: "user" });
       const { course } = await createTestCourse(teacher._id);
 
       const request = buildRequest("POST", `/api/courses/${course._id}/assignments`, {
@@ -124,7 +124,7 @@ describe("Assignment CRUD", () => {
     });
 
     it("creates a quiz assignment", async () => {
-      const { user: teacher, token } = await createTestUser({ role: "teacher" });
+      const { user: teacher, token } = await createTestUser({ role: "user" });
       const { course } = await createTestCourse(teacher._id);
 
       const request = buildRequest("POST", `/api/courses/${course._id}/assignments`, {
@@ -160,7 +160,7 @@ describe("Assignment CRUD", () => {
     });
 
     it("returns 401 for unauthenticated users", async () => {
-      const { user: teacher } = await createTestUser({ role: "teacher" });
+      const { user: teacher } = await createTestUser({ role: "user" });
       const { course } = await createTestCourse(teacher._id);
 
       const request = buildRequest("POST", `/api/courses/${course._id}/assignments`, {
@@ -180,8 +180,8 @@ describe("Assignment CRUD", () => {
     });
 
     it("returns 403 for students", async () => {
-      const { user: teacher } = await createTestUser({ role: "teacher" });
-      const { token: studentToken } = await createTestUser({ role: "student" });
+      const { user: teacher } = await createTestUser({ role: "user" });
+      const { token: studentToken } = await createTestUser({ role: "user" });
       const { course } = await createTestCourse(teacher._id);
 
       const request = buildRequest("POST", `/api/courses/${course._id}/assignments`, {
@@ -202,7 +202,7 @@ describe("Assignment CRUD", () => {
     });
 
     it("returns 400 for invalid data", async () => {
-      const { user: teacher, token } = await createTestUser({ role: "teacher" });
+      const { user: teacher, token } = await createTestUser({ role: "user" });
       const { course } = await createTestCourse(teacher._id);
 
       const request = buildRequest("POST", `/api/courses/${course._id}/assignments`, {
@@ -220,7 +220,7 @@ describe("Assignment CRUD", () => {
 
   describe("GET /api/courses/[id]/assignments/[assignmentId]", () => {
     it("returns assignment details for instructor", async () => {
-      const { user: teacher, token } = await createTestUser({ role: "teacher" });
+      const { user: teacher, token } = await createTestUser({ role: "user" });
       const { course } = await createTestCourse(teacher._id, { isPublished: true });
       const { assignment } = await createTestAssignment(course._id, {
         isPublished: true,
@@ -249,8 +249,8 @@ describe("Assignment CRUD", () => {
     });
 
     it("strips quiz answers for students", async () => {
-      const { user: teacher } = await createTestUser({ role: "teacher" });
-      const { user: student, token: studentToken } = await createTestUser({ role: "student" });
+      const { user: teacher } = await createTestUser({ role: "user" });
+      const { user: student, token: studentToken } = await createTestUser({ role: "user" });
       const { course } = await createTestCourse(teacher._id, { isPublished: true });
 
       await createTestEnrollment(course._id, student._id);
@@ -298,8 +298,8 @@ describe("Assignment CRUD", () => {
     });
 
     it("returns 404 for unpublished assignment viewed by student", async () => {
-      const { user: teacher } = await createTestUser({ role: "teacher" });
-      const { user: student, token: studentToken } = await createTestUser({ role: "student" });
+      const { user: teacher } = await createTestUser({ role: "user" });
+      const { user: student, token: studentToken } = await createTestUser({ role: "user" });
       const { course } = await createTestCourse(teacher._id, { isPublished: true });
 
       await createTestEnrollment(course._id, student._id);
@@ -325,7 +325,7 @@ describe("Assignment CRUD", () => {
 
   describe("PATCH /api/courses/[id]/assignments/[assignmentId]", () => {
     it("updates assignment fields", async () => {
-      const { user: teacher, token } = await createTestUser({ role: "teacher" });
+      const { user: teacher, token } = await createTestUser({ role: "user" });
       const { course } = await createTestCourse(teacher._id);
       const { assignment } = await createTestAssignment(course._id);
 
@@ -353,8 +353,8 @@ describe("Assignment CRUD", () => {
     });
 
     it("returns 403 for non-instructor", async () => {
-      const { user: teacher } = await createTestUser({ role: "teacher" });
-      const { token: studentToken } = await createTestUser({ role: "student" });
+      const { user: teacher } = await createTestUser({ role: "user" });
+      const { token: studentToken } = await createTestUser({ role: "user" });
       const { course } = await createTestCourse(teacher._id);
       const { assignment } = await createTestAssignment(course._id);
 
@@ -377,8 +377,8 @@ describe("Assignment CRUD", () => {
 
   describe("DELETE /api/courses/[id]/assignments/[assignmentId]", () => {
     it("deletes assignment and cascades to submissions", async () => {
-      const { user: teacher, token } = await createTestUser({ role: "teacher" });
-      const { user: student } = await createTestUser({ role: "student" });
+      const { user: teacher, token } = await createTestUser({ role: "user" });
+      const { user: student } = await createTestUser({ role: "user" });
       const { course } = await createTestCourse(teacher._id);
       const { assignment } = await createTestAssignment(course._id);
 
@@ -415,8 +415,8 @@ describe("Assignment CRUD", () => {
     });
 
     it("returns 403 for non-instructor", async () => {
-      const { user: teacher } = await createTestUser({ role: "teacher" });
-      const { token: studentToken } = await createTestUser({ role: "student" });
+      const { user: teacher } = await createTestUser({ role: "user" });
+      const { token: studentToken } = await createTestUser({ role: "user" });
       const { course } = await createTestCourse(teacher._id);
       const { assignment } = await createTestAssignment(course._id);
 

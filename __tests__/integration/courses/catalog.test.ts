@@ -28,7 +28,7 @@ afterAll(async () => {
 describe("Course Catalog", () => {
   describe("GET /api/courses?catalog=true", () => {
     it("returns only published courses for unauthenticated users", async () => {
-      const { user: teacher } = await createTestUser({ role: "teacher" });
+      const { user: teacher } = await createTestUser({ role: "user" });
       await createTestCourse(teacher._id, { title: "Published", accessLevel: "published" });
       await createTestCourse(teacher._id, { title: "Unlisted", accessLevel: "unlisted" });
       await createTestCourse(teacher._id, { title: "Restricted", accessLevel: "restricted" });
@@ -49,7 +49,7 @@ describe("Course Catalog", () => {
     });
 
     it("excludes restricted and unlisted courses from catalog", async () => {
-      const { user: teacher } = await createTestUser({ role: "teacher" });
+      const { user: teacher } = await createTestUser({ role: "user" });
       await createTestCourse(teacher._id, { title: "Unlisted", accessLevel: "unlisted" });
       await createTestCourse(teacher._id, { title: "Restricted", accessLevel: "restricted" });
 
@@ -67,7 +67,7 @@ describe("Course Catalog", () => {
     });
 
     it("supports keyword search across titles and descriptions", async () => {
-      const { user: teacher } = await createTestUser({ role: "teacher" });
+      const { user: teacher } = await createTestUser({ role: "user" });
       await createTestCourse(teacher._id, {
         title: "JavaScript Fundamentals",
         description: "Learn JS basics",
@@ -93,7 +93,7 @@ describe("Course Catalog", () => {
     });
 
     it("returns empty results for non-matching search", async () => {
-      const { user: teacher } = await createTestUser({ role: "teacher" });
+      const { user: teacher } = await createTestUser({ role: "user" });
       await createTestCourse(teacher._id, {
         title: "Some Course",
         accessLevel: "published",
@@ -113,8 +113,8 @@ describe("Course Catalog", () => {
     });
 
     it("excludes enrolled/owned courses for authenticated users in catalog mode", async () => {
-      const { user: teacher } = await createTestUser({ role: "teacher" });
-      const { user: student, token: studentToken } = await createTestUser({ role: "student" });
+      const { user: teacher } = await createTestUser({ role: "user" });
+      const { user: student, token: studentToken } = await createTestUser({ role: "user" });
 
       const { course: enrolledCourse } = await createTestCourse(teacher._id, {
         title: "Enrolled",
@@ -148,7 +148,7 @@ describe("Course Catalog", () => {
     });
 
     it("sorts by enrollment count descending", async () => {
-      const { user: teacher } = await createTestUser({ role: "teacher" });
+      const { user: teacher } = await createTestUser({ role: "user" });
 
       const { course: c1 } = await createTestCourse(teacher._id, {
         title: "Low Enrollment",
@@ -181,7 +181,7 @@ describe("Course Catalog", () => {
     });
 
     it("paginates with Load More support", async () => {
-      const { user: teacher } = await createTestUser({ role: "teacher" });
+      const { user: teacher } = await createTestUser({ role: "user" });
       for (let i = 0; i < 15; i++) {
         await createTestCourse(teacher._id, {
           title: `Course ${String(i).padStart(2, "0")}`,
@@ -214,7 +214,7 @@ describe("Course Catalog", () => {
     });
 
     it("backward compatible: non-catalog GET still returns user's courses", async () => {
-      const { user: teacher, token: teacherToken } = await createTestUser({ role: "teacher" });
+      const { user: teacher, token: teacherToken } = await createTestUser({ role: "user" });
       await createTestCourse(teacher._id, { title: "My Restricted Course", accessLevel: "restricted" });
       await createTestCourse(teacher._id, { title: "My Published Course", accessLevel: "published" });
 
@@ -232,7 +232,7 @@ describe("Course Catalog", () => {
 
   describe("GET /api/courses/[id] OG metadata", () => {
     it("returns OG metadata fields for published courses", async () => {
-      const { user: teacher } = await createTestUser({ role: "teacher", name: "Prof Smith" });
+      const { user: teacher } = await createTestUser({ role: "user", name: "Prof Smith" });
       const { course } = await createTestCourse(teacher._id, {
         title: "Public Course",
         description: "A great course for everyone",
@@ -258,7 +258,7 @@ describe("Course Catalog", () => {
     });
 
     it("returns OG metadata fields for unlisted courses", async () => {
-      const { user: teacher } = await createTestUser({ role: "teacher", name: "Dr Jones" });
+      const { user: teacher } = await createTestUser({ role: "user", name: "Dr Jones" });
       const { course } = await createTestCourse(teacher._id, {
         title: "Unlisted Course",
         description: "An unlisted but accessible course",
@@ -286,7 +286,7 @@ describe("Course Catalog", () => {
 
   describe("GET /api/courses without catalog param", () => {
     it("unauthenticated query uses accessLevel filter", async () => {
-      const { user: teacher } = await createTestUser({ role: "teacher" });
+      const { user: teacher } = await createTestUser({ role: "user" });
       await createTestCourse(teacher._id, { title: "Published", accessLevel: "published" });
       await createTestCourse(teacher._id, { title: "Restricted", accessLevel: "restricted" });
 

@@ -20,7 +20,7 @@ describe("GET /api/auth/me", () => {
     const { token } = await createTestUser({
       email: "me@example.com",
       name: "Me User",
-      role: "student",
+      role: "user",
     });
 
     const request = buildRequest("GET", "/api/auth/me", { token });
@@ -32,7 +32,7 @@ describe("GET /api/auth/me", () => {
     expect(status).toBe(200);
     expect(data.user.email).toBe("me@example.com");
     expect(data.user.name).toBe("Me User");
-    expect(data.user.role).toBe("student");
+    expect(data.user.role).toBe("user");
   });
 
   it("returns 401 when no token is provided", async () => {

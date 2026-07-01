@@ -90,8 +90,8 @@ describe("POST /api/courses/[id]/assignments/[assignmentId]/quiz/start", () => {
   });
 
   it("returns 403 for non-enrolled student", async () => {
-    const { user: teacher } = await createTestUser({ role: "teacher" });
-    const { token: studentToken } = await createTestUser({ role: "student" });
+    const { user: teacher } = await createTestUser({ role: "user" });
+    const { token: studentToken } = await createTestUser({ role: "user" });
     const { course } = await createTestCourse(teacher._id, { isPublished: true });
     const { assignment } = await createTestQuizAssignment(course._id);
 
@@ -111,8 +111,8 @@ describe("POST /api/courses/[id]/assignments/[assignmentId]/quiz/start", () => {
   });
 
   it("returns 404 for non-existent quiz assignment", async () => {
-    const { user: teacher } = await createTestUser({ role: "teacher" });
-    const { user: student, token: studentToken } = await createTestUser({ role: "student" });
+    const { user: teacher } = await createTestUser({ role: "user" });
+    const { user: student, token: studentToken } = await createTestUser({ role: "user" });
     const { course } = await createTestCourse(teacher._id, { isPublished: true });
     await createTestEnrollment(course._id, student._id);
 
@@ -133,8 +133,8 @@ describe("POST /api/courses/[id]/assignments/[assignmentId]/quiz/start", () => {
   });
 
   it("returns 400 for unpublished quiz", async () => {
-    const { user: teacher } = await createTestUser({ role: "teacher" });
-    const { user: student, token: studentToken } = await createTestUser({ role: "student" });
+    const { user: teacher } = await createTestUser({ role: "user" });
+    const { user: student, token: studentToken } = await createTestUser({ role: "user" });
     const { course } = await createTestCourse(teacher._id, { isPublished: true });
     await createTestEnrollment(course._id, student._id);
     const { assignment } = await createTestQuizAssignment(course._id, {
@@ -157,8 +157,8 @@ describe("POST /api/courses/[id]/assignments/[assignmentId]/quiz/start", () => {
   });
 
   it("returns questions without correctAnswer for enrolled student", async () => {
-    const { user: teacher } = await createTestUser({ role: "teacher" });
-    const { user: student, token: studentToken } = await createTestUser({ role: "student" });
+    const { user: teacher } = await createTestUser({ role: "user" });
+    const { user: student, token: studentToken } = await createTestUser({ role: "user" });
     const { course } = await createTestCourse(teacher._id, { isPublished: true });
     await createTestEnrollment(course._id, student._id);
     const { assignment } = await createTestQuizAssignment(course._id);
@@ -188,8 +188,8 @@ describe("POST /api/courses/[id]/assignments/[assignmentId]/quiz/start", () => {
   });
 
   it("creates a Submission document on first attempt", async () => {
-    const { user: teacher } = await createTestUser({ role: "teacher" });
-    const { user: student, token: studentToken } = await createTestUser({ role: "student" });
+    const { user: teacher } = await createTestUser({ role: "user" });
+    const { user: student, token: studentToken } = await createTestUser({ role: "user" });
     const { course } = await createTestCourse(teacher._id, { isPublished: true });
     await createTestEnrollment(course._id, student._id);
     const { assignment } = await createTestQuizAssignment(course._id);
@@ -215,8 +215,8 @@ describe("POST /api/courses/[id]/assignments/[assignmentId]/quiz/start", () => {
   });
 
   it("resumes existing incomplete attempt instead of creating new", async () => {
-    const { user: teacher } = await createTestUser({ role: "teacher" });
-    const { user: student, token: studentToken } = await createTestUser({ role: "student" });
+    const { user: teacher } = await createTestUser({ role: "user" });
+    const { user: student, token: studentToken } = await createTestUser({ role: "user" });
     const { course } = await createTestCourse(teacher._id, { isPublished: true });
     await createTestEnrollment(course._id, student._id);
     const { assignment } = await createTestQuizAssignment(course._id);
@@ -262,8 +262,8 @@ describe("POST /api/courses/[id]/assignments/[assignmentId]/quiz/start", () => {
   });
 
   it("auto-closes expired attempt and starts fresh", async () => {
-    const { user: teacher } = await createTestUser({ role: "teacher" });
-    const { user: student, token: studentToken } = await createTestUser({ role: "student" });
+    const { user: teacher } = await createTestUser({ role: "user" });
+    const { user: student, token: studentToken } = await createTestUser({ role: "user" });
     const { course } = await createTestCourse(teacher._id, { isPublished: true });
     await createTestEnrollment(course._id, student._id);
     const { assignment } = await createTestQuizAssignment(course._id, {

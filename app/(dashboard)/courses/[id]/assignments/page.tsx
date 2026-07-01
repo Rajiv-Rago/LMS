@@ -24,7 +24,7 @@ interface Assignment {
 
 interface User {
   id: string;
-  role: "student" | "teacher" | "admin";
+  role: "user" | "admin";
 }
 
 interface CourseData {

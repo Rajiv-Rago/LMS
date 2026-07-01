@@ -85,7 +85,7 @@ function assertNoLeakedDetails(errorMessage: string) {
 // ── Tests ──────────────────────────────────────────────────────────
 describe("AI route error handling — provider not configured", () => {
   it("POST /api/courses/ai/syllabus returns 503 with generic message", async () => {
-    const { token } = await createTestUser({ role: "teacher" });
+    const { token } = await createTestUser({ role: "user" });
 
     const request = buildRequest("POST", "/api/courses/ai/syllabus", {
       token,
@@ -106,7 +106,7 @@ describe("AI route error handling — provider not configured", () => {
   });
 
   it("POST /api/courses/ai/[courseId]/generate-all returns 503 with generic message", async () => {
-    const { user, token } = await createTestUser({ role: "teacher" });
+    const { user, token } = await createTestUser({ role: "user" });
 
     const { course } = await createTestCourse(user._id, {
       owner: user._id,
@@ -139,7 +139,7 @@ describe("AI route error handling — provider not configured", () => {
   });
 
   it("POST /api/courses/ai/[courseId]/modules/[moduleId]/generate returns 503 with generic message", async () => {
-    const { user, token } = await createTestUser({ role: "teacher" });
+    const { user, token } = await createTestUser({ role: "user" });
 
     const { course } = await createTestCourse(user._id, {
       owner: user._id,
@@ -170,7 +170,7 @@ describe("AI route error handling — provider not configured", () => {
   });
 
   it("POST /api/courses/ai/[courseId]/lessons/[lessonId]/generate returns 503 with generic message", async () => {
-    const { user, token } = await createTestUser({ role: "teacher" });
+    const { user, token } = await createTestUser({ role: "user" });
 
     const { course } = await createTestCourse(user._id, {
       owner: user._id,
@@ -209,7 +209,7 @@ describe("AI route error handling — provider not configured", () => {
   });
 
   it("POST /api/courses/youtube/generate returns 503 with generic message", async () => {
-    const { token } = await createTestUser({ role: "teacher" });
+    const { token } = await createTestUser({ role: "user" });
 
     const request = buildRequest("POST", "/api/courses/youtube/generate", {
       token,
@@ -231,7 +231,7 @@ describe("AI route error handling — provider not configured", () => {
 
 describe("AI route error handling — catch-all blocks", () => {
   it("POST /api/courses/ai/syllabus returns generic 500 when an unexpected error occurs", async () => {
-    const { token } = await createTestUser({ role: "teacher" });
+    const { token } = await createTestUser({ role: "user" });
 
     // Make enqueueJob throw an internal error
     const { enqueueJob } = jest.requireMock("@/lib/queue") as { enqueueJob: jest.Mock };
@@ -269,7 +269,7 @@ describe("AI route error handling — catch-all blocks", () => {
   });
 
   it("POST /api/courses/youtube/generate returns generic 500 when an unexpected error occurs", async () => {
-    const { token } = await createTestUser({ role: "teacher" });
+    const { token } = await createTestUser({ role: "user" });
 
     const { enqueueJob } = jest.requireMock("@/lib/queue") as { enqueueJob: jest.Mock };
     const { resolveProvider } = jest.requireMock("@/lib/ai/utils/providerResolver") as { resolveProvider: jest.Mock };

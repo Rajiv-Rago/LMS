@@ -7,7 +7,7 @@ export interface AuthJsUser {
   id: string;
   email: string;
   name: string;
-  role: "student" | "teacher" | "admin";
+  role: "user" | "admin";
   subscriptionTier: "free" | "plus" | "admin";
   sessionId: string;
 }

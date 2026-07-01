@@ -38,7 +38,7 @@ describe("resolveOAuthSignIn", () => {
     expect(result).toMatchObject({
       email: "new.google@example.com",
       name: "Google User",
-      role: "student",
+      role: "user",
       subscriptionTier: "free",
       sessionId: expect.any(String),
     });
@@ -54,7 +54,7 @@ describe("resolveOAuthSignIn", () => {
   it("rejects a trusted matching email without an explicit link intent", async () => {
     const { user } = await createTestUser({
       email: "teacher@example.com",
-      role: "teacher",
+      role: "user",
     });
     await User.updateOne({ _id: user._id }, { $set: { subscriptionTier: "plus" } });
 
@@ -80,7 +80,7 @@ describe("resolveOAuthSignIn", () => {
   it("links a trusted matching email with an explicit link intent", async () => {
     const { user } = await createTestUser({
       email: "teacher@example.com",
-      role: "teacher",
+      role: "user",
     });
     await User.updateOne({ _id: user._id }, { $set: { subscriptionTier: "plus" } });
 
@@ -100,7 +100,7 @@ describe("resolveOAuthSignIn", () => {
 
     expect(result).toMatchObject({
       id: user._id.toString(),
-      role: "teacher",
+      role: "user",
       subscriptionTier: "plus",
     });
     expect(await OAuthAccount.exists({ provider: "google", userId: user._id })).toBeTruthy();

@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
       email,
       name,
       password,
-      role: "student",
+      role: "user",
     });
 
     const response = NextResponse.json(

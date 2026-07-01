@@ -5,7 +5,7 @@ import { resolveOAuthSignIn } from "./oauth";
 import { clearOAuthLinkIntent, getOAuthLinkIntent } from "./oauthLinkIntent";
 import { OAuthProvider } from "@/lib/models/OAuthAccount";
 
-type UserRole = "student" | "teacher" | "admin";
+type UserRole = "user" | "admin";
 type SubscriptionTier = "free" | "plus" | "admin";
 
 export const authCallbacks = {

@@ -23,8 +23,8 @@ afterAll(async () => {
 }, 30000);
 
 async function setupQuiz() {
-  const { user: teacher } = await createTestUser({ role: "teacher" });
-  const { user: student, token: studentToken } = await createTestUser({ role: "student" });
+  const { user: teacher } = await createTestUser({ role: "user" });
+  const { user: student, token: studentToken } = await createTestUser({ role: "user" });
   const { course } = await createTestCourse(teacher._id, { isPublished: true });
   await createTestEnrollment(course._id, student._id);
   const { assignment } = await createTestQuizAssignment(course._id);
@@ -63,8 +63,8 @@ describe("POST /api/courses/[id]/assignments/[assignmentId]/quiz/submit", () => 
   });
 
   it("returns 400 when no active attempt exists", async () => {
-    const { user: teacher } = await createTestUser({ role: "teacher" });
-    const { user: student, token: studentToken } = await createTestUser({ role: "student" });
+    const { user: teacher } = await createTestUser({ role: "user" });
+    const { user: student, token: studentToken } = await createTestUser({ role: "user" });
     const { course } = await createTestCourse(teacher._id, { isPublished: true });
     await createTestEnrollment(course._id, student._id);
     const { assignment } = await createTestQuizAssignment(course._id);
@@ -117,8 +117,8 @@ describe("POST /api/courses/[id]/assignments/[assignmentId]/quiz/submit", () => 
   });
 
   it("returns 400 when time limit exceeded", async () => {
-    const { user: teacher } = await createTestUser({ role: "teacher" });
-    const { user: student, token: studentToken } = await createTestUser({ role: "student" });
+    const { user: teacher } = await createTestUser({ role: "user" });
+    const { user: student, token: studentToken } = await createTestUser({ role: "user" });
     const { course } = await createTestCourse(teacher._id, { isPublished: true });
     await createTestEnrollment(course._id, student._id);
     const { assignment } = await createTestQuizAssignment(course._id, {
@@ -213,8 +213,8 @@ describe("POST /api/courses/[id]/assignments/[assignmentId]/quiz/submit", () => 
   });
 
   it("omits detailed answers when showCorrectAnswers is disabled", async () => {
-    const { user: teacher } = await createTestUser({ role: "teacher" });
-    const { user: student, token: studentToken } = await createTestUser({ role: "student" });
+    const { user: teacher } = await createTestUser({ role: "user" });
+    const { user: student, token: studentToken } = await createTestUser({ role: "user" });
     const { course } = await createTestCourse(teacher._id, { isPublished: true });
     await createTestEnrollment(course._id, student._id);
     const { assignment } = await createTestQuizAssignment(course._id, {

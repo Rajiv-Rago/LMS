@@ -39,7 +39,7 @@ export async function createTestUser(
     email: string;
     name: string;
     password: string;
-    role: "student" | "teacher" | "admin";
+    role: "user" | "admin";
   }> = {}
 ): Promise<TestUserResult> {
   userCounter++;
@@ -47,7 +47,7 @@ export async function createTestUser(
     email: `testuser${userCounter}@example.com`,
     name: `Test User ${userCounter}`,
     password: "password123",
-    role: "student" as const,
+    role: "user" as const,
   };
 
   const data = { ...defaults, ...overrides };

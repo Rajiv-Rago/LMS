@@ -24,7 +24,7 @@ describe("authorizeCredentials", () => {
       email: "authjs@example.com",
       name: "Auth User",
       password: "password123",
-      role: "teacher",
+      role: "user",
     });
 
     await User.updateOne({ _id: user._id }, { $set: { subscriptionTier: "plus" } });
@@ -40,7 +40,7 @@ describe("authorizeCredentials", () => {
       id: user._id.toString(),
       email: "authjs@example.com",
       name: "Auth User",
-      role: "teacher",
+      role: "user",
       subscriptionTier: "plus",
     });
     expect(result?.sessionId).toEqual(expect.any(String));

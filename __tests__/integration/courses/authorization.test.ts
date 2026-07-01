@@ -39,13 +39,13 @@ afterAll(async () => {
 describe("Cross-route authorization consistency", () => {
   async function setupCourseWithData() {
     const { user: instructor, token: instructorToken } = await createTestUser({
-      role: "teacher",
+      role: "user",
     });
     const { user: enrolledStudent, token: studentToken } = await createTestUser({
-      role: "student",
+      role: "user",
     });
     const { user: outsider, token: outsiderToken } = await createTestUser({
-      role: "student",
+      role: "user",
     });
     const { user: admin, token: adminToken } = await createTestUser({
       role: "admin",

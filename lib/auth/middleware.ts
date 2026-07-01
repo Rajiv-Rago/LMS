@@ -92,7 +92,7 @@ async function getActiveUserPayload(token: JWT): Promise<JWTPayload | null> {
 }
 
 function isUserRole(value: unknown): value is UserRole {
-  return value === "student" || value === "teacher" || value === "admin";
+  return value === "user" || value === "admin";
 }
 
 function isSubscriptionTier(value: unknown): value is SubscriptionTier {
@@ -134,7 +134,7 @@ export function requireAuth(
   };
 }
 
-export function requireRole(...roles: ("student" | "teacher" | "admin")[]) {
+export function requireRole(...roles: ("user" | "admin")[]) {
   return (
     handler: (
       request: NextRequest,

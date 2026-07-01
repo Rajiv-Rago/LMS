@@ -20,7 +20,7 @@ afterAll(async () => {
   await disconnectTestDb();
 });
 
-function makePayload(userId: string, role: "student" | "teacher" | "admin" = "student"): JWTPayload {
+function makePayload(userId: string, role: "user" | "admin" = "user"): JWTPayload {
   return {
     userId,
     email: "test@example.com",
@@ -31,9 +31,9 @@ function makePayload(userId: string, role: "student" | "teacher" | "admin" = "st
 
 describe("getCoursePermissions", () => {
   it("returns isInstructor, canEdit, canView true for the course instructor", async () => {
-    const { user: instructor } = await createTestUser({ role: "teacher" });
+    const { user: instructor } = await createTestUser({ role: "user" });
     const { course } = await createTestCourse(instructor._id);
-    const payload = makePayload(instructor._id.toString(), "teacher");
+    const payload = makePayload(instructor._id.toString(), "user");
 
     const perms = await getCoursePermissions(course, payload);
 
@@ -47,12 +47,12 @@ describe("getCoursePermissions", () => {
   });
 
   it("returns isOwner, canEdit, canView true for the course owner", async () => {
-    const { user: teacher } = await createTestUser({ role: "teacher" });
-    const { user: owner } = await createTestUser({ role: "student" });
+    const { user: teacher } = await createTestUser({ role: "user" });
+    const { user: owner } = await createTestUser({ role: "user" });
     const { course } = await createTestCourse(teacher._id, {
       owner: owner._id,
     });
-    const payload = makePayload(owner._id.toString(), "student");
+    const payload = makePayload(owner._id.toString(), "user");
 
     const perms = await getCoursePermissions(course, payload);
 
@@ -63,13 +63,13 @@ describe("getCoursePermissions", () => {
   });
 
   it("returns isEnrolled, canView true, canEdit false for enrolled student", async () => {
-    const { user: teacher } = await createTestUser({ role: "teacher" });
-    const { user: student } = await createTestUser({ role: "student" });
+    const { user: teacher } = await createTestUser({ role: "user" });
+    const { user: student } = await createTestUser({ role: "user" });
     const { course } = await createTestCourse(teacher._id);
 
     await Enrollment.create({ course: course._id, student: student._id });
 
-    const payload = makePayload(student._id.toString(), "student");
+    const payload = makePayload(student._id.toString(), "user");
     const perms = await getCoursePermissions(course, payload);
 
     expect(perms.isEnrolled).toBe(true);
@@ -80,7 +80,7 @@ describe("getCoursePermissions", () => {
   });
 
   it("returns isAdmin, canEdit, canView true for admin users", async () => {
-    const { user: teacher } = await createTestUser({ role: "teacher" });
+    const { user: teacher } = await createTestUser({ role: "user" });
     const { user: admin } = await createTestUser({ role: "admin" });
     const { course } = await createTestCourse(teacher._id);
 
@@ -93,15 +93,15 @@ describe("getCoursePermissions", () => {
   });
 
   it("returns isSharedWith, canView true, canEdit false for shared users", async () => {
-    const { user: teacher } = await createTestUser({ role: "teacher" });
-    const { user: sharedUser } = await createTestUser({ role: "student" });
+    const { user: teacher } = await createTestUser({ role: "user" });
+    const { user: sharedUser } = await createTestUser({ role: "user" });
     const { course } = await createTestCourse(teacher._id);
 
     // Add user to sharedWith array
     course.sharedWith.push(sharedUser._id);
     await course.save();
 
-    const payload = makePayload(sharedUser._id.toString(), "student");
+    const payload = makePayload(sharedUser._id.toString(), "user");
     const perms = await getCoursePermissions(course, payload);
 
     expect(perms.isSharedWith).toBe(true);
@@ -112,11 +112,11 @@ describe("getCoursePermissions", () => {
   });
 
   it("returns all false flags for an outsider", async () => {
-    const { user: teacher } = await createTestUser({ role: "teacher" });
-    const { user: outsider } = await createTestUser({ role: "student" });
+    const { user: teacher } = await createTestUser({ role: "user" });
+    const { user: outsider } = await createTestUser({ role: "user" });
     const { course } = await createTestCourse(teacher._id);
 
-    const payload = makePayload(outsider._id.toString(), "student");
+    const payload = makePayload(outsider._id.toString(), "user");
     const perms = await getCoursePermissions(course, payload);
 
     expect(perms.isInstructor).toBe(false);
@@ -129,15 +129,15 @@ describe("getCoursePermissions", () => {
   });
 
   it("uses Enrollment collection for isEnrolled, not course.enrolledStudents array", async () => {
-    const { user: teacher } = await createTestUser({ role: "teacher" });
-    const { user: student } = await createTestUser({ role: "student" });
+    const { user: teacher } = await createTestUser({ role: "user" });
+    const { user: student } = await createTestUser({ role: "user" });
     const { course } = await createTestCourse(teacher._id);
 
     // Add student to enrolledStudents array but NOT to Enrollment collection
     course.enrolledStudents.push(student._id);
     await course.save();
 
-    const payload = makePayload(student._id.toString(), "student");
+    const payload = makePayload(student._id.toString(), "user");
     const perms = await getCoursePermissions(course, payload);
 
     // Should NOT be enrolled because Enrollment collection is the source of truth
@@ -145,13 +145,13 @@ describe("getCoursePermissions", () => {
   });
 
   it("canEdit is true when isInstructor OR isOwner OR isAdmin", async () => {
-    const { user: teacher } = await createTestUser({ role: "teacher" });
+    const { user: teacher } = await createTestUser({ role: "user" });
     const { course } = await createTestCourse(teacher._id);
 
     // Instructor
     const instrPerms = await getCoursePermissions(
       course,
-      makePayload(teacher._id.toString(), "teacher")
+      makePayload(teacher._id.toString(), "user")
     );
     expect(instrPerms.canEdit).toBe(true);
 

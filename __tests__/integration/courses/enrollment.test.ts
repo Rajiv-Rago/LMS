@@ -26,9 +26,9 @@ afterAll(async () => {
 describe("Course Enrollment", () => {
   describe("POST /api/courses/[id]/enroll", () => {
     it("enrolls a student and creates an Enrollment document", async () => {
-      const { user: teacher } = await createTestUser({ role: "teacher" });
+      const { user: teacher } = await createTestUser({ role: "user" });
       const { user: student, token: studentToken } = await createTestUser({
-        role: "student",
+        role: "user",
       });
       const { course } = await createTestCourse(teacher._id, {
         isPublished: true,
@@ -54,9 +54,9 @@ describe("Course Enrollment", () => {
     });
 
     it("returns 400 for duplicate enrollment (compound index)", async () => {
-      const { user: teacher } = await createTestUser({ role: "teacher" });
+      const { user: teacher } = await createTestUser({ role: "user" });
       const { user: student, token: studentToken } = await createTestUser({
-        role: "student",
+        role: "user",
       });
       const { course } = await createTestCourse(teacher._id, {
         isPublished: true,
@@ -81,9 +81,9 @@ describe("Course Enrollment", () => {
     });
 
     it("returns 400 when enrolling in unpublished course", async () => {
-      const { user: teacher } = await createTestUser({ role: "teacher" });
+      const { user: teacher } = await createTestUser({ role: "user" });
       const { token: studentToken } = await createTestUser({
-        role: "student",
+        role: "user",
       });
       const { course } = await createTestCourse(teacher._id, {
         isPublished: false,
@@ -107,7 +107,7 @@ describe("Course Enrollment", () => {
 
     it("prevents an instructor from enrolling in their own course", async () => {
       const { user: teacher, token: teacherToken } = await createTestUser({
-        role: "teacher",
+        role: "user",
       });
       const { course } = await createTestCourse(teacher._id, {
         isPublished: true,
@@ -130,7 +130,7 @@ describe("Course Enrollment", () => {
     });
 
     it("returns 401 for unauthenticated users", async () => {
-      const { user: teacher } = await createTestUser({ role: "teacher" });
+      const { user: teacher } = await createTestUser({ role: "user" });
       const { course } = await createTestCourse(teacher._id, {
         isPublished: true,
       });
@@ -148,7 +148,7 @@ describe("Course Enrollment", () => {
     });
 
     it("returns 404 for non-existent course", async () => {
-      const { token } = await createTestUser({ role: "student" });
+      const { token } = await createTestUser({ role: "user" });
       const fakeId = "000000000000000000000000";
 
       const request = buildRequest("POST", `/api/courses/${fakeId}/enroll`, {
@@ -163,7 +163,7 @@ describe("Course Enrollment", () => {
     });
 
     it("returns 400 for invalid ObjectId", async () => {
-      const { token } = await createTestUser({ role: "student" });
+      const { token } = await createTestUser({ role: "user" });
 
       const request = buildRequest(
         "POST",
@@ -179,9 +179,9 @@ describe("Course Enrollment", () => {
     });
 
     it("only creates one enrollment for concurrent attempts", async () => {
-      const { user: teacher } = await createTestUser({ role: "teacher" });
+      const { user: teacher } = await createTestUser({ role: "user" });
       const { user: student, token: studentToken } = await createTestUser({
-        role: "student",
+        role: "user",
       });
       const { course } = await createTestCourse(teacher._id, {
         isPublished: true,
@@ -215,9 +215,9 @@ describe("Course Enrollment", () => {
 
   describe("DELETE /api/courses/[id]/enroll (unenroll)", () => {
     it("unenrolls a student by removing the Enrollment document", async () => {
-      const { user: teacher } = await createTestUser({ role: "teacher" });
+      const { user: teacher } = await createTestUser({ role: "user" });
       const { user: student, token: studentToken } = await createTestUser({
-        role: "student",
+        role: "user",
       });
       const { course } = await createTestCourse(teacher._id, {
         isPublished: true,
@@ -245,9 +245,9 @@ describe("Course Enrollment", () => {
     });
 
     it("returns 400 when not enrolled", async () => {
-      const { user: teacher } = await createTestUser({ role: "teacher" });
+      const { user: teacher } = await createTestUser({ role: "user" });
       const { token: studentToken } = await createTestUser({
-        role: "student",
+        role: "user",
       });
       const { course } = await createTestCourse(teacher._id, {
         isPublished: true,
@@ -270,7 +270,7 @@ describe("Course Enrollment", () => {
     });
 
     it("returns 401 for unauthenticated users", async () => {
-      const { user: teacher } = await createTestUser({ role: "teacher" });
+      const { user: teacher } = await createTestUser({ role: "user" });
       const { course } = await createTestCourse(teacher._id, {
         isPublished: true,
       });

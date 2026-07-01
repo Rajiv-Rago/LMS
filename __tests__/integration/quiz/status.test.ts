@@ -24,8 +24,8 @@ afterAll(async () => {
 
 describe("GET /api/courses/[id]/assignments/[assignmentId]/quiz", () => {
   it("returns quiz info and attempts for enrolled student", async () => {
-    const { user: teacher } = await createTestUser({ role: "teacher" });
-    const { user: student, token: studentToken } = await createTestUser({ role: "student" });
+    const { user: teacher } = await createTestUser({ role: "user" });
+    const { user: student, token: studentToken } = await createTestUser({ role: "user" });
     const { course } = await createTestCourse(teacher._id, { isPublished: true });
     await createTestEnrollment(course._id, student._id);
     const { assignment } = await createTestQuizAssignment(course._id);
@@ -57,7 +57,7 @@ describe("GET /api/courses/[id]/assignments/[assignmentId]/quiz", () => {
   });
 
   it("returns full assignment details for instructor", async () => {
-    const { user: teacher, token: teacherToken } = await createTestUser({ role: "teacher" });
+    const { user: teacher, token: teacherToken } = await createTestUser({ role: "user" });
     const { course } = await createTestCourse(teacher._id, { isPublished: true });
     const { assignment } = await createTestQuizAssignment(course._id);
 
@@ -83,7 +83,7 @@ describe("GET /api/courses/[id]/assignments/[assignmentId]/quiz", () => {
   });
 
   it("returns full assignment details for admin", async () => {
-    const { user: teacher } = await createTestUser({ role: "teacher" });
+    const { user: teacher } = await createTestUser({ role: "user" });
     const { token: adminToken } = await createTestUser({ role: "admin" });
     const { course } = await createTestCourse(teacher._id, { isPublished: true });
     const { assignment } = await createTestQuizAssignment(course._id);
@@ -108,8 +108,8 @@ describe("GET /api/courses/[id]/assignments/[assignmentId]/quiz", () => {
   });
 
   it("returns 200 for non-enrolled outsider on published course", async () => {
-    const { user: teacher } = await createTestUser({ role: "teacher" });
-    const { token: outsiderToken } = await createTestUser({ role: "student" });
+    const { user: teacher } = await createTestUser({ role: "user" });
+    const { token: outsiderToken } = await createTestUser({ role: "user" });
     const { course } = await createTestCourse(teacher._id, { isPublished: true });
     const { assignment } = await createTestQuizAssignment(course._id);
 
@@ -129,8 +129,8 @@ describe("GET /api/courses/[id]/assignments/[assignmentId]/quiz", () => {
   });
 
   it("detects active attempt", async () => {
-    const { user: teacher } = await createTestUser({ role: "teacher" });
-    const { user: student, token: studentToken } = await createTestUser({ role: "student" });
+    const { user: teacher } = await createTestUser({ role: "user" });
+    const { user: student, token: studentToken } = await createTestUser({ role: "user" });
     const { course } = await createTestCourse(teacher._id, { isPublished: true });
     await createTestEnrollment(course._id, student._id);
     const { assignment } = await createTestQuizAssignment(course._id);
@@ -171,8 +171,8 @@ describe("GET /api/courses/[id]/assignments/[assignmentId]/quiz", () => {
   });
 
   it("shows completed attempts after submission", async () => {
-    const { user: teacher } = await createTestUser({ role: "teacher" });
-    const { user: student, token: studentToken } = await createTestUser({ role: "student" });
+    const { user: teacher } = await createTestUser({ role: "user" });
+    const { user: student, token: studentToken } = await createTestUser({ role: "user" });
     const { course } = await createTestCourse(teacher._id, { isPublished: true });
     await createTestEnrollment(course._id, student._id);
     const { assignment } = await createTestQuizAssignment(course._id);

@@ -25,7 +25,7 @@ describe("User Model", () => {
       const user = await User.create(validUser);
       expect(user.email).toBe("test@example.com");
       expect(user.name).toBe("Test User");
-      expect(user.role).toBe("student"); // default
+      expect(user.role).toBe("user"); // default
       expect(user.failedLoginAttempts).toBe(0);
     });
 
@@ -131,7 +131,7 @@ describe("User Model", () => {
     });
 
     it("accepts valid roles", async () => {
-      for (const role of ["student", "teacher", "admin"]) {
+      for (const role of ["user", "admin"]) {
         const user = await User.create({
           ...validUser,
           email: `${role}@test.com`,

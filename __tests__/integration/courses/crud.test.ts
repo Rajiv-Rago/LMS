@@ -43,37 +43,24 @@ describe("Courses CRUD", () => {
       expect(data.course.isPublished).toBe(false);
     });
 
-    it("prevents a non-admin from creating a course", async () => {
-      const { token } = await createTestUser({ role: "student" });
+    it("allows a regular user to create a course and owns it", async () => {
+      const { user, token } = await createTestUser({ role: "user" });
 
       const request = buildRequest("POST", "/api/courses", {
         token,
         body: {
-          title: "Student Course",
-          description: "Should not be allowed",
+          title: "User Course",
+          description: "Any logged-in user can create courses",
         },
       });
       const response = await POST(request);
-      const { status, data } = await parseResponse<{ error: string }>(response);
+      const { status, data } = await parseResponse<{
+        course: { instructor: { _id: string }; owner: string };
+      }>(response);
 
-      expect(status).toBe(403);
-      expect(data.error).toContain("Only admins");
-    });
-
-    it("prevents a teacher from creating a course", async () => {
-      const { token } = await createTestUser({ role: "teacher" });
-
-      const request = buildRequest("POST", "/api/courses", {
-        token,
-        body: {
-          title: "Teacher Course",
-          description: "Should fail -- only admin can create",
-        },
-      });
-      const response = await POST(request);
-      const { status } = await parseResponse(response);
-
-      expect(status).toBe(403);
+      expect(status).toBe(201);
+      expect(data.course.instructor._id).toBe(user._id.toString());
+      expect(data.course.owner).toBe(user._id.toString());
     });
 
     it("returns 401 for unauthenticated users", async () => {
@@ -105,7 +92,7 @@ describe("Courses CRUD", () => {
 
   describe("GET /api/courses", () => {
     it("returns courses for authenticated users", async () => {
-      const { user, token } = await createTestUser({ role: "teacher" });
+      const { user, token } = await createTestUser({ role: "user" });
       await createTestCourse(user._id, { title: "Course 1", isPublished: true });
       await createTestCourse(user._id, { title: "Course 2", isPublished: true });
 
@@ -122,7 +109,7 @@ describe("Courses CRUD", () => {
     });
 
     it("returns only published courses for unauthenticated users", async () => {
-      const { user } = await createTestUser({ role: "teacher" });
+      const { user } = await createTestUser({ role: "user" });
       await createTestCourse(user._id, {
         title: "Published",
         isPublished: true,
@@ -147,7 +134,7 @@ describe("Courses CRUD", () => {
 
   describe("GET /api/courses/[id]", () => {
     it("returns a course by ID", async () => {
-      const { user, token } = await createTestUser({ role: "teacher" });
+      const { user, token } = await createTestUser({ role: "user" });
       const { course } = await createTestCourse(user._id, {
         title: "Single Course",
         isPublished: true,
@@ -171,7 +158,7 @@ describe("Courses CRUD", () => {
     });
 
     it("returns 404 for non-existent course", async () => {
-      const { token } = await createTestUser({ role: "teacher" });
+      const { token } = await createTestUser({ role: "user" });
       const fakeId = "000000000000000000000000";
 
       const request = buildRequest("GET", `/api/courses/${fakeId}`, {
@@ -186,8 +173,8 @@ describe("Courses CRUD", () => {
     });
 
     it("hides unpublished course from non-instructor/non-enrolled users", async () => {
-      const { user: teacher } = await createTestUser({ role: "teacher" });
-      const { token: studentToken } = await createTestUser({ role: "student" });
+      const { user: teacher } = await createTestUser({ role: "user" });
+      const { token: studentToken } = await createTestUser({ role: "user" });
       const { course } = await createTestCourse(teacher._id, {
         isPublished: false,
       });
@@ -206,7 +193,7 @@ describe("Courses CRUD", () => {
 
   describe("PATCH /api/courses/[id]", () => {
     it("allows the instructor to update the course", async () => {
-      const { user, token } = await createTestUser({ role: "teacher" });
+      const { user, token } = await createTestUser({ role: "user" });
       const { course } = await createTestCourse(user._id, {
         title: "Original Title",
       });
@@ -227,8 +214,8 @@ describe("Courses CRUD", () => {
     });
 
     it("returns 403 when a non-instructor tries to update", async () => {
-      const { user: teacher } = await createTestUser({ role: "teacher" });
-      const { token: otherToken } = await createTestUser({ role: "teacher" });
+      const { user: teacher } = await createTestUser({ role: "user" });
+      const { token: otherToken } = await createTestUser({ role: "user" });
       const { course } = await createTestCourse(teacher._id);
 
       const request = buildRequest("PATCH", `/api/courses/${course._id}`, {
@@ -245,7 +232,7 @@ describe("Courses CRUD", () => {
     });
 
     it("returns 401 for unauthenticated users", async () => {
-      const { user } = await createTestUser({ role: "teacher" });
+      const { user } = await createTestUser({ role: "user" });
       const { course } = await createTestCourse(user._id);
 
       const request = buildRequest("PATCH", `/api/courses/${course._id}`, {
@@ -262,7 +249,7 @@ describe("Courses CRUD", () => {
 
   describe("DELETE /api/courses/[id]", () => {
     it("allows the instructor to delete the course", async () => {
-      const { user, token } = await createTestUser({ role: "teacher" });
+      const { user, token } = await createTestUser({ role: "user" });
       const { course } = await createTestCourse(user._id);
 
       const request = buildRequest("DELETE", `/api/courses/${course._id}`, {
@@ -278,8 +265,8 @@ describe("Courses CRUD", () => {
     });
 
     it("returns 403 when a non-instructor tries to delete", async () => {
-      const { user: teacher } = await createTestUser({ role: "teacher" });
-      const { token: otherToken } = await createTestUser({ role: "teacher" });
+      const { user: teacher } = await createTestUser({ role: "user" });
+      const { token: otherToken } = await createTestUser({ role: "user" });
       const { course } = await createTestCourse(teacher._id);
 
       const request = buildRequest("DELETE", `/api/courses/${course._id}`, {
@@ -294,7 +281,7 @@ describe("Courses CRUD", () => {
     });
 
     it("returns 404 for non-existent course", async () => {
-      const { token } = await createTestUser({ role: "teacher" });
+      const { token } = await createTestUser({ role: "user" });
       const fakeId = "000000000000000000000000";
 
       const request = buildRequest("DELETE", `/api/courses/${fakeId}`, {

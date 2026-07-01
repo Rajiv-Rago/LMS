@@ -44,14 +44,14 @@ describe("authenticate", () => {
     jest.mocked(getToken).mockResolvedValue({
       id: "authjs-user",
       email: "authjs@example.com",
-      role: "student",
+      role: "user",
       subscriptionTier: "free",
       sessionId: "session-id",
     });
     jest.mocked(User.findById).mockResolvedValue({
       _id: { toString: () => "authjs-user" },
       email: "authjs@example.com",
-      role: "teacher",
+      role: "admin",
       subscriptionTier: "plus",
       sessionId: "session-id",
     } as never);
@@ -59,7 +59,7 @@ describe("authenticate", () => {
     await expect(authenticate(buildRequest(`${SESSION_COOKIE}=encrypted-token`))).resolves.toEqual({
       userId: "authjs-user",
       email: "authjs@example.com",
-      role: "teacher",
+      role: "admin",
       subscriptionTier: "plus",
       sessionId: "session-id",
     });
@@ -69,7 +69,7 @@ describe("authenticate", () => {
     jest.mocked(getToken).mockResolvedValue({
       id: "deleted-user",
       email: "deleted@example.com",
-      role: "student",
+      role: "user",
       subscriptionTier: "free",
       sessionId: "session-id",
     });

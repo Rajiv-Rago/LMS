@@ -54,7 +54,7 @@ beforeEach(() => {
             id: "user-1",
             name: "Student User",
             email: "student@example.com",
-            role: "student",
+            role: "user",
           },
         }),
       } as Response);

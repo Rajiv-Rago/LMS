@@ -109,7 +109,7 @@ async function parseSseResponse(response: Response) {
 
 describe("POST /api/courses/ai/[courseId]/lessons/[lessonId]/generate", () => {
   it("streams generated lesson content for course owner", async () => {
-    const { user, token } = await createTestUser({ role: "teacher" });
+    const { user, token } = await createTestUser({ role: "user" });
     const { course, lesson } = await createLessonFixture(
       user._id.toString()
     );
@@ -135,9 +135,9 @@ describe("POST /api/courses/ai/[courseId]/lessons/[lessonId]/generate", () => {
   });
 
   it("streams generated lesson content for sharedWith user", async () => {
-    const { user: owner } = await createTestUser({ role: "teacher" });
+    const { user: owner } = await createTestUser({ role: "user" });
     const { user: sharedUser, token: sharedToken } = await createTestUser({
-      role: "student",
+      role: "user",
     });
     const { course, lesson } = await createLessonFixture(
       owner._id.toString()
@@ -168,9 +168,9 @@ describe("POST /api/courses/ai/[courseId]/lessons/[lessonId]/generate", () => {
   });
 
   it("returns 403 for enrolled-only user", async () => {
-    const { user: owner } = await createTestUser({ role: "teacher" });
+    const { user: owner } = await createTestUser({ role: "user" });
     const { token: studentToken } = await createTestUser({
-      role: "student",
+      role: "user",
     });
     const { course, lesson } = await createLessonFixture(
       owner._id.toString()
@@ -194,7 +194,7 @@ describe("POST /api/courses/ai/[courseId]/lessons/[lessonId]/generate", () => {
   });
 
   it("returns 401 for unauthenticated user", async () => {
-    const { user: owner } = await createTestUser({ role: "teacher" });
+    const { user: owner } = await createTestUser({ role: "user" });
     const { course, lesson } = await createLessonFixture(
       owner._id.toString()
     );
@@ -225,7 +225,7 @@ describe("POST /api/courses/ai/[courseId]/lessons/[lessonId]/generate", () => {
       ),
     });
 
-    const { user, token } = await createTestUser({ role: "teacher" });
+    const { user, token } = await createTestUser({ role: "user" });
     const { course, lesson } = await createLessonFixture(
       user._id.toString()
     );
@@ -250,9 +250,9 @@ describe("POST /api/courses/ai/[courseId]/lessons/[lessonId]/generate", () => {
 
 describe("GET /api/courses/[id]/modules/[moduleId]/lessons/[lessonId]", () => {
   it("returns isSharedWith in permissions for shared user", async () => {
-    const { user: owner } = await createTestUser({ role: "teacher" });
+    const { user: owner } = await createTestUser({ role: "user" });
     const { user: sharedUser, token: sharedToken } = await createTestUser({
-      role: "student",
+      role: "user",
     });
     const { course, module, lesson } = await createLessonFixture(
       owner._id.toString()

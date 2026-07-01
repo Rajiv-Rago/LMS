@@ -11,7 +11,7 @@ export interface OAuthAppUser {
   id: string;
   email: string;
   name: string;
-  role: "student" | "teacher" | "admin";
+  role: "user" | "admin";
   subscriptionTier: "free" | "plus" | "admin";
   sessionId: string;
 }
@@ -113,7 +113,7 @@ export async function resolveOAuthSignIn({
   const user = await User.create({
     email: trustedEmail.email,
     name: getProfileName(profile) || trustedEmail.email.split("@")[0],
-    role: "student",
+    role: "user",
     subscriptionTier: "free",
   });
 
@@ -284,7 +284,7 @@ async function buildOAuthAppUser(user: {
   _id: mongoose.Types.ObjectId;
   email: string;
   name: string;
-  role: "student" | "teacher" | "admin";
+  role: "user" | "admin";
   subscriptionTier: "free" | "plus" | "admin";
 }): Promise<OAuthAppUser> {
   const sessionId = await createAuthSession(user._id.toString(), {

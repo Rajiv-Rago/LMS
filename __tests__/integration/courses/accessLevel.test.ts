@@ -28,13 +28,13 @@ afterAll(async () => {
 describe("Course accessLevel", () => {
   describe("Schema", () => {
     it("defaults accessLevel to restricted", async () => {
-      const { user: teacher } = await createTestUser({ role: "teacher" });
+      const { user: teacher } = await createTestUser({ role: "user" });
       const { course } = await createTestCourse(teacher._id);
       expect(course.accessLevel).toBe("restricted");
     });
 
     it("accepts published, unlisted, and restricted values", async () => {
-      const { user: teacher } = await createTestUser({ role: "teacher" });
+      const { user: teacher } = await createTestUser({ role: "user" });
 
       const { course: c1 } = await createTestCourse(teacher._id, { accessLevel: "published" });
       expect(c1.accessLevel).toBe("published");
@@ -47,13 +47,13 @@ describe("Course accessLevel", () => {
     });
 
     it("has enrolledCount field defaulting to 0", async () => {
-      const { user: teacher } = await createTestUser({ role: "teacher" });
+      const { user: teacher } = await createTestUser({ role: "user" });
       const { course } = await createTestCourse(teacher._id);
       expect(course.enrolledCount).toBe(0);
     });
 
     it("isPublished virtual returns true for non-restricted courses", async () => {
-      const { user: teacher } = await createTestUser({ role: "teacher" });
+      const { user: teacher } = await createTestUser({ role: "user" });
 
       const { course: published } = await createTestCourse(teacher._id, { accessLevel: "published" });
       expect(published.isPublished).toBe(true);
@@ -68,7 +68,7 @@ describe("Course accessLevel", () => {
 
   describe("Permissions with null user", () => {
     it("returns canView=true for published course with null user", async () => {
-      const { user: teacher } = await createTestUser({ role: "teacher" });
+      const { user: teacher } = await createTestUser({ role: "user" });
       const { course } = await createTestCourse(teacher._id, { accessLevel: "published" });
       const perms = await getCoursePermissions(course, null);
       expect(perms.canView).toBe(true);
@@ -80,14 +80,14 @@ describe("Course accessLevel", () => {
     });
 
     it("returns canView=true for unlisted course with null user", async () => {
-      const { user: teacher } = await createTestUser({ role: "teacher" });
+      const { user: teacher } = await createTestUser({ role: "user" });
       const { course } = await createTestCourse(teacher._id, { accessLevel: "unlisted" });
       const perms = await getCoursePermissions(course, null);
       expect(perms.canView).toBe(true);
     });
 
     it("returns canView=false for restricted course with null user", async () => {
-      const { user: teacher } = await createTestUser({ role: "teacher" });
+      const { user: teacher } = await createTestUser({ role: "user" });
       const { course } = await createTestCourse(teacher._id, { accessLevel: "restricted" });
       const perms = await getCoursePermissions(course, null);
       expect(perms.canView).toBe(false);
@@ -96,8 +96,8 @@ describe("Course accessLevel", () => {
 
   describe("Permissions with authenticated user", () => {
     it("allows any authenticated user to view published courses", async () => {
-      const { user: teacher } = await createTestUser({ role: "teacher" });
-      const { user: student } = await createTestUser({ role: "student" });
+      const { user: teacher } = await createTestUser({ role: "user" });
+      const { user: student } = await createTestUser({ role: "user" });
       const { course } = await createTestCourse(teacher._id, { accessLevel: "published" });
       const perms = await getCoursePermissions(course, {
         userId: student._id.toString(),
@@ -109,8 +109,8 @@ describe("Course accessLevel", () => {
     });
 
     it("allows any authenticated user to view unlisted courses", async () => {
-      const { user: teacher } = await createTestUser({ role: "teacher" });
-      const { user: student } = await createTestUser({ role: "student" });
+      const { user: teacher } = await createTestUser({ role: "user" });
+      const { user: student } = await createTestUser({ role: "user" });
       const { course } = await createTestCourse(teacher._id, { accessLevel: "unlisted" });
       const perms = await getCoursePermissions(course, {
         userId: student._id.toString(),
@@ -124,8 +124,8 @@ describe("Course accessLevel", () => {
 
   describe("Enroll route with accessLevel", () => {
     it("allows enrollment in published courses", async () => {
-      const { user: teacher } = await createTestUser({ role: "teacher" });
-      const { token: studentToken } = await createTestUser({ role: "student" });
+      const { user: teacher } = await createTestUser({ role: "user" });
+      const { token: studentToken } = await createTestUser({ role: "user" });
       const { course } = await createTestCourse(teacher._id, { accessLevel: "published" });
 
       const request = buildRequest("POST", `/api/courses/${course._id}/enroll`, { token: studentToken });
@@ -135,8 +135,8 @@ describe("Course accessLevel", () => {
     });
 
     it("allows enrollment in unlisted courses", async () => {
-      const { user: teacher } = await createTestUser({ role: "teacher" });
-      const { token: studentToken } = await createTestUser({ role: "student" });
+      const { user: teacher } = await createTestUser({ role: "user" });
+      const { token: studentToken } = await createTestUser({ role: "user" });
       const { course } = await createTestCourse(teacher._id, { accessLevel: "unlisted" });
 
       const request = buildRequest("POST", `/api/courses/${course._id}/enroll`, { token: studentToken });
@@ -146,8 +146,8 @@ describe("Course accessLevel", () => {
     });
 
     it("blocks enrollment in restricted courses", async () => {
-      const { user: teacher } = await createTestUser({ role: "teacher" });
-      const { token: studentToken } = await createTestUser({ role: "student" });
+      const { user: teacher } = await createTestUser({ role: "user" });
+      const { token: studentToken } = await createTestUser({ role: "user" });
       const { course } = await createTestCourse(teacher._id, { accessLevel: "restricted" });
 
       const request = buildRequest("POST", `/api/courses/${course._id}/enroll`, { token: studentToken });
@@ -157,8 +157,8 @@ describe("Course accessLevel", () => {
     });
 
     it("increments enrolledCount on enrollment", async () => {
-      const { user: teacher } = await createTestUser({ role: "teacher" });
-      const { token: studentToken } = await createTestUser({ role: "student" });
+      const { user: teacher } = await createTestUser({ role: "user" });
+      const { token: studentToken } = await createTestUser({ role: "user" });
       const { course } = await createTestCourse(teacher._id, { accessLevel: "published" });
 
       const request = buildRequest("POST", `/api/courses/${course._id}/enroll`, { token: studentToken });
@@ -169,8 +169,8 @@ describe("Course accessLevel", () => {
     });
 
     it("decrements enrolledCount on unenroll", async () => {
-      const { user: teacher } = await createTestUser({ role: "teacher" });
-      const { user: student, token: studentToken } = await createTestUser({ role: "student" });
+      const { user: teacher } = await createTestUser({ role: "user" });
+      const { user: student, token: studentToken } = await createTestUser({ role: "user" });
       const { course } = await createTestCourse(teacher._id, { accessLevel: "published" });
 
       await createTestEnrollment(course._id, student._id);
@@ -186,7 +186,7 @@ describe("Course accessLevel", () => {
 
   describe("GET /api/courses/[id] with accessLevel", () => {
     it("returns published course for unauthenticated user", async () => {
-      const { user: teacher } = await createTestUser({ role: "teacher" });
+      const { user: teacher } = await createTestUser({ role: "user" });
       const { course } = await createTestCourse(teacher._id, { accessLevel: "published" });
 
       const request = buildRequest("GET", `/api/courses/${course._id}`);
@@ -198,7 +198,7 @@ describe("Course accessLevel", () => {
     });
 
     it("returns unlisted course for unauthenticated user", async () => {
-      const { user: teacher } = await createTestUser({ role: "teacher" });
+      const { user: teacher } = await createTestUser({ role: "user" });
       const { course } = await createTestCourse(teacher._id, { accessLevel: "unlisted" });
 
       const request = buildRequest("GET", `/api/courses/${course._id}`);
@@ -208,7 +208,7 @@ describe("Course accessLevel", () => {
     });
 
     it("returns 404 for restricted course to unauthenticated user", async () => {
-      const { user: teacher } = await createTestUser({ role: "teacher" });
+      const { user: teacher } = await createTestUser({ role: "user" });
       const { course } = await createTestCourse(teacher._id, { accessLevel: "restricted" });
 
       const request = buildRequest("GET", `/api/courses/${course._id}`);
@@ -218,7 +218,7 @@ describe("Course accessLevel", () => {
     });
 
     it("uses accessLevel for canEnroll check", async () => {
-      const { user: teacher } = await createTestUser({ role: "teacher" });
+      const { user: teacher } = await createTestUser({ role: "user" });
       const { course } = await createTestCourse(teacher._id, { accessLevel: "published" });
 
       const request = buildRequest("GET", `/api/courses/${course._id}`);
@@ -230,7 +230,7 @@ describe("Course accessLevel", () => {
 
   describe("Fixture support", () => {
     it("createTestCourse accepts accessLevel override", async () => {
-      const { user: teacher } = await createTestUser({ role: "teacher" });
+      const { user: teacher } = await createTestUser({ role: "user" });
       const { course } = await createTestCourse(teacher._id, { accessLevel: "published" });
       expect(course.accessLevel).toBe("published");
     });

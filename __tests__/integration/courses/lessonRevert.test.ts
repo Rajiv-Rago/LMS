@@ -83,7 +83,7 @@ describe("POST /api/courses/ai/[courseId]/lessons/[lessonId]/revert", () => {
   });
 
   it("swaps content and previousContent for owner", async () => {
-    const { user, token } = await createTestUser({ role: "teacher" });
+    const { user, token } = await createTestUser({ role: "user" });
     const { course, lesson } = await createLessonWithPreviousContent(
       user._id.toString()
     );
@@ -116,9 +116,9 @@ describe("POST /api/courses/ai/[courseId]/lessons/[lessonId]/revert", () => {
   });
 
   it("swaps content for sharedWith user", async () => {
-    const { user: owner } = await createTestUser({ role: "teacher" });
+    const { user: owner } = await createTestUser({ role: "user" });
     const { user: sharedUser, token: sharedToken } = await createTestUser({
-      role: "student",
+      role: "user",
     });
     const { course, lesson } = await createLessonWithPreviousContent(
       owner._id.toString()
@@ -148,9 +148,9 @@ describe("POST /api/courses/ai/[courseId]/lessons/[lessonId]/revert", () => {
   });
 
   it("returns 403 for enrolled-only user", async () => {
-    const { user: owner } = await createTestUser({ role: "teacher" });
+    const { user: owner } = await createTestUser({ role: "user" });
     const { token: studentToken } = await createTestUser({
-      role: "student",
+      role: "user",
     });
     const { course, lesson } = await createLessonWithPreviousContent(
       owner._id.toString()
@@ -174,7 +174,7 @@ describe("POST /api/courses/ai/[courseId]/lessons/[lessonId]/revert", () => {
   });
 
   it("returns 401 for unauthenticated user", async () => {
-    const { user: owner } = await createTestUser({ role: "teacher" });
+    const { user: owner } = await createTestUser({ role: "user" });
     const { course, lesson } = await createLessonWithPreviousContent(
       owner._id.toString()
     );
@@ -197,7 +197,7 @@ describe("POST /api/courses/ai/[courseId]/lessons/[lessonId]/revert", () => {
   });
 
   it("returns 404 when lesson has no previousContent", async () => {
-    const { user, token } = await createTestUser({ role: "teacher" });
+    const { user, token } = await createTestUser({ role: "user" });
     const { course, lesson } = await createLessonWithoutPreviousContent(
       user._id.toString()
     );
@@ -229,7 +229,7 @@ describe("GET /api/ai/credits", () => {
   });
 
   it("returns remaining credits for authenticated user", async () => {
-    const { token } = await createTestUser({ role: "student" });
+    const { token } = await createTestUser({ role: "user" });
 
     const request = buildRequest("GET", "/api/ai/credits", { token });
     const response = await creditsGET(request);

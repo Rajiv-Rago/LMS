@@ -9,7 +9,7 @@ interface User {
   id: string;
   name: string;
   email: string;
-  role: "student" | "teacher" | "admin";
+  role: "user" | "admin";
   createdAt: string;
 }
 

@@ -6,7 +6,7 @@ export interface IUser extends Document {
   email: string;
   name: string;
   password?: string;
-  role: "student" | "teacher" | "admin";
+  role: "user" | "admin";
   subscriptionTier: "free" | "plus" | "admin";
   resetPasswordToken?: string;
   resetPasswordExpires?: Date;
@@ -56,10 +56,10 @@ const userSchema = new mongoose.Schema<IUser, UserModel, IUserMethods>(
     role: {
       type: String,
       enum: {
-        values: ["student", "teacher", "admin"],
-        message: "Role must be student, teacher, or admin",
+        values: ["user", "admin"],
+        message: "Role must be user or admin",
       },
-      default: "student",
+      default: "user",
     },
     subscriptionTier: {
       type: String,

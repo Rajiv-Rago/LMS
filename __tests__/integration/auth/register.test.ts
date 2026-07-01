@@ -34,7 +34,7 @@ describe("POST /api/auth/register", () => {
     expect(status).toBe(201);
     expect(data.user.email).toBe("new@example.com");
     expect(data.user.name).toBe("New User");
-    expect(data.user.role).toBe("student");
+    expect(data.user.role).toBe("user");
     expect(data.message).toBe("Registration successful");
   });
 
@@ -51,7 +51,7 @@ describe("POST /api/auth/register", () => {
 
   it("ignores role field in registration body", async () => {
     const request = buildRequest("POST", "/api/auth/register", {
-      body: { ...validBody, email: "teacher-attempt@example.com", role: "teacher" },
+      body: { ...validBody, email: "admin-attempt@example.com", role: "admin" },
     });
     const response = await POST(request);
     const { status, data } = await parseResponse<{
@@ -59,7 +59,7 @@ describe("POST /api/auth/register", () => {
     }>(response);
 
     expect(status).toBe(201);
-    expect(data.user.role).toBe("student");
+    expect(data.user.role).toBe("user");
   });
 
   it("returns 409 for duplicate email", async () => {
@@ -145,6 +145,6 @@ describe("POST /api/auth/register", () => {
     }>(response);
 
     expect(status).toBe(201);
-    expect(data.user.role).toBe("student");
+    expect(data.user.role).toBe("user");
   });
 });

@@ -17,7 +17,7 @@ describe("authCallbacks", () => {
         id: "user-id",
         email: "user@example.com",
         name: "User",
-        role: "teacher",
+        role: "user",
         subscriptionTier: "plus",
         sessionId: "session-id",
       },
@@ -28,7 +28,7 @@ describe("authCallbacks", () => {
 
     expect(token).toMatchObject({
       id: "user-id",
-      role: "teacher",
+      role: "user",
       subscriptionTier: "plus",
       sessionId: "session-id",
     });
@@ -46,7 +46,7 @@ describe("authCallbacks", () => {
       },
       token: {
         id: "user-id",
-        role: "teacher",
+        role: "user",
         subscriptionTier: "plus",
       },
       user: undefined,
@@ -56,7 +56,7 @@ describe("authCallbacks", () => {
 
     expect(session.user).toMatchObject({
       id: "user-id",
-      role: "teacher",
+      role: "user",
       subscriptionTier: "plus",
     });
   });

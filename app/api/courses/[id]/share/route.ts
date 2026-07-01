@@ -48,7 +48,7 @@ export async function GET(
 
     return NextResponse.json({
       sharedWith: course.sharedWith || [],
-      maxShares: user.role === "student" ? MAX_SHARES_STUDENT : null,
+      maxShares: user.role !== "admin" ? MAX_SHARES_STUDENT : null,
     });
   } catch (error) {
     captureException(error, { operation: "Get course shares error" });
@@ -102,7 +102,7 @@ export async function POST(
     }
 
     if (
-      user.role === "student" &&
+      user.role !== "admin" &&
       (course.sharedWith?.length || 0) >= MAX_SHARES_STUDENT
     ) {
       return NextResponse.json(

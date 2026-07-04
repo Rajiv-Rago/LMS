@@ -514,7 +514,7 @@ export default function LessonDetailPage({
 
   if (loading) {
     return (
-      <div className="max-w-6xl mx-auto space-y-6">
+      <div className="max-w-7xl mx-auto space-y-6">
         <Skeleton className="h-4 w-24" />
         <div className="flex flex-col xl:flex-row gap-6">
           <div className="hidden xl:block w-52 shrink-0 rounded-lg border border-zinc-200 dark:border-zinc-800 p-4 space-y-2">
@@ -570,7 +570,7 @@ export default function LessonDetailPage({
   };
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
+    <div className="max-w-7xl mx-auto space-y-6">
       <div>
         <Link
           href={`/courses/${id}/overview`}

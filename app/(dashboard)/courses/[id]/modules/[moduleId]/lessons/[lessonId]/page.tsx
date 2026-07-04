@@ -1,16 +1,17 @@
 "use client";
 
-import { useEffect, useState, useRef, useCallback, use } from "react";
+import { useEffect, useState, useRef, useCallback, useMemo, use } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ChevronDown } from "lucide-react";
-import MarkdownContent from "@/components/ui/MarkdownContent";
+import { ChevronDown, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import MarkdownContent, { slugify } from "@/components/ui/MarkdownContent";
 import YouTubeVideoPicker from "@/components/lesson/YouTubeVideoPicker";
 import ContentGenerationSkeleton from "@/components/lesson/ContentGenerationSkeleton";
 import FeedbackSection from "@/components/lesson/FeedbackSection";
 import Button from "@/components/ui/Button";
 import { Skeleton, SkeletonText } from "@/components/ui/Skeleton";
 import { useToast } from "@/lib/hooks/useToast";
+import { useBreadcrumbs } from "@/components/nav/breadcrumbs";
 
 interface YouTubeMetadata {
   videoId: string;
@@ -68,6 +69,9 @@ export default function LessonDetailPage({
   const [editing, setEditing] = useState(false);
   const [modules, setModules] = useState<ModuleData[]>([]);
   const [moduleNavOpen, setModuleNavOpen] = useState(false);
+  const [moduleNavHidden, setModuleNavHidden] = useState(false);
+  const [moduleNavWidth, setModuleNavWidth] = useState(208);
+  const [activeHeading, setActiveHeading] = useState("");
   const [formData, setFormData] = useState({
     title: "",
     contentType: "text" as "text" | "video" | "file",
@@ -441,12 +445,79 @@ export default function LessonDetailPage({
 
   const currentModule = modules.find((m) => m._id === moduleId);
 
+  useBreadcrumbs(
+    currentModule && lesson
+      ? [
+          { label: currentModule.title, href: `/courses/${id}/overview` },
+          { label: lesson.title },
+        ]
+      : []
+  );
+
+  // "On this page" TOC: parse h2/h3 from the raw markdown; ids match the
+  // slugified headings MarkdownContent renders.
+  const tocItems = useMemo(() => {
+    const items: { id: string; text: string; level: number }[] = [];
+    let inCodeBlock = false;
+    for (const line of (lesson?.content || "").split("\n")) {
+      if (/^\s*```/.test(line)) {
+        inCodeBlock = !inCodeBlock;
+        continue;
+      }
+      if (inCodeBlock) continue;
+      const match = /^(#{2,3})\s+(.+)/.exec(line);
+      if (!match) continue;
+      const text = match[2]
+        .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
+        .replace(/[*_`~]/g, "")
+        .trim();
+      items.push({ id: slugify(text), text, level: match[1].length });
+    }
+    return items;
+  }, [lesson?.content]);
+
+  // Scrollspy: highlight the TOC entry whose heading is near the viewport top
+  useEffect(() => {
+    if (!tocItems.length || !("IntersectionObserver" in window)) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            setActiveHeading(entry.target.id);
+            break;
+          }
+        }
+      },
+      { rootMargin: "0% 0% -80% 0%" }
+    );
+    for (const item of tocItems) {
+      const el = document.getElementById(item.id);
+      if (el) observer.observe(el);
+    }
+    return () => observer.disconnect();
+  }, [tocItems]);
+
+  const startModuleNavResize = (e: React.PointerEvent) => {
+    e.preventDefault();
+    const left = (
+      e.currentTarget.parentElement as HTMLElement
+    ).getBoundingClientRect().left;
+    const move = (ev: PointerEvent) =>
+      setModuleNavWidth(Math.min(360, Math.max(160, ev.clientX - left)));
+    const up = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  };
+
   if (loading) {
     return (
       <div className="max-w-6xl mx-auto space-y-6">
         <Skeleton className="h-4 w-24" />
-        <div className="flex flex-col lg:flex-row gap-6">
-          <div className="hidden lg:block w-52 shrink-0 rounded-lg border border-zinc-200 dark:border-zinc-800 p-4 space-y-2">
+        <div className="flex flex-col xl:flex-row gap-6">
+          <div className="hidden xl:block w-52 shrink-0 rounded-lg border border-zinc-200 dark:border-zinc-800 p-4 space-y-2">
             <Skeleton className="h-6 w-32" />
             {Array.from({ length: 6 }).map((_, i) => (
               <Skeleton key={i} className="h-8 w-full" />
@@ -509,10 +580,10 @@ export default function LessonDetailPage({
         </Link>
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-6">
-        {/* Module sidebar - mobile collapsed */}
+      <div className="flex flex-col xl:flex-row gap-6">
+        {/* Module sidebar - collapsed dropdown (mobile & narrow desktop) */}
         {currentModule && (
-          <div className="lg:hidden">
+          <div className="xl:hidden">
             <button
               onClick={() => setModuleNavOpen(!moduleNavOpen)}
               className="w-full flex items-center justify-between min-h-[44px] px-4 py-2 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-sm font-medium text-zinc-900 dark:text-white"
@@ -533,14 +604,45 @@ export default function LessonDetailPage({
         )}
 
         {/* Module sidebar - desktop */}
-        {currentModule && (
-          <div className="hidden lg:block w-52 shrink-0">
-            <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 space-y-3 sticky top-6">
-              <h3 className="text-sm font-semibold text-zinc-900 dark:text-white truncate">
-                {currentModule.title}
-              </h3>
+        {currentModule && !moduleNavHidden && (
+          <div
+            className="hidden xl:block shrink-0 relative"
+            style={{ width: moduleNavWidth }}
+          >
+            <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 space-y-3 sticky top-16">
+              <div className="flex items-center justify-between gap-2">
+                <h3 className="text-sm font-semibold text-zinc-900 dark:text-white truncate">
+                  {currentModule.title}
+                </h3>
+                <button
+                  onClick={() => setModuleNavHidden(true)}
+                  className="shrink-0 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
+                  aria-label="Hide lesson list"
+                >
+                  <PanelLeftClose className="w-4 h-4" />
+                </button>
+              </div>
               {renderModuleLessonList()}
             </div>
+            {/* Resize handle */}
+            <div
+              onPointerDown={startModuleNavResize}
+              className="absolute inset-y-0 -right-2 w-2 cursor-col-resize hover:bg-indigo-400/40"
+              aria-hidden="true"
+            />
+          </div>
+        )}
+
+        {/* Reopen button when lesson list is hidden on desktop */}
+        {currentModule && moduleNavHidden && (
+          <div className="hidden xl:block shrink-0">
+            <button
+              onClick={() => setModuleNavHidden(false)}
+              className="sticky top-16 flex items-center justify-center h-9 w-9 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
+              aria-label="Show lesson list"
+            >
+              <PanelLeftOpen className="w-4 h-4" />
+            </button>
           </div>
         )}
 
@@ -675,7 +777,7 @@ export default function LessonDetailPage({
                     </p>
                   </div>
                   {permissions?.canEdit && (
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-2 shrink-0">
                       <Button variant="secondary" size="sm" onClick={handlePublish}>
                         {lesson.isPublished ? "Unpublish" : "Publish"}
                       </Button>
@@ -920,6 +1022,38 @@ export default function LessonDetailPage({
             )}
           </div>
         </div>
+
+        {/* "On this page" TOC - wide screens only */}
+        {!editing && !generating && lesson.content && tocItems.length > 1 && (
+          <nav
+            aria-label="On this page"
+            className="hidden 2xl:block w-56 shrink-0"
+          >
+            <div className="sticky top-16">
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400 mb-2">
+                On this page
+              </h3>
+              <ul className="border-l border-zinc-200 dark:border-zinc-800">
+                {tocItems.map((item) => (
+                  <li key={item.id}>
+                    <a
+                      href={`#${item.id}`}
+                      className={`block py-1 text-sm border-l-2 -ml-px ${
+                        item.level === 3 ? "pl-6" : "pl-3"
+                      } ${
+                        activeHeading === item.id
+                          ? "border-indigo-600 text-indigo-600 dark:text-indigo-400 font-medium"
+                          : "border-transparent text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"
+                      }`}
+                    >
+                      {item.text}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </nav>
+        )}
       </div>
     </div>
   );

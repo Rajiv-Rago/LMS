@@ -36,7 +36,8 @@ function LoginForm() {
         redirectTo,
       });
 
-      if (!result?.ok) {
+      // Auth.js v5 returns ok:true even on bad credentials; the failure is in `error`.
+      if (result?.error || !result?.ok) {
         throw new Error("Invalid email or password");
       }
 

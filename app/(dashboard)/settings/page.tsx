@@ -28,7 +28,6 @@ interface LinkedProvider {
 const OAUTH_PROVIDERS = [
   { provider: "google", displayName: "Google" },
   { provider: "github", displayName: "GitHub" },
-  { provider: "facebook", displayName: "Facebook" },
 ] as const;
 
 export default function SettingsPage() {

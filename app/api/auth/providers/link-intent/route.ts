@@ -9,7 +9,7 @@ import {
   oauthLinkIntentCookieOptions,
 } from "@/lib/auth/oauthLinkIntent";
 
-const PROVIDERS = new Set<OAuthProvider>(["google", "github", "facebook"]);
+const PROVIDERS = new Set<OAuthProvider>(["google", "github"]);
 
 export async function POST(request: NextRequest) {
   try {

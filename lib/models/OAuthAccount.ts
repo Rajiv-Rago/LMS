@@ -1,6 +1,6 @@
 import mongoose, { Document, Model } from "mongoose";
 
-export type OAuthProvider = "google" | "github" | "facebook";
+export type OAuthProvider = "google" | "github";
 
 export interface IOAuthAccount extends Document {
   _id: mongoose.Types.ObjectId;
@@ -23,7 +23,7 @@ const oauthAccountSchema = new mongoose.Schema<IOAuthAccount, OAuthAccountModel>
   {
     provider: {
       type: String,
-      enum: ["google", "github", "facebook"],
+      enum: ["google", "github"],
       required: true,
     },
     providerAccountId: {

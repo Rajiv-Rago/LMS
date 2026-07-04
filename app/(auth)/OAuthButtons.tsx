@@ -10,7 +10,6 @@ interface OAuthButtonsProps {
 const providers = [
   { id: "google", label: "Google" },
   { id: "github", label: "GitHub" },
-  { id: "facebook", label: "Facebook" },
 ] as const;
 
 export default function OAuthButtons({ redirectTo }: OAuthButtonsProps) {

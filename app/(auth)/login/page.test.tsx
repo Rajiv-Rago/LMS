@@ -94,9 +94,10 @@ describe("LoginPage", () => {
   });
 
   it("shows a generic error for failed credentials", async () => {
+    // Auth.js v5 reports credential failures with ok:true and error set.
     jest.mocked(signIn).mockResolvedValue({
-      ok: false,
-      status: 401,
+      ok: true,
+      status: 200,
       error: "CredentialsSignin",
       url: null,
     });

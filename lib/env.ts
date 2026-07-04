@@ -8,8 +8,6 @@ const envSchema = z.object({
   AUTH_GOOGLE_SECRET: z.string().optional(),
   AUTH_GITHUB_ID: z.string().optional(),
   AUTH_GITHUB_SECRET: z.string().optional(),
-  AUTH_FACEBOOK_ID: z.string().optional(),
-  AUTH_FACEBOOK_SECRET: z.string().optional(),
 
   // Optional with defaults
   NODE_ENV: z

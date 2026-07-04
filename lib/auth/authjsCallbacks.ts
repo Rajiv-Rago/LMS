@@ -61,5 +61,5 @@ export const authCallbacks = {
 } satisfies NextAuthConfig["callbacks"];
 
 function isOAuthProvider(provider: string): provider is OAuthProvider {
-  return provider === "google" || provider === "github" || provider === "facebook";
+  return provider === "google" || provider === "github";
 }

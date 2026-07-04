@@ -7,7 +7,6 @@ import { captureException } from "@/lib/logger";
 const PROVIDER_DISPLAY_NAMES: Record<OAuthProvider, string> = {
   google: "Google",
   github: "GitHub",
-  facebook: "Facebook",
 };
 
 export async function GET(request: NextRequest) {

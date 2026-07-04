@@ -70,9 +70,9 @@ describe("RegisterPage", () => {
 
   it("starts OAuth sign-in from registration", () => {
     render(<RegisterPage />);
-    fireEvent.click(screen.getByRole("button", { name: /continue with facebook/i }));
+    fireEvent.click(screen.getByRole("button", { name: /continue with github/i }));
 
-    expect(signIn).toHaveBeenCalledWith("facebook", {
+    expect(signIn).toHaveBeenCalledWith("github", {
       redirectTo: "/dashboard",
     });
   });

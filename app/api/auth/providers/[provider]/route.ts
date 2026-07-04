@@ -6,7 +6,7 @@ import OAuthAccount, { OAuthProvider } from "@/lib/models/OAuthAccount";
 import { logAuditEvent } from "@/lib/auth/auditLog";
 import { captureException } from "@/lib/logger";
 
-const PROVIDERS = new Set<OAuthProvider>(["google", "github", "facebook"]);
+const PROVIDERS = new Set<OAuthProvider>(["google", "github"]);
 
 export async function DELETE(
   request: NextRequest,

@@ -27,7 +27,7 @@ interface TrustedOAuthEmail {
   verified: boolean;
 }
 
-const SUPPORTED_PROVIDERS = new Set(["google", "github", "facebook"]);
+const SUPPORTED_PROVIDERS = new Set(["google", "github"]);
 const SYSTEM_USER_ID = new mongoose.Types.ObjectId("000000000000000000000000");
 
 export async function resolveOAuthSignIn({

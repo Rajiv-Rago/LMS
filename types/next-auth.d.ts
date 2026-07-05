@@ -1,6 +1,6 @@
 import type { DefaultSession } from "next-auth";
 
-type UserRole = "student" | "teacher" | "admin";
+type UserRole = "user" | "admin";
 type SubscriptionTier = "free" | "plus" | "admin";
 
 declare module "next-auth" {

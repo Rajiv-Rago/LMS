@@ -445,6 +445,17 @@ export default function LessonDetailPage({
 
   const currentModule = modules.find((m) => m._id === moduleId);
 
+  // Prev/next across the whole course, in module order
+  const flatLessons = modules.flatMap((m) =>
+    m.lessons.map((l) => ({ ...l, moduleId: m._id }))
+  );
+  const lessonIndex = flatLessons.findIndex((l) => l._id === lessonId);
+  const prevLesson = lessonIndex > 0 ? flatLessons[lessonIndex - 1] : null;
+  const nextLesson =
+    lessonIndex >= 0 && lessonIndex < flatLessons.length - 1
+      ? flatLessons[lessonIndex + 1]
+      : null;
+
   useBreadcrumbs(
     currentModule && lesson
       ? [
@@ -1021,6 +1032,40 @@ export default function LessonDetailPage({
               </>
             )}
           </div>
+
+          {/* Prev/next lesson navigation */}
+          {!editing && (prevLesson || nextLesson) && (
+            <div className="mt-4 flex justify-between gap-4">
+              {prevLesson ? (
+                <Link
+                  href={`/courses/${id}/modules/${prevLesson.moduleId}/lessons/${prevLesson._id}`}
+                  className="group max-w-[48%] rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 py-3 hover:border-indigo-300 dark:hover:border-indigo-700"
+                >
+                  <span className="block text-xs text-zinc-500 dark:text-zinc-400">
+                    &larr; Previous
+                  </span>
+                  <span className="block text-sm font-medium text-zinc-900 dark:text-white truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400">
+                    {prevLesson.title}
+                  </span>
+                </Link>
+              ) : (
+                <span />
+              )}
+              {nextLesson && (
+                <Link
+                  href={`/courses/${id}/modules/${nextLesson.moduleId}/lessons/${nextLesson._id}`}
+                  className="group max-w-[48%] rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 py-3 text-right hover:border-indigo-300 dark:hover:border-indigo-700"
+                >
+                  <span className="block text-xs text-zinc-500 dark:text-zinc-400">
+                    Next &rarr;
+                  </span>
+                  <span className="block text-sm font-medium text-zinc-900 dark:text-white truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400">
+                    {nextLesson.title}
+                  </span>
+                </Link>
+              )}
+            </div>
+          )}
         </div>
 
         {/* "On this page" TOC - wide screens only */}

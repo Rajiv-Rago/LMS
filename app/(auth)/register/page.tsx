@@ -19,6 +19,7 @@ function RegisterForm() {
     password: "",
     confirmPassword: "",
   });
+  const [acceptTerms, setAcceptTerms] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const redirectTo = enrollCourseId
@@ -39,6 +40,11 @@ function RegisterForm() {
       return;
     }
 
+    if (!acceptTerms) {
+      setError("You must accept the Terms of Service and Privacy Policy");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -49,6 +55,7 @@ function RegisterForm() {
           name: formData.name,
           email: formData.email,
           password: formData.password,
+          acceptTerms,
         }),
       });
 
@@ -214,6 +221,39 @@ function RegisterForm() {
               placeholder="Confirm your password"
             />
           </div>
+        </div>
+
+        <div className="flex items-start gap-2">
+          <input
+            id="acceptTerms"
+            name="acceptTerms"
+            type="checkbox"
+            required
+            checked={acceptTerms}
+            onChange={(e) => setAcceptTerms(e.target.checked)}
+            className="mt-0.5 h-4 w-4 rounded border-zinc-300 dark:border-zinc-700 text-indigo-600 focus:ring-indigo-500"
+          />
+          <label
+            htmlFor="acceptTerms"
+            className="text-sm text-zinc-700 dark:text-zinc-300"
+          >
+            I agree to the{" "}
+            <Link
+              href="/terms"
+              target="_blank"
+              className="font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400"
+            >
+              Terms of Service
+            </Link>{" "}
+            and{" "}
+            <Link
+              href="/privacy"
+              target="_blank"
+              className="font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400"
+            >
+              Privacy Policy
+            </Link>
+          </label>
         </div>
 
         <Button

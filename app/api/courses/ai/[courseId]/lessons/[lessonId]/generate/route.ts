@@ -3,7 +3,7 @@ import { after } from "next/server";
 import mongoose from "mongoose";
 import { dbConnect } from "@/lib/db";
 import { Course, Module, Lesson } from "@/lib/models";
-import { authenticate, requireCsrf } from "@/lib/auth";
+import { authenticate, requireCsrf, requireVerifiedEmail } from "@/lib/auth";
 import { getCoursePermissions } from "@/lib/auth/coursePermissions";
 import { AIProviderName, AITier } from "@/lib/ai/types";
 import { resolveProvider } from "@/lib/ai/utils/providerResolver";
@@ -38,6 +38,9 @@ export async function POST(
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    const verifyError = requireVerifiedEmail(user);
+    if (verifyError) return verifyError;
 
     const subTier = user.role === "admin" ? "admin" as const : user.subscriptionTier;
     const rateCheck = await enforceAIRateLimit(user.userId, subTier, "credits");

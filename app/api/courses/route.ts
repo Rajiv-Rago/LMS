@@ -32,6 +32,7 @@ export async function GET(request: NextRequest) {
 
     if (isCatalog) {
       query.accessLevel = "published";
+      query.moderationRemovedAt = null;
       sort = { enrolledCount: -1, createdAt: -1 };
 
       if (user) {
@@ -57,13 +58,13 @@ export async function GET(request: NextRequest) {
               { owner: user.userId },
               { _id: { $in: enrolledCourseIds } },
               { sharedWith: user.userId },
-              { accessLevel: { $in: ["published"] }, owner: { $exists: false } },
+              { accessLevel: { $in: ["published"] }, owner: { $exists: false }, moderationRemovedAt: null },
             ],
           };
         }
       }
     } else {
-      query = { accessLevel: { $in: ["published"] } };
+      query = { accessLevel: { $in: ["published"] }, moderationRemovedAt: null };
     }
 
     if (search) {

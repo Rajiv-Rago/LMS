@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import mongoose from "mongoose";
 import { dbConnect } from "@/lib/db";
 import { Course, Module, Lesson } from "@/lib/models";
-import { authenticate, requireCsrf } from "@/lib/auth";
+import { authenticate, requireCsrf, requireVerifiedEmail } from "@/lib/auth";
 import { AIProviderName, AITier } from "@/lib/ai/types";
 import { resolveProvider } from "@/lib/ai/utils/providerResolver";
 import { getUserAIPreferences } from "@/lib/ai/utils/userPreferences";
@@ -24,6 +24,9 @@ export async function POST(
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    const verifyError = requireVerifiedEmail(user);
+    if (verifyError) return verifyError;
 
     const { courseId, moduleId } = await params;
 

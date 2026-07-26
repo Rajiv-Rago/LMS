@@ -53,6 +53,7 @@ describe("authenticate", () => {
       email: "authjs@example.com",
       role: "admin",
       subscriptionTier: "plus",
+      emailVerifiedAt: new Date(),
       sessionId: "session-id",
     } as never);
 
@@ -61,6 +62,7 @@ describe("authenticate", () => {
       email: "authjs@example.com",
       role: "admin",
       subscriptionTier: "plus",
+      emailVerified: true,
       sessionId: "session-id",
     });
   });

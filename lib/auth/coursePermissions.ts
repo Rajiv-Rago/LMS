@@ -24,7 +24,9 @@ export async function getCoursePermissions(
   user: JWTPayload | null
 ): Promise<CoursePermissions> {
   if (!user) {
-    const canView = course.accessLevel === "published" || course.accessLevel === "unlisted";
+    const canView =
+      (course.accessLevel === "published" || course.accessLevel === "unlisted") &&
+      !course.moderationRemovedAt;
     return {
       isInstructor: false,
       isEnrolled: false,
@@ -44,7 +46,9 @@ export async function getCoursePermissions(
   const isEnrolled = await Enrollment.isEnrolled(course._id, user.userId);
 
   const canEdit = isInstructor || isOwner || isAdmin;
-  const isAccessible = course.accessLevel === "published" || course.accessLevel === "unlisted";
+  const isAccessible =
+    (course.accessLevel === "published" || course.accessLevel === "unlisted") &&
+    !course.moderationRemovedAt;
   const canView = canEdit || isEnrolled || isSharedWith || isAccessible;
 
   return {

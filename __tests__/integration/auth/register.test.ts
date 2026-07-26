@@ -19,6 +19,7 @@ describe("POST /api/auth/register", () => {
     email: "new@example.com",
     name: "New User",
     password: "Password123!",
+    acceptTerms: true,
   };
 
   it("registers a new user successfully", async () => {

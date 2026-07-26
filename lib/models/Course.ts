@@ -32,6 +32,7 @@ export interface ICourse extends Document {
     pathVariant?: string;
     generatedAt: Date;
   };
+  moderationRemovedAt: Date | null;
   deletedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
@@ -117,6 +118,12 @@ const courseSchema = new mongoose.Schema<ICourse, CourseModel>(
       teachingStyle: { type: String },
       pathVariant: { type: String },
       generatedAt: { type: Date },
+    },
+    // Set by admin moderation; hides the course from public view without
+    // touching accessLevel, so restore preserves the owner's visibility choice
+    moderationRemovedAt: {
+      type: Date,
+      default: null,
     },
     deletedAt: {
       type: Date,

@@ -46,6 +46,22 @@ export default async function PublicLayout({
         </div>
       </nav>
       <main>{children}</main>
+      <footer className="border-t border-zinc-200 dark:border-zinc-800 py-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between text-sm text-zinc-500 dark:text-zinc-400">
+          <span>Kantigo</span>
+          <div className="flex items-center gap-4">
+            <Link href="/terms" className="hover:text-zinc-700 dark:hover:text-zinc-200">
+              Terms
+            </Link>
+            <Link href="/privacy" className="hover:text-zinc-700 dark:hover:text-zinc-200">
+              Privacy
+            </Link>
+            <Link href="/legal/dmca" className="hover:text-zinc-700 dark:hover:text-zinc-200">
+              DMCA
+            </Link>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

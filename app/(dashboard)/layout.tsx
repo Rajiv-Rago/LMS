@@ -10,6 +10,7 @@ interface User {
   name: string;
   email: string;
   role: "user" | "admin";
+  emailVerifiedAt: string | null;
   aiPreferences?: {
     defaultTier?: "concise" | "balanced" | "thorough";
     defaultProvider?: string;

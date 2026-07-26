@@ -74,3 +74,9 @@ export type { IAIUsage, AIUsageCategory } from "./AIUsage";
 
 export { default as Enrollment } from "./Enrollment";
 export type { IEnrollment } from "./Enrollment";
+
+export { default as RateLimit } from "./RateLimit";
+export type { IRateLimit } from "./RateLimit";
+
+export { default as Report } from "./Report";
+export type { IReport, ReportReason, ReportStatus } from "./Report";

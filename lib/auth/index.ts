@@ -5,6 +5,7 @@ export {
   requireAuth,
   requireRole,
   requireCsrf,
+  requireVerifiedEmail,
 } from "./middleware";
 export type { AuthenticatedRequest } from "./middleware";
 export {

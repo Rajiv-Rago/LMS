@@ -4,6 +4,8 @@ import bcrypt from "bcryptjs";
 import { dbConnect } from "@/lib/db";
 import User from "@/lib/models/User";
 import { requireCsrf } from "@/lib/auth";
+import { enforceRateLimit } from "@/lib/rateLimit";
+import { getClientIp } from "@/lib/utils/request";
 import { forgotPasswordSchema } from "@/lib/validation/authSchemas";
 import { logAuditEvent } from "@/lib/auth/auditLog";
 import { captureException, logger } from "@/lib/logger";
@@ -18,6 +20,9 @@ export async function POST(request: NextRequest) {
   try {
     const csrfError = requireCsrf(request);
     if (csrfError) return csrfError;
+
+    const limited = await enforceRateLimit("forgot-password", getClientIp(request), 5, "hour");
+    if (limited) return limited;
 
     const body = await request.json();
     const validation = forgotPasswordSchema.safeParse(body);

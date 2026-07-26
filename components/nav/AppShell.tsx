@@ -9,6 +9,7 @@ import { BreadcrumbContext, type Crumb } from "@/components/nav/breadcrumbs";
 import { NotificationBell } from "@/components/ui/NotificationBell";
 import ThemeToggle from "@/components/ui/ThemeToggle";
 import BottomNav from "@/components/ui/BottomNav";
+import VerifyEmailBanner from "@/components/nav/VerifyEmailBanner";
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard" },
@@ -24,7 +25,12 @@ export default function AppShell({
   user,
   children,
 }: {
-  user: { name?: string | null; email?: string | null };
+  user: {
+    name?: string | null;
+    email?: string | null;
+    emailVerifiedAt?: string | Date | null;
+    role?: string;
+  };
   children: React.ReactNode;
 }) {
   const router = useRouter();
@@ -138,7 +144,10 @@ export default function AppShell({
           </div>
 
           <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto" aria-label="Sidebar navigation">
-            {navigation.map((item) => {
+            {[
+              ...navigation,
+              ...(user.role === "admin" ? [{ name: "Reports", href: "/admin/reports" }] : []),
+            ].map((item) => {
               const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
               return (
                 <Link
@@ -180,6 +189,17 @@ export default function AppShell({
             >
               Sign out
             </button>
+            <div className="mt-3 flex items-center justify-center gap-3 text-xs text-zinc-400 dark:text-zinc-500">
+              <Link href="/terms" className="hover:text-zinc-600 dark:hover:text-zinc-300">
+                Terms
+              </Link>
+              <Link href="/privacy" className="hover:text-zinc-600 dark:hover:text-zinc-300">
+                Privacy
+              </Link>
+              <Link href="/legal/dmca" className="hover:text-zinc-600 dark:hover:text-zinc-300">
+                DMCA
+              </Link>
+            </div>
           </div>
         </div>
 
@@ -247,6 +267,7 @@ export default function AppShell({
             </>
           )}
         </div>
+        {user.emailVerifiedAt === null && <VerifyEmailBanner />}
         <div className="p-4 lg:p-6">{children}</div>
       </main>
 

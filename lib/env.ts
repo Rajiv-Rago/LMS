@@ -42,6 +42,7 @@ const envSchema = z.object({
   // Email
   EMAIL_PROVIDER: z.enum(["console", "sendgrid", "ses", "resend"]).default("console"),
   EMAIL_FROM_ADDRESS: z.string().optional(),
+  ADMIN_EMAIL: z.string().optional(),
   SENDGRID_API_KEY: z.string().optional(),
   RESEND_API_KEY: z.string().optional(),
   AWS_REGION: z.string().optional(),

@@ -10,6 +10,9 @@ export interface IUser extends Document {
   subscriptionTier: "free" | "plus" | "admin";
   resetPasswordToken?: string;
   resetPasswordExpires?: Date;
+  emailVerifiedAt: Date | null;
+  verificationToken?: string;
+  verificationExpires?: Date;
   failedLoginAttempts: number;
   lockUntil?: Date;
   aiPreferences?: {
@@ -17,6 +20,7 @@ export interface IUser extends Document {
     defaultProvider?: "openai" | "anthropic" | "cerebras" | "gemini";
     defaultModel?: string;
   };
+  termsAcceptedAt?: Date;
   deletedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
@@ -77,6 +81,18 @@ const userSchema = new mongoose.Schema<IUser, UserModel, IUserMethods>(
       type: Date,
       select: false,
     },
+    emailVerifiedAt: {
+      type: Date,
+      default: null,
+    },
+    verificationToken: {
+      type: String,
+      select: false,
+    },
+    verificationExpires: {
+      type: Date,
+      select: false,
+    },
     failedLoginAttempts: {
       type: Number,
       default: 0,
@@ -96,6 +112,9 @@ const userSchema = new mongoose.Schema<IUser, UserModel, IUserMethods>(
       defaultModel: {
         type: String,
       },
+    },
+    termsAcceptedAt: {
+      type: Date,
     },
     deletedAt: {
       type: Date,

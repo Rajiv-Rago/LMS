@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/lib/hooks/useToast";
 import ShareDialog from "@/components/course/ShareDialog";
+import ReportDialog from "@/components/course/ReportDialog";
 import Button from "@/components/ui/Button";
 import { Skeleton, SkeletonText } from "@/components/ui/Skeleton";
 
@@ -33,6 +34,7 @@ interface Course {
   syllabusStatus?: string;
   aiPreferences?: { defaultProvider: string };
   youtubeMetadata?: { skillLevel: string };
+  moderationRemovedAt?: string | null;
   modules: Array<{ _id: string; title: string; lessons: unknown[] }>;
 }
 
@@ -108,6 +110,7 @@ export default function CoursePreview({ courseId }: { courseId: string }) {
   const [expandedModules, setExpandedModules] = useState<Set<string>>(new Set());
   const [lockedLesson, setLockedLesson] = useState<string | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
 
   useEffect(() => {
     async function loadCourse() {
@@ -223,6 +226,11 @@ export default function CoursePreview({ courseId }: { courseId: string }) {
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <div className="lg:flex lg:gap-8">
         <div className="flex-1 min-w-0">
+          {course.moderationRemovedAt && (
+            <div className="mb-4 rounded-lg border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/30 px-4 py-3 text-sm text-amber-800 dark:text-amber-200">
+              This course was removed from public listing by a moderator.
+            </div>
+          )}
           <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">
             {course.title}
           </h1>
@@ -348,6 +356,16 @@ export default function CoursePreview({ courseId }: { courseId: string }) {
             >
               Copy link
             </Button>
+
+            {!permissions?.canEdit && (
+              <button
+                type="button"
+                onClick={() => setReportOpen(true)}
+                className="w-full py-2 text-xs text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"
+              >
+                Report this course
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -364,6 +382,12 @@ export default function CoursePreview({ courseId }: { courseId: string }) {
           </Button>
         </div>
       )}
+
+      <ReportDialog
+        courseId={courseId}
+        open={reportOpen}
+        onClose={() => setReportOpen(false)}
+      />
 
       {permissions?.canEdit && (
         <ShareDialog

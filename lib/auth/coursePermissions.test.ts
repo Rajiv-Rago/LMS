@@ -144,6 +144,24 @@ describe("getCoursePermissions", () => {
     expect(perms.isEnrolled).toBe(false);
   });
 
+  it("moderation-removed published course: anon canView false, owner canView true", async () => {
+    const { user: teacher } = await createTestUser({ role: "user" });
+    const { course } = await createTestCourse(teacher._id, {
+      owner: teacher._id,
+      accessLevel: "published",
+      moderationRemovedAt: new Date(),
+    });
+
+    const anonPerms = await getCoursePermissions(course, null);
+    expect(anonPerms.canView).toBe(false);
+
+    const ownerPerms = await getCoursePermissions(
+      course,
+      makePayload(teacher._id.toString(), "user")
+    );
+    expect(ownerPerms.canView).toBe(true);
+  });
+
   it("canEdit is true when isInstructor OR isOwner OR isAdmin", async () => {
     const { user: teacher } = await createTestUser({ role: "user" });
     const { course } = await createTestCourse(teacher._id);

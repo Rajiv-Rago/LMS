@@ -17,6 +17,9 @@ export const registerSchema = z.object({
   email: z.string().email("Invalid email address"),
   name: z.string().min(2, "Name must be at least 2 characters"),
   password: passwordSchema,
+  acceptTerms: z.literal(true, {
+    error: "You must accept the Terms of Service and Privacy Policy",
+  }),
 });
 
 export const forgotPasswordSchema = z.object({

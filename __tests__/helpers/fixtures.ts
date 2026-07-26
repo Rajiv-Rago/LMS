@@ -40,6 +40,7 @@ export async function createTestUser(
     name: string;
     password: string;
     role: "user" | "admin";
+    emailVerifiedAt: Date | null;
   }> = {}
 ): Promise<TestUserResult> {
   userCounter++;
@@ -48,6 +49,9 @@ export async function createTestUser(
     name: `Test User ${userCounter}`,
     password: "password123",
     role: "user" as const,
+    // Verified by default so tests exercise post-verification behavior;
+    // pass null to test the unverified gate
+    emailVerifiedAt: new Date(),
   };
 
   const data = { ...defaults, ...overrides };
@@ -84,6 +88,7 @@ export async function createTestCourse(
     isPublished: boolean;
     accessLevel: "restricted" | "unlisted" | "published";
     owner: string | mongoose.Types.ObjectId;
+    moderationRemovedAt: Date;
   }> = {}
 ): Promise<TestCourseResult> {
   const { isPublished, ...rest } = overrides;

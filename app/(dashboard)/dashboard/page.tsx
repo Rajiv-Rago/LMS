@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState, useCallback, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { BookOpen } from "lucide-react";
 import GenerationInput from "@/components/dashboard/GenerationInput";
 import GeneratingCard from "@/components/dashboard/GeneratingCard";
@@ -26,8 +26,18 @@ interface Course {
 
 type GenerationPhase = "idle" | "submitting" | "generating" | "complete";
 
+// useSearchParams requires a Suspense boundary at build time
 export default function DashboardPage() {
+  return (
+    <Suspense>
+      <DashboardContent />
+    </Suspense>
+  );
+}
+
+function DashboardContent() {
   const router = useRouter();
+  const verified = useSearchParams().get("verified");
   const confirm = useConfirm();
   const toast = useToast();
   const [myCourses, setMyCourses] = useState<Course[]>([]);
@@ -182,6 +192,25 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
+      {verified === "success" && (
+        <div className="rounded-lg bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 p-4">
+          <p className="text-sm text-emerald-700 dark:text-emerald-300">
+            Your email has been verified. All features are unlocked.
+          </p>
+        </div>
+      )}
+      {(verified === "expired" || verified === "invalid") && (
+        <div className="rounded-lg bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 p-4">
+          <p className="text-sm text-amber-700 dark:text-amber-300">
+            {verified === "expired"
+              ? "That verification link has expired."
+              : "That verification link is invalid or was already used."}{" "}
+            If your email still needs verifying, use the resend button in the
+            banner above.
+          </p>
+        </div>
+      )}
+
       <GenerationInput
         onSubmit={handleGenerate}
         disabled={generationPhase !== "idle"}

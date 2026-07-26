@@ -3,7 +3,7 @@ import { z } from "zod";
 import { dbConnect } from "@/lib/db";
 import { Course } from "@/lib/models";
 import Enrollment from "@/lib/models/Enrollment";
-import { authenticate, requireCsrf } from "@/lib/auth";
+import { authenticate, requireCsrf, requireVerifiedEmail } from "@/lib/auth";
 import { getCoursePermissions } from "@/lib/auth/coursePermissions";
 import { validateObjectId } from "@/lib/utils/validateObjectId";
 import { captureException } from "@/lib/logger";
@@ -113,6 +113,16 @@ export async function PATCH(
     }
 
     const { title, description, coverImage, isPublished, accessLevel } = validation.data;
+
+    // Only publishing requires a verified email; unpublishing and other edits don't
+    const wantsPublish =
+      accessLevel === "published" ||
+      (accessLevel === undefined && isPublished === true);
+    if (wantsPublish && course.accessLevel !== "published") {
+      const verifyError = requireVerifiedEmail(user);
+      if (verifyError) return verifyError;
+    }
+
     if (title !== undefined) course.title = title;
     if (description !== undefined) course.description = description;
     if (coverImage !== undefined) course.coverImage = coverImage ?? undefined;

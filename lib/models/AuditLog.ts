@@ -10,13 +10,18 @@ export type AuditAction =
   | "role.change"
   | "account.locked"
   | "account.created"
+  | "email.verified"
   | "oauth.login.success"
   | "oauth.account.created"
   | "oauth.account.linked"
   | "oauth.account.unlinked"
   | "oauth.login.rejected"
   | "session.revoked"
-  | "course.permission.change";
+  | "course.permission.change"
+  | "course.reported"
+  | "report.status.change"
+  | "course.moderation.remove"
+  | "course.moderation.restore";
 
 export interface IAuditLog extends Document {
   _id: mongoose.Types.ObjectId;

@@ -12,6 +12,7 @@ let jobStatus = "pending";
 
 jest.mock("next/navigation", () => ({
   useRouter: () => ({ push: mockPush, refresh: mockRefresh }),
+  useSearchParams: () => new URLSearchParams(),
 }));
 
 jest.mock("@/lib/hooks/useConfirm", () => ({

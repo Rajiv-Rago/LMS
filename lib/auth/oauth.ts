@@ -110,11 +110,16 @@ export async function resolveOAuthSignIn({
     return null;
   }
 
+  // Implicit consent: the login/register pages show "By continuing, you agree
+  // to the Terms and Privacy Policy" next to the OAuth buttons.
   const user = await User.create({
     email: trustedEmail.email,
     name: getProfileName(profile) || trustedEmail.email.split("@")[0],
     role: "user",
     subscriptionTier: "free",
+    termsAcceptedAt: new Date(),
+    // OAuth emails are provider-verified (see getTrustedEmail)
+    emailVerifiedAt: new Date(),
   });
 
   await OAuthAccount.create({

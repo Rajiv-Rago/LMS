@@ -49,6 +49,7 @@ function submitRegistration() {
   fireEvent.change(screen.getByLabelText(/confirm password/i), {
     target: { value: "password123" },
   });
+  fireEvent.click(screen.getByLabelText(/i agree to the/i));
   fireEvent.click(screen.getByRole("button", { name: /create account/i }));
 }
 
@@ -65,6 +66,25 @@ describe("RegisterPage", () => {
         redirectTo: "/dashboard",
       });
       expect(mockPush).toHaveBeenCalledWith("/dashboard");
+    });
+  });
+
+  it("sends acceptTerms with the registration request", async () => {
+    render(<RegisterPage />);
+    submitRegistration();
+
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledWith(
+        "/api/auth/register",
+        expect.objectContaining({
+          body: JSON.stringify({
+            name: "New User",
+            email: "new@example.com",
+            password: "password123",
+            acceptTerms: true,
+          }),
+        })
+      );
     });
   });
 

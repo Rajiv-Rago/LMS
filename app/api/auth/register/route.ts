@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { dbConnect, DatabaseConnectionError } from "@/lib/db";
 import User from "@/lib/models/User";
 import { requireCsrf } from "@/lib/auth";
+import { enforceRateLimit } from "@/lib/rateLimit";
+import { getClientIp } from "@/lib/utils/request";
+import { sendVerificationEmail } from "@/lib/auth/emailVerification";
 import { logAuditEvent } from "@/lib/auth/auditLog";
 import { registerSchema } from "@/lib/validation/authSchemas";
 import { captureException } from "@/lib/logger";
@@ -10,6 +13,9 @@ export async function POST(request: NextRequest) {
   try {
     const csrfError = requireCsrf(request);
     if (csrfError) return csrfError;
+
+    const limited = await enforceRateLimit("register", getClientIp(request), 5, "hour");
+    if (limited) return limited;
 
     const body = await request.json();
     const validation = registerSchema.safeParse(body);
@@ -38,7 +44,11 @@ export async function POST(request: NextRequest) {
       name,
       password,
       role: "user",
+      termsAcceptedAt: new Date(),
     });
+
+    // Non-fatal: registration succeeds even if the email fails to send
+    await sendVerificationEmail(user._id.toString(), user.email);
 
     const response = NextResponse.json(
       {

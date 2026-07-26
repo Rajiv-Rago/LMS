@@ -87,6 +87,7 @@ async function getActiveUserPayload(token: JWT): Promise<JWTPayload | null> {
     email: user.email,
     role: user.role,
     subscriptionTier: user.subscriptionTier,
+    emailVerified: !!user.emailVerifiedAt,
     sessionId: token.sessionId,
   };
 }
@@ -97,6 +98,16 @@ function isUserRole(value: unknown): value is UserRole {
 
 function isSubscriptionTier(value: unknown): value is SubscriptionTier {
   return value === "free" || value === "plus" || value === "admin";
+}
+
+export function requireVerifiedEmail(user: JWTPayload): NextResponse | null {
+  if (!user.emailVerified) {
+    return NextResponse.json(
+      { error: "Email verification required" },
+      { status: 403 }
+    );
+  }
+  return null;
 }
 
 export async function getAuthenticatedUser(

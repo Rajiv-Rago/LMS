@@ -25,6 +25,8 @@ export async function GET(request: NextRequest) {
         email: user.email,
         name: user.name,
         role: user.role,
+        subscriptionTier: user.subscriptionTier,
+        emailVerifiedAt: user.emailVerifiedAt,
         createdAt: user.createdAt,
         aiPreferences: user.aiPreferences,
       },

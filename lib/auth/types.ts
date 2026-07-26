@@ -7,6 +7,7 @@ export interface JWTPayload {
   email: string;
   role: "user" | "admin";
   subscriptionTier: SubscriptionTier;
+  emailVerified: boolean;
   sessionId?: string;
   iat?: number;
   exp?: number;

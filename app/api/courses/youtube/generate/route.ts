@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { authenticate, requireCsrf } from "@/lib/auth";
+import { authenticate, requireCsrf, requireVerifiedEmail } from "@/lib/auth";
 import { AIProviderName, AITier } from "@/lib/ai/types";
 import { resolveProvider } from "@/lib/ai/utils/providerResolver";
 import { getUserAIPreferences } from "@/lib/ai/utils/userPreferences";
@@ -19,6 +19,9 @@ export async function POST(request: NextRequest) {
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    const verifyError = requireVerifiedEmail(user);
+    if (verifyError) return verifyError;
 
     // Rate limit check
     const subTier = user.role === "admin" ? ("admin" as const) : user.subscriptionTier;

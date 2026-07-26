@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { dbConnect } from "@/lib/db";
 import { Course, Lesson, AIGeneratedContent } from "@/lib/models";
-import { authenticate, requireCsrf } from "@/lib/auth";
+import { authenticate, requireCsrf, requireVerifiedEmail } from "@/lib/auth";
 import { getCoursePermissions } from "@/lib/auth/coursePermissions";
 import { validateObjectId } from "@/lib/utils/validateObjectId";
 import { createAIProvider, resolveProvider } from "@/lib/ai";
@@ -48,6 +48,9 @@ export async function POST(request: NextRequest) {
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    const verifyError = requireVerifiedEmail(user);
+    if (verifyError) return verifyError;
 
     // Rate limit check
     const subTier = user.role === "admin" ? "admin" as const : user.subscriptionTier;

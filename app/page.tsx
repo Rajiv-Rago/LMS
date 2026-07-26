@@ -1,6 +1,11 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { auth } from "@/auth";
 
-export default function Home() {
+export default async function Home() {
+  const session = await auth();
+  if (session?.user) redirect("/dashboard");
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-zinc-50 to-white dark:from-zinc-950 dark:to-zinc-900">
       {/* Navigation */}
@@ -266,9 +271,29 @@ export default function Home() {
                 From curious to capable
               </span>
             </div>
-            <span className="text-sm text-zinc-500 dark:text-zinc-400">
-              kantigo.dev
-            </span>
+            <div className="flex items-center gap-4">
+              <Link
+                href="/terms"
+                className="text-sm text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"
+              >
+                Terms
+              </Link>
+              <Link
+                href="/privacy"
+                className="text-sm text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"
+              >
+                Privacy
+              </Link>
+              <Link
+                href="/legal/dmca"
+                className="text-sm text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"
+              >
+                DMCA
+              </Link>
+              <span className="text-sm text-zinc-500 dark:text-zinc-400">
+                kantigo.dev
+              </span>
+            </div>
           </div>
         </div>
       </footer>

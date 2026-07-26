@@ -1,6 +1,7 @@
 "use client";
 
 import { signIn } from "next-auth/react";
+import Link from "next/link";
 import Button from "@/components/ui/Button";
 
 interface OAuthButtonsProps {
@@ -26,6 +27,25 @@ export default function OAuthButtons({ redirectTo }: OAuthButtonsProps) {
           Continue with {provider.label}
         </Button>
       ))}
+      <p className="text-xs text-zinc-500 dark:text-zinc-400 text-center">
+        By continuing, you agree to our{" "}
+        <Link
+          href="/terms"
+          target="_blank"
+          className="underline hover:text-zinc-700 dark:hover:text-zinc-200"
+        >
+          Terms of Service
+        </Link>{" "}
+        and{" "}
+        <Link
+          href="/privacy"
+          target="_blank"
+          className="underline hover:text-zinc-700 dark:hover:text-zinc-200"
+        >
+          Privacy Policy
+        </Link>
+        .
+      </p>
       <div className="relative py-2">
         <div className="absolute inset-0 flex items-center" aria-hidden="true">
           <div className="w-full border-t border-zinc-200 dark:border-zinc-800" />

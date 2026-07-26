@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { authenticate, requireCsrf } from "@/lib/auth";
+import { authenticate, requireCsrf, requireVerifiedEmail } from "@/lib/auth";
 import { dbConnect } from "@/lib/db";
 import { Course } from "@/lib/models";
 import { enqueueJob } from "@/lib/queue";
@@ -33,6 +33,9 @@ export async function POST(request: NextRequest) {
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    const verifyError = requireVerifiedEmail(user);
+    if (verifyError) return verifyError;
 
     const body = await request.json();
     const validation = generateCourseSchema.safeParse(body);

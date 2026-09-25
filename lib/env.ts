@@ -39,6 +39,12 @@ const envSchema = z.object({
   // AI rate limiting
   AI_RATE_LIMIT_ENABLED: z.string().default("true").transform(v => v === "true"),
 
+  // Diagnostic assessment agentic loop cap (MCQ batches + essay rounds)
+  DIAGNOSTIC_MAX_ITERATIONS: z.string().default("5").transform((v) => {
+    const n = parseInt(v, 10);
+    return Number.isFinite(n) && n > 0 ? n : 5;
+  }),
+
   // Email
   EMAIL_PROVIDER: z.enum(["console", "sendgrid", "ses", "resend"]).default("console"),
   EMAIL_FROM_ADDRESS: z.string().optional(),

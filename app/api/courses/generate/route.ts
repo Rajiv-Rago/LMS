@@ -19,7 +19,14 @@ const MAX_GENERATED_COURSES: Record<SubscriptionTier, number> = {
 
 const generateCourseSchema = z.object({
   topic: z.string().min(1).max(500),
-  skillLevel: z.enum(["beginner", "intermediate", "advanced"]),
+  // Complexity labels (aliases for beginner/intermediate/advanced). skillLevel kept for back-compat.
+  complexity: z.enum(["foundations", "standard", "deep", "beginner", "intermediate", "advanced"]).optional(),
+  skillLevel: z.enum(["beginner", "intermediate", "advanced"]).optional(),
+  passingScore: z.number().min(0).max(100).default(70),
+  additionalContext: z.string().max(5000).optional(),
+  estimatedDuration: z.string().max(100).optional(),
+  includeVideos: z.boolean().optional(),
+  knowledgeProfile: z.string().max(5000).optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -46,7 +53,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { topic, skillLevel } = validation.data;
+    const { topic, complexity, skillLevel, passingScore, additionalContext, estimatedDuration, includeVideos, knowledgeProfile } = validation.data;
+    const { complexityToLevel } = await import("@/lib/ai/utils/promptUtils");
+    const targetLevel = complexityToLevel((complexity ?? skillLevel ?? "standard") as "foundations" | "standard" | "deep");
 
     await dbConnect();
 
@@ -92,9 +101,13 @@ export async function POST(request: NextRequest) {
       type: "ai.generate-syllabus",
       data: {
         topic,
-        targetLevel: skillLevel,
-        estimatedDuration: "4-6 hours",
-        includeVideos: true,
+        targetLevel,
+        complexity: complexity ?? skillLevel ?? "standard",
+        estimatedDuration: estimatedDuration || "4-6 hours",
+        includeVideos: includeVideos ?? true,
+        passingScore,
+        additionalContext,
+        knowledgeProfile,
       },
       userId: user.userId,
     });

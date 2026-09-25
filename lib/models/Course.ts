@@ -25,6 +25,7 @@ export interface ICourse extends Document {
   sharedWith: mongoose.Types.ObjectId[];
   syllabusStatus?: SyllabusStatus;
   syllabusPrompt?: string;
+  passingScore: number;
   aiPreferences?: AIPreferences;
   youtubeMetadata?: {
     skillLevel: string;
@@ -32,6 +33,12 @@ export interface ICourse extends Document {
     pathVariant?: string;
     generatedAt: Date;
   };
+  references?: {
+    url: string;
+    title: string;
+    description: string;
+    sourceVerified: boolean;
+  }[];
   moderationRemovedAt: Date | null;
   deletedAt: Date | null;
   createdAt: Date;
@@ -104,6 +111,13 @@ const courseSchema = new mongoose.Schema<ICourse, CourseModel>(
       type: String,
       maxlength: [5000, "Syllabus prompt cannot exceed 5000 characters"],
     },
+    // Minimum score (0-100) required on module-end tests for a module to count as completed
+    passingScore: {
+      type: Number,
+      min: [0, "Passing score cannot be negative"],
+      max: [100, "Passing score cannot exceed 100"],
+      default: 70,
+    },
     aiPreferences: {
       defaultProvider: {
         type: String,
@@ -119,8 +133,15 @@ const courseSchema = new mongoose.Schema<ICourse, CourseModel>(
       pathVariant: { type: String },
       generatedAt: { type: Date },
     },
+    references: [
+      {
+        url: { type: String },
+        title: { type: String },
+        description: { type: String },
+        sourceVerified: { type: Boolean, default: false },
+      },
+    ],
     // Set by admin moderation; hides the course from public view without
-    // touching accessLevel, so restore preserves the owner's visibility choice
     moderationRemovedAt: {
       type: Date,
       default: null,

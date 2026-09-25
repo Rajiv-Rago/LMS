@@ -2,10 +2,8 @@
 
 import { useState } from "react";
 
-type SkillLevel = "beginner" | "intermediate" | "advanced";
-
 interface GenerationInputProps {
-  onSubmit: (topic: string, skillLevel: string) => void;
+  onSubmit: (topic: string) => void;
   disabled?: boolean;
   limitReached?: boolean;
   showWelcome?: boolean;
@@ -18,12 +16,6 @@ const SUGGESTION_CHIPS = [
   "Machine Learning 101",
 ];
 
-const SKILL_LEVELS: { value: SkillLevel; label: string }[] = [
-  { value: "beginner", label: "Beginner" },
-  { value: "intermediate", label: "Intermediate" },
-  { value: "advanced", label: "Advanced" },
-];
-
 export default function GenerationInput({
   onSubmit,
   disabled = false,
@@ -31,12 +23,11 @@ export default function GenerationInput({
   showWelcome = false,
 }: GenerationInputProps) {
   const [topic, setTopic] = useState("");
-  const [skillLevel, setSkillLevel] = useState<SkillLevel>("beginner");
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!topic.trim() || disabled || limitReached) return;
-    onSubmit(topic.trim(), skillLevel);
+    onSubmit(topic.trim());
   }
 
   return (
@@ -65,23 +56,6 @@ export default function GenerationInput({
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          <div className="flex gap-1.5">
-            {SKILL_LEVELS.map(({ value, label }) => (
-              <button
-                key={value}
-                type="button"
-                onClick={() => setSkillLevel(value)}
-                className={`px-3 py-1.5 text-sm font-medium rounded-full transition-colors ${
-                  skillLevel === value
-                    ? "bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300"
-                    : "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700"
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-
           <button
             type="submit"
             disabled={disabled || limitReached || !topic.trim()}

@@ -1,5 +1,5 @@
 import { dbConnect } from "@/lib/db";
-import { Course, Module, Lesson } from "@/lib/models";
+import { Assignment, Course, Module, Lesson } from "@/lib/models";
 import { AIProviderName, AITier } from "@/lib/ai/types";
 import { resolveProvider } from "@/lib/ai/utils/providerResolver";
 import { getUserAIPreferences } from "@/lib/ai/utils/userPreferences";
@@ -31,9 +31,12 @@ registerHandler(
     const {
       topic,
       targetLevel,
+      complexity,
       estimatedDuration,
       additionalContext,
       includeVideos,
+      passingScore,
+      knowledgeProfile,
       tier,
       provider,
       model,
@@ -41,9 +44,12 @@ registerHandler(
     } = data as {
       topic: string;
       targetLevel: string;
+      complexity?: string;
       estimatedDuration: string;
       additionalContext?: string;
       includeVideos?: boolean;
+      passingScore?: number;
+      knowledgeProfile?: string;
       tier?: string;
       provider?: string;
       model?: string;
@@ -81,10 +87,18 @@ registerHandler(
     const { syllabus, usage } = await syllabusService.generateSyllabus({
       topic,
       targetLevel: targetLevel as TargetLevel,
+      complexity: (complexity as "foundations" | "standard" | "deep") ?? undefined,
       estimatedDuration,
       additionalContext,
       includeVideos,
+      passingScore,
+      knowledgeProfile,
     });
+
+    const effectivePassingScore =
+      typeof passingScore === "number" && passingScore >= 0 && passingScore <= 100
+        ? passingScore
+        : 70;
 
     const course = await Course.create({
       title: syllabus.courseTitle,
@@ -92,7 +106,8 @@ registerHandler(
       instructor: userId,
       owner: userId,
       syllabusStatus: "completed",
-      syllabusPrompt: `Topic: ${topic}\nLevel: ${targetLevel}\nDuration: ${estimatedDuration}${additionalContext ? `\nContext: ${additionalContext}` : ""}`,
+      syllabusPrompt: `Topic: ${topic}\nLevel: ${targetLevel}\nComplexity: ${complexity ?? targetLevel}\nDuration: ${estimatedDuration}\nPassing Score: ${effectivePassingScore}${additionalContext ? `\nContext: ${additionalContext}` : ""}${knowledgeProfile ? `\nKnowledge Profile: ${knowledgeProfile}` : ""}`,
+      passingScore: effectivePassingScore,
       aiPreferences: {
         defaultProvider: resolved.provider,
         defaultModel: resolved.model,
@@ -136,6 +151,23 @@ registerHandler(
         const lessons = await Promise.all(lessonPromises);
         courseModule.lessons = lessons.map((l) => l._id);
         await courseModule.save();
+
+        // Each module ends with a test gating completion (passingScore on the course).
+        // Created as a placeholder quiz; questions are filled by lesson-content generation later.
+        await Assignment.create({
+          title: `${moduleData.title} — Module Test`,
+          description: `End-of-module test for "${moduleData.title}". Score at least ${effectivePassingScore}% to mark the module as completed.`,
+          course: course._id,
+          module: courseModule._id,
+          dueDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+          points: 100,
+          submissionType: "text",
+          isPublished: true,
+          assignmentType: "quiz",
+          questions: [],
+          quizSettings: { shuffleQuestions: false, showCorrectAnswers: true },
+        });
+
         return courseModule;
       }
     );

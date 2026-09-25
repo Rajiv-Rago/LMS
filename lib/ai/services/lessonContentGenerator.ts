@@ -108,11 +108,12 @@ export class LessonContentGeneratorService {
     });
   }
 
-  async generateLessonContent(request: LessonContentRequest): Promise<{
+  async generateLessonContent(request: LessonContentRequest, courseReferences?: Array<{url: string; title: string; description: string}>): Promise<{
     content: GeneratedLessonContent;
     usage?: { promptTokens: number; completionTokens: number; totalTokens: number };
   }> {
-    const userPrompt = this.buildUserPrompt(request);
+    const selectedReferences = this.selectReferences(request, courseReferences || []);
+    const userPrompt = this.buildUserPrompt(request, selectedReferences);
     const useGoogleSearch = this.provider.name === "gemini";
 
     const response = await this.provider.generateText(userPrompt, {
@@ -166,7 +167,14 @@ export class LessonContentGeneratorService {
     }
   }
 
-  private buildUserPrompt(request: LessonContentRequest, forJson = true): string {
+  private selectReferences(request: LessonContentRequest, references: Array<{url: string; title: string; description: string}>): Array<{url: string; title: string}> {
+    // Agentic selection: filter references relevant to lesson module/title
+    return references
+      .filter((r) => r.title.toLowerCase().includes(request.moduleTitle.toLowerCase()) || r.description.toLowerCase().includes(request.lessonTitle.toLowerCase()))
+      .map((r) => ({ url: r.url, title: r.title }));
+  }
+
+  private buildUserPrompt(request: LessonContentRequest, selectedReferences?: Array<{url: string; title: string}>, forJson = true): string {
     let prompt = `Create lesson content for the following:
 
 Course: ${request.courseTitle}
@@ -196,6 +204,10 @@ ${request.feedback}
 Please regenerate the lesson content addressing this feedback while maintaining the overall structure and quality.`;
     }
 
+    if (selectedReferences && selectedReferences.length > 0) {
+      prompt += `\n\nSelected References (cite these in content):\n` + selectedReferences.map((r) => `- ${r.title}: ${r.url}`).join("\n");
+    }
+
     if (forJson) {
       prompt += "\n\nRemember to respond with ONLY the JSON object, no other text.";
     }
@@ -204,7 +216,7 @@ Please regenerate the lesson content addressing this feedback while maintaining 
   }
 
   async *streamLessonContent(request: LessonContentRequest): AsyncGenerator<StreamEvent> {
-    const userPrompt = this.buildUserPrompt(request, false);
+    const userPrompt = this.buildUserPrompt(request, [], false);
     const useGoogleSearch = this.provider.name === "gemini";
 
     if (!this.provider.chatStream) {

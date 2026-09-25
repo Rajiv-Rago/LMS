@@ -1,16 +1,21 @@
 import { AIProvider, AIProviderName } from "../types";
 import { createAIProvider } from "../index";
 import { parseAIJsonResponse } from "../utils/jsonParser";
-import { TargetLevel } from "../utils/promptUtils";
+import { Complexity, TargetLevel, complexityToLevel } from "../utils/promptUtils";
 
-export type { TargetLevel } from "../utils/promptUtils";
+export type { Complexity, TargetLevel } from "../utils/promptUtils";
 
 export interface SyllabusRequest {
   topic: string;
   targetLevel: TargetLevel;
+  /** Complexity label (alias for target level). When provided, takes precedence. */
+  complexity?: Complexity | TargetLevel;
   estimatedDuration: string;
   additionalContext?: string;
   includeVideos?: boolean;
+  passingScore?: number;
+  /** Adaptive diagnostic summary (what the learner already knows / gaps). */
+  knowledgeProfile?: string;
 }
 
 export interface GeneratedLesson {
@@ -32,6 +37,7 @@ export interface GeneratedSyllabus {
   courseTitle: string;
   courseDescription: string;
   modules: GeneratedModule[];
+  syllabusReferencesReady?: boolean;
 }
 
 export interface SyllabusGeneratorConfig {
@@ -65,13 +71,16 @@ The JSON must follow this exact structure:
 }
 
 Guidelines:
-- Create 4-8 modules depending on the scope of the topic
+- Foundations complexity: 3-4 modules, 3 lessons each, concise text lessons for newcomers
+- Standard complexity: 4-6 modules, 3-5 lessons each, balanced depth
+- Deep complexity: 6-8 modules, 4-6 lessons each, thorough text lessons with theory, edge cases and pitfalls
 - Each module should have 3-6 lessons
 - Lessons should build upon each other logically
-- Adjust complexity based on the target level (beginner/intermediate/advanced)
+- Adjust complexity based on the target level (beginner/intermediate/advanced, aliased as foundations/standard/deep)
 - The course description should explain what students will learn and prerequisites if any
 - Module descriptions should summarize the key themes covered
-- Lesson outlines should be specific enough to guide future content generation`;
+- Lesson outlines should be specific enough to guide future content generation
+- Each module ends with a test; keep module scope testable against the course passing score`;
 
 const VIDEO_SYSTEM_PROMPT_ADDENDUM = `
 
@@ -122,6 +131,9 @@ export class SyllabusGeneratorService {
 
     const syllabus = this.parseResponse(response.content);
 
+    // Trigger web-search agent for syllabus-level references (stored in Course.references later by caller)
+    syllabus.syllabusReferencesReady = true;
+
     return {
       syllabus,
       usage: response.usage,
@@ -129,14 +141,25 @@ export class SyllabusGeneratorService {
   }
 
   private buildUserPrompt(request: SyllabusRequest): string {
+    const effectiveLevel: TargetLevel = request.complexity
+      ? complexityToLevel(request.complexity)
+      : request.targetLevel;
     let prompt = `Create a course syllabus for the following:
 
 Topic: ${request.topic}
-Target Level: ${request.targetLevel}
+Target Level: ${effectiveLevel}
 Estimated Duration: ${request.estimatedDuration}`;
+
+    if (request.passingScore !== undefined) {
+      prompt += `\nPassing Score: ${request.passingScore}% (each module ends with a test; scope modules so they are testable at this bar)`;
+    }
 
     if (request.additionalContext) {
       prompt += `\n\nAdditional Context/Requirements:\n${request.additionalContext}`;
+    }
+
+    if (request.knowledgeProfile) {
+      prompt += `\n\nLearner Knowledge Profile (from diagnostic assessment — skip what they already know, emphasize gaps):\n${request.knowledgeProfile}`;
     }
 
     prompt += "\n\nRemember to respond with ONLY the JSON object, no other text.";

@@ -4,10 +4,13 @@ import { useEffect, useState, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { BookOpen } from "lucide-react";
 import GenerationInput from "@/components/dashboard/GenerationInput";
+import CourseConfigModal, { CourseConfig } from "@/components/dashboard/CourseConfigModal";
+import DiagnosticRunner from "@/components/dashboard/DiagnosticRunner";
 import GeneratingCard from "@/components/dashboard/GeneratingCard";
 import CourseSection from "@/components/dashboard/CourseSection";
 import EmptyState from "@/components/ui/EmptyState";
-import { useJobPoller, JobResult } from "@/lib/hooks/useJobPoller";
+import { useJobEvents } from "@/lib/hooks/useJobEvents";
+import type { JobResult } from "@/lib/hooks/useJobPoller";
 import { Skeleton, SkeletonCard } from "@/components/ui/Skeleton";
 import { useConfirm } from "@/lib/hooks/useConfirm";
 import { useToast } from "@/lib/hooks/useToast";
@@ -46,9 +49,15 @@ function DashboardContent() {
   const [generatingTopic, setGeneratingTopic] = useState("");
   const [error, setError] = useState("");
   const [courseLimit, setCourseLimit] = useState(5);
+  // Config modal + diagnostic flow: Generate opens the modal first, syllabus only starts after assessment.
+  const [configOpen, setConfigOpen] = useState(false);
+  const [pendingTopic, setPendingTopic] = useState("");
+  const [courseConfig, setCourseConfig] = useState<CourseConfig | null>(null);
+  const [activeJobId, setActiveJobId] = useState<string | null>(null);
 
   const handleComplete = useCallback(
     (result: JobResult) => {
+      setActiveJobId(null);
       setGenerationPhase("complete");
       const courseId = (result.result as { courseId?: string })?.courseId;
       if (courseId) {
@@ -60,12 +69,14 @@ function DashboardContent() {
   );
 
   const handleFailed = useCallback((result: JobResult) => {
+    setActiveJobId(null);
     setError(result.error || "Generation failed");
     setGenerationPhase("idle");
     setGeneratingTopic("");
+    setCourseConfig(null);
   }, []);
 
-  const { addJobs } = useJobPoller({
+  const { addJobs, removeJobs } = useJobEvents({
     onComplete: handleComplete,
     onFailed: handleFailed,
   });
@@ -123,7 +134,22 @@ function DashboardContent() {
     }
   }
 
-  async function handleGenerate(topic: string, skillLevel: string) {
+  async function handleGenerate(topic: string) {
+    // Open the config popup instead of generating immediately.
+    setError("");
+    setPendingTopic(topic);
+    setConfigOpen(true);
+  }
+
+  function handleConfigContinue(config: CourseConfig) {
+    setConfigOpen(false);
+    setCourseConfig(config);
+    setGeneratingTopic(config.topic);
+  }
+
+  async function handleDiagnosticComplete(knowledgeProfile: string) {
+    if (!courseConfig) return;
+    const { topic, complexity, passingScore, additionalContext } = courseConfig;
     setError("");
     setGenerationPhase("submitting");
     setGeneratingTopic(topic);
@@ -135,7 +161,13 @@ function DashboardContent() {
           "Content-Type": "application/json",
           "X-Requested-With": "XMLHttpRequest",
         },
-        body: JSON.stringify({ topic, skillLevel }),
+        body: JSON.stringify({
+          topic,
+          complexity,
+          passingScore,
+          additionalContext: additionalContext || undefined,
+          knowledgeProfile: knowledgeProfile || undefined,
+        }),
       });
 
       if (res.status === 429) {
@@ -143,6 +175,7 @@ function DashboardContent() {
         setError(data.error || "Rate limit reached. Please try again later.");
         setGenerationPhase("idle");
         setGeneratingTopic("");
+        setCourseConfig(null);
         return;
       }
 
@@ -150,6 +183,7 @@ function DashboardContent() {
         setError("AI service is temporarily unavailable. Please try again later.");
         setGenerationPhase("idle");
         setGeneratingTopic("");
+        setCourseConfig(null);
         return;
       }
 
@@ -160,11 +194,13 @@ function DashboardContent() {
 
       const data = await res.json();
       setGenerationPhase("generating");
+      setActiveJobId(data.jobId);
       addJobs([{ jobId: data.jobId, meta: { topic } }]);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to start generation");
       setGenerationPhase("idle");
       setGeneratingTopic("");
+      setCourseConfig(null);
     }
   }
 
@@ -224,12 +260,31 @@ function DashboardContent() {
         </div>
       )}
 
-      {generationPhase === "generating" && generatingTopic && (
+      {configOpen && (
+        <CourseConfigModal
+          initialTopic={pendingTopic}
+          onClose={() => setConfigOpen(false)}
+          onContinue={handleConfigContinue}
+        />
+      )}
+
+      {courseConfig && generationPhase === "idle" && (
+        <DiagnosticRunner
+          config={courseConfig}
+          onBack={() => setCourseConfig(null)}
+          onComplete={handleDiagnosticComplete}
+        />
+      )}
+
+      {(generationPhase === "generating" || generationPhase === "submitting") && generatingTopic && (
         <GeneratingCard
           topic={generatingTopic}
           onCancel={() => {
+            if (activeJobId) removeJobs([activeJobId]);
+            setActiveJobId(null);
             setGenerationPhase("idle");
             setGeneratingTopic("");
+            setCourseConfig(null);
           }}
         />
       )}

@@ -25,6 +25,7 @@ export default function NewAICoursePage() {
     estimatedDuration: "",
     additionalContext: "",
     includeVideos: false,
+    passingScore: 70,
   });
 
   const userDefaults = useUserAIDefaults();
@@ -94,10 +95,11 @@ export default function NewAICoursePage() {
     setPhase("submitting");
 
     try {
-      const payload: Record<string, string | boolean> = {
+      const payload: Record<string, string | boolean | number> = {
         topic: formData.topic,
         targetLevel: formData.targetLevel,
         estimatedDuration: formData.estimatedDuration,
+        passingScore: formData.passingScore,
       };
 
       if (formData.additionalContext) {
@@ -223,7 +225,7 @@ export default function NewAICoursePage() {
                 htmlFor="targetLevel"
                 className="block text-sm font-medium text-zinc-700 dark:text-zinc-300"
               >
-                Experience Level
+                Complexity
               </label>
               <select
                 id="targetLevel"
@@ -235,9 +237,9 @@ export default function NewAICoursePage() {
                 }
                 className="mt-1 block w-full rounded-md border border-zinc-300 dark:border-zinc-700 px-3 py-2 text-sm bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <option value="beginner">Beginner</option>
-                <option value="intermediate">Intermediate</option>
-                <option value="advanced">Advanced</option>
+                <option value="beginner">Foundations (beginner)</option>
+                <option value="intermediate">Standard (intermediate)</option>
+                <option value="advanced">Deep (advanced)</option>
               </select>
             </div>
 
@@ -278,7 +280,29 @@ export default function NewAICoursePage() {
                   setFormData({ ...formData, additionalContext: e.target.value })
                 }
                 className="mt-1 block w-full rounded-md border border-zinc-300 dark:border-zinc-700 px-3 py-2 text-sm bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white placeholder-zinc-400 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                placeholder="Any specific topics to cover, learning goals, or prerequisites..."
+                placeholder="Paste topics, goals, or a full university course description..."
+              />
+            </div>
+
+            <div>
+              <label
+                htmlFor="passingScore"
+                className="block text-sm font-medium text-zinc-700 dark:text-zinc-300"
+              >
+                Passing score: {formData.passingScore}% (each module ends with a test)
+              </label>
+              <input
+                id="passingScore"
+                type="range"
+                min={0}
+                max={100}
+                step={5}
+                disabled={isGenerating}
+                value={formData.passingScore}
+                onChange={(e) =>
+                  setFormData({ ...formData, passingScore: parseInt(e.target.value, 10) })
+                }
+                className="mt-2 w-full accent-violet-600"
               />
             </div>
 

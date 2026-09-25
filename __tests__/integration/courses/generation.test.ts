@@ -102,7 +102,40 @@ describe("POST /api/courses/generate", () => {
         data: expect.objectContaining({
           topic: "Python basics",
           targetLevel: "beginner",
+          complexity: "beginner",
+          passingScore: 70,
           includeVideos: true,
+        }),
+      })
+    );
+  });
+
+  it("accepts complexity + passingScore + additionalContext", async () => {
+    const { token } = await createTestUser();
+    const request = buildRequest("POST", "/api/courses/generate", {
+      token,
+      body: {
+        topic: "Linear Algebra",
+        complexity: "deep",
+        passingScore: 80,
+        additionalContext: "Cover eigenvalues in depth.",
+      },
+    });
+    const response = await POST(request);
+    const { status, data } = await parseResponse<{ jobId: string }>(response);
+
+    expect(status).toBe(202);
+    expect(data.jobId).toBe("mock-job-id-123");
+
+    expect(enqueueJob).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: "ai.generate-syllabus",
+        data: expect.objectContaining({
+          topic: "Linear Algebra",
+          targetLevel: "advanced",
+          complexity: "deep",
+          passingScore: 80,
+          additionalContext: "Cover eigenvalues in depth.",
         }),
       })
     );

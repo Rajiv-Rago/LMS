@@ -14,10 +14,13 @@ import { ErrorCodes } from "@/lib/telemetry/errorCodes";
 const createSyllabusSchema = z
   .object({
     topic: z.string().min(1).max(500),
-    targetLevel: z.enum(["beginner", "intermediate", "advanced"]),
+    targetLevel: z.enum(["beginner", "intermediate", "advanced"]).optional(),
+    complexity: z.enum(["foundations", "standard", "deep", "beginner", "intermediate", "advanced"]).optional(),
     estimatedDuration: z.string().min(1).max(100),
-    additionalContext: z.string().max(2000).optional(),
+    additionalContext: z.string().max(5000).optional(),
     includeVideos: z.boolean().optional(),
+    passingScore: z.number().min(0).max(100).optional(),
+    knowledgeProfile: z.string().max(5000).optional(),
     tier: aiTierSchema.optional(),
     provider: aiProviderSchema.optional(),
     model: z.string().max(256).optional(),
@@ -55,8 +58,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { topic, targetLevel, estimatedDuration, additionalContext, includeVideos, tier, provider, model } =
+    const { topic, targetLevel, complexity, estimatedDuration, additionalContext, includeVideos, passingScore, knowledgeProfile, tier, provider, model } =
       validation.data;
+    const { complexityToLevel } = await import("@/lib/ai/utils/promptUtils");
+    const effectiveLevel = complexityToLevel(
+      (complexity ?? targetLevel ?? "standard") as "foundations" | "standard" | "deep"
+    );
 
     // Fail fast: verify provider is configured before enqueueing
     const userPreferences = (tier || provider) ? undefined : await getUserAIPreferences(user.userId);
@@ -86,7 +93,7 @@ export async function POST(request: NextRequest) {
 
     const jobId = await enqueueJob({
       type: "ai.generate-syllabus",
-      data: { topic, targetLevel, estimatedDuration, additionalContext, includeVideos, tier, provider, model },
+      data: { topic, targetLevel: effectiveLevel, complexity: complexity ?? targetLevel ?? "standard", estimatedDuration, additionalContext, includeVideos, passingScore, knowledgeProfile, tier, provider, model },
       userId: user.userId,
     });
 

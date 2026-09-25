@@ -1,0 +1,33 @@
+{
+  "name": "lms-plugin-web-search",
+  "version": "1.0.1",
+  "description": "LM Studio plugin — fact-grounded web search with reasoning, source verification, and multi-angle research",
+  "main": "index.js",
+  "scripts": {
+    "build": "npx tsc",
+    "watch": "npx tsc --watch",
+    "test": "vitest run"
+  },
+  "keywords": [
+    "lmstudio",
+    "lmstudio-plugin",
+    "web-search",
+    "fact-check",
+    "research",
+    "source-verification",
+    "deep-search",
+    "news",
+    "academic"
+  ],
+  "author": "thrilok",
+  "license": "MIT",
+  "dependencies": {
+    "@lmstudio/sdk": "^1.5.0",
+    "zod": "3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.7"
+  }
+}

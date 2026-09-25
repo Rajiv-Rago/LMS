@@ -1,0 +1,18 @@
+{
+  "type": "plugin",
+  "runner": "node",
+  "owner": "ragorajiv2",
+  "name": "web-search",
+  "revision": 1,
+  "tags": [
+    "lmstudio",
+    "lmstudio-plugin",
+    "web-search",
+    "fact-check",
+    "research",
+    "source-verification",
+    "deep-search",
+    "news",
+    "academic"
+  ]
+}

@@ -44,6 +44,7 @@
   "exclude": [
     "node_modules",
     "packages/*/node_modules",
+    "packages/web-search",
     "packages/*/src/app",
     "packages/*/src/components",
     "packages/*/src/context",

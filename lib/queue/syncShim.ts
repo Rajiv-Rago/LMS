@@ -1,7 +1,17 @@
+import mongoose from "mongoose";
+import { dbConnect } from "@/lib/db";
+import Job from "@/lib/models/Job";
 import { getHandler, handlersReady } from "./handlers";
 import type { QueueAdapter, EnqueueOptions, JobStatusResult } from "./index";
 
-interface SyncJobResult {
+/**
+ * SyncShim executes jobs inline (fire-and-forget) when QUEUE_ENABLED=false,
+ * but persists job state to the Job collection so status lookups work across
+ * processes/workers. Next.js may serve the enqueue POST and subsequent
+ * GET /api/jobs/:id from different module instances — an in-memory Map alone
+ * would 404 forever even though the job actually completed.
+ */
+interface MemoryJob {
   status: "pending" | "completed" | "failed";
   result?: Record<string, unknown>;
   error?: string;
@@ -10,67 +20,111 @@ interface SyncJobResult {
   completedAt?: Date;
 }
 
-const results = new Map<string, SyncJobResult>();
+// Fallback for contexts without a DB (or non-ObjectId userIds in tests).
+const memoryResults = new Map<string, MemoryJob>();
 
-let counter = 0;
+function isObjectId(id: string): boolean {
+  return mongoose.Types.ObjectId.isValid(id);
+}
 
 export class SyncShim implements QueueAdapter {
   async enqueueJob(options: EnqueueOptions): Promise<string> {
     // Wait for async handler registration before looking up
     await handlersReady;
 
-    const id = `sync-${++counter}-${Date.now()}`;
     const handler = getHandler(options.type);
-
     if (!handler) {
       throw new Error(`No handler registered for job type: ${options.type}`);
     }
 
-    const now = new Date();
+    const useDb = isObjectId(options.userId);
+    let id: string;
 
-    results.set(id, {
-      status: "pending",
-      userId: options.userId,
-      createdAt: now,
-    });
+    if (useDb) {
+      await dbConnect();
+      const job = await Job.create({
+        type: options.type,
+        data: options.data,
+        userId: options.userId,
+        status: "pending",
+        maxAttempts: options.maxAttempts ?? 1,
+      });
+      id = job._id.toString();
+    } else {
+      id = `sync-mem-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      memoryResults.set(id, { status: "pending", userId: options.userId, createdAt: new Date() });
+    }
 
+    // Fire-and-forget inline execution; state transitions are persisted
+    // so any worker/process can observe them.
     handler({
       ...options.data,
       userId: options.userId,
-    }).then((result) => {
-      results.set(id, {
-        status: "completed",
-        result,
-        userId: options.userId,
-        createdAt: now,
-        completedAt: new Date(),
-      });
-    }).catch((error) => {
-      const errorMessage =
-        error instanceof Error ? error.message : "Unknown error";
-      results.set(id, {
-        status: "failed",
-        error: errorMessage,
-        userId: options.userId,
-        createdAt: now,
-        completedAt: new Date(),
-      });
-    });
+    }).then(
+      async (result) => {
+        if (useDb) {
+          await dbConnect();
+          await Job.findByIdAndUpdate(id, {
+            $set: { status: "completed", result, completedAt: new Date() },
+          });
+        } else {
+          const mem = memoryResults.get(id);
+          if (mem) {
+            mem.status = "completed";
+            mem.result = result;
+            mem.completedAt = new Date();
+          }
+        }
+      },
+      async (error) => {
+        const errorMessage = error instanceof Error ? error.message : "Unknown error";
+        if (useDb) {
+          await dbConnect();
+          await Job.findByIdAndUpdate(id, {
+            $set: { status: "failed", error: errorMessage, completedAt: new Date() },
+          });
+        } else {
+          const mem = memoryResults.get(id);
+          if (mem) {
+            mem.status = "failed";
+            mem.error = errorMessage;
+            mem.completedAt = new Date();
+          }
+        }
+      }
+    );
 
     return id;
   }
 
   async getJobStatus(jobId: string, userId?: string): Promise<JobStatusResult | null> {
-    const job = results.get(jobId);
+    if (!isObjectId(jobId)) {
+      const mem = memoryResults.get(jobId);
+      if (!mem) return null;
+      if (userId && mem.userId && mem.userId !== userId) return null;
+      return {
+        id: jobId,
+        status: mem.status,
+        result: mem.result,
+        error: mem.error,
+        attempts: 1,
+        createdAt: mem.createdAt,
+        completedAt: mem.completedAt,
+      };
+    }
+
+    await dbConnect();
+    const filter: Record<string, unknown> = { _id: jobId };
+    if (userId) filter.userId = userId;
+    const job = await Job.findOne(filter);
     if (!job) return null;
-    if (userId && job.userId && job.userId !== userId) return null;
 
     return {
-      id: jobId,
+      id: job._id.toString(),
       status: job.status,
-      result: job.result,
+      result: job.result ?? undefined,
       error: job.error,
-      attempts: 1,
+      attempts: job.attempts,
       createdAt: job.createdAt,
       completedAt: job.completedAt,
     };

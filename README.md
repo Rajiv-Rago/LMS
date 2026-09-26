@@ -87,18 +87,25 @@ See [`.env.example`](.env.example) for all options. Key variables:
 | `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` | No | Google OAuth credentials |
 | `AUTH_GITHUB_ID` / `AUTH_GITHUB_SECRET` | No | GitHub OAuth credentials |
 | `AUTH_FACEBOOK_ID` / `AUTH_FACEBOOK_SECRET` | No | Facebook OAuth credentials |
-| `AI_PROVIDER` | No | Default AI provider (`openai`, `anthropic`, `groq`, `cerebras`, `gemini`) |
+| `AI_PROVIDER` | No | Default AI provider (`openai`, `anthropic`, `cerebras`, `gemini`) |
 | `OPENAI_API_KEY` | No* | OpenAI API key |
 | `ANTHROPIC_API_KEY` | No* | Anthropic API key |
 | `GROQ_API_KEY` | No* | Groq API key |
 | `CEREBRAS_API_KEY` | No* | Cerebras API key |
 | `GEMINI_API_KEY` | No* | Google Gemini API key |
+| `LANGSMITH_TRACING` | No | Set `true` to trace LangChain AI calls to LangSmith; disabled by default |
+| `LANGSMITH_API_KEY` | No | Required only when tracing is enabled |
+| `LANGSMITH_PROJECT` | No | Trace project name (for example, `kantigo`) |
+| `LANGSMITH_ENDPOINT` | No | Region-specific API endpoint when the LangSmith workspace is outside the US |
+| `LANGCHAIN_CALLBACKS_BACKGROUND` | No | Set `false` in Vercel/serverless deployments so traces finish before execution ends |
 | `BRAVE_SEARCH_API_KEY` | No | Brave Search API key for reliable server-side course reference search; without it, DuckDuckGo HTML search is best effort |
 | `STORAGE_PROVIDER` | No | `local` (default) or `s3` |
 | `EMAIL_PROVIDER` | No | `console` (default), `resend`, `sendgrid`, or `ses` |
 | `APP_URL` | No | Public URL for email links (default: `http://localhost:3000`) |
 
 \* At least one AI provider key is required for AI features.
+
+LangSmith tracing captures prompts, course context, and model responses. Enable it only after configuring the key and checking your data retention and disclosure settings. The app uses LangChain chat models for OpenAI, Anthropic, Cerebras, and Gemini; the existing provider selection and response format remain the same.
 
 ### Course web research
 

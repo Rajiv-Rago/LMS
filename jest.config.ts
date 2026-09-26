@@ -11,6 +11,7 @@ const customJestConfig = {
   forceExit: true,
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/$1",
+    "^eventsource-parser/stream$": "<rootDir>/__tests__/mocks/eventsourceParserStream.ts",
     "^next-auth/jwt$": "<rootDir>/__tests__/helpers/nextAuthJwt.ts",
     "^@auth/core/errors$": "<rootDir>/__tests__/helpers/authCoreErrors.ts",
     "^@youtube-core/(.*)$": "<rootDir>/packages/youtube-learning-path/src/core/$1",

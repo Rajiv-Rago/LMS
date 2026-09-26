@@ -71,6 +71,11 @@ export default function PrivacyPage() {
             provider to generate a response.
           </li>
           <li>
+            <strong>LangSmith</strong> — when tracing is enabled by the site operator,
+            AI prompts, relevant course context, model responses, and usage
+            metadata are sent to LangSmith for debugging and monitoring.
+          </li>
+          <li>
             <strong>Google (YouTube Data API)</strong> — used to search and
             retrieve video metadata for YouTube-based learning paths.
           </li>

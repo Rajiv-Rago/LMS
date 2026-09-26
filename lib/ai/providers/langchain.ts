@@ -3,6 +3,7 @@ import type { BaseMessage } from "@langchain/core/messages";
 import type { BaseChatModel } from "@langchain/core/language_models/chat_models";
 import type { AIProvider, AIMessage, AICompletionOptions, AICompletionResponse, AISource, AIStreamResult, AIProviderName } from "../types";
 import { AIProviderError, classifyProviderError } from "../errors";
+import { researchWithTools } from "../tools/webResearch";
 
 /** Keep the app's provider contract while routing inference through LangChain. */
 export abstract class LangChainProvider implements AIProvider {
@@ -37,16 +38,20 @@ export abstract class LangChainProvider implements AIProvider {
   }
 
   protected async invoke(messages: AIMessage[], options?: AICompletionOptions): Promise<AICompletionResponse> {
-    const response = await this.createModel(options).invoke(this.messages(messages, options));
+    const model = this.createModel(options);
+    const research = options?.webResearch
+      ? await researchWithTools(model, this.messages(messages, options))
+      : undefined;
+    const response = await model.invoke(research?.messages ?? this.messages(messages, options));
     const usage = response.usage_metadata;
-    const sources = this.sources({ ...response.additional_kwargs, ...response.response_metadata });
+    const sources = research?.sources ?? this.sources({ ...response.additional_kwargs, ...response.response_metadata });
     return {
       content: response.text,
       finishReason: String(response.response_metadata.finish_reason ?? response.response_metadata.finishReason ?? "") || undefined,
-      usage: usage ? {
-        promptTokens: usage.input_tokens,
-        completionTokens: usage.output_tokens,
-        totalTokens: usage.total_tokens,
+      usage: usage || research ? {
+        promptTokens: (usage?.input_tokens ?? 0) + (research?.usage.promptTokens ?? 0),
+        completionTokens: (usage?.output_tokens ?? 0) + (research?.usage.completionTokens ?? 0),
+        totalTokens: (usage?.total_tokens ?? 0) + (research?.usage.totalTokens ?? 0),
       } : undefined,
       sources: sources.length ? sources : undefined,
     };
@@ -66,7 +71,11 @@ export abstract class LangChainProvider implements AIProvider {
 
   async chatStream(messages: AIMessage[], options?: AICompletionOptions): Promise<AIStreamResult> {
     try {
-      const chunks = await this.createModel(options).stream(this.messages(messages, options));
+      const model = this.createModel(options);
+      const research = options?.webResearch
+        ? await researchWithTools(model, this.messages(messages, options))
+        : undefined;
+      const chunks = await model.stream(research?.messages ?? this.messages(messages, options));
       let resolveResponse!: (result: Awaited<AIStreamResult["response"]>) => void;
       let rejectResponse!: (error: unknown) => void;
       const response = new Promise<Awaited<AIStreamResult["response"]>>((resolve, reject) => {
@@ -78,21 +87,21 @@ export abstract class LangChainProvider implements AIProvider {
       const extractSources = (metadata: Record<string, unknown>) => this.sources(metadata);
       const wrapStreamError = (error: unknown) => this.wrapError(error, "chatStream");
       async function* stream(): AsyncGenerator<string> {
-        let promptTokens = 0;
-        let completionTokens = 0;
-        let totalTokens = 0;
-        let hasUsage = false;
-        let sources: AISource[] = [];
+        let promptTokens = research?.usage.promptTokens ?? 0;
+        let completionTokens = research?.usage.completionTokens ?? 0;
+        let totalTokens = research?.usage.totalTokens ?? 0;
+        let hasUsage = Boolean(research);
+        let sources: AISource[] = research?.sources ?? [];
         try {
           for await (const chunk of chunks) {
             if (chunk.usage_metadata) {
               // Streamed usage may be cumulative; the final reported value wins.
-              promptTokens = chunk.usage_metadata.input_tokens ?? promptTokens;
-              completionTokens = chunk.usage_metadata.output_tokens ?? completionTokens;
-              totalTokens = chunk.usage_metadata.total_tokens ?? totalTokens;
+              promptTokens = (research?.usage.promptTokens ?? 0) + (chunk.usage_metadata.input_tokens ?? 0);
+              completionTokens = (research?.usage.completionTokens ?? 0) + (chunk.usage_metadata.output_tokens ?? 0);
+              totalTokens = (research?.usage.totalTokens ?? 0) + (chunk.usage_metadata.total_tokens ?? 0);
               hasUsage = true;
             }
-            const found = extractSources({ ...chunk.additional_kwargs, ...chunk.response_metadata });
+            const found = research ? [] : extractSources({ ...chunk.additional_kwargs, ...chunk.response_metadata });
             if (found.length) sources = [...new Map([...sources, ...found].map(source => [source.url, source])).values()];
             if (chunk.text) yield chunk.text;
           }

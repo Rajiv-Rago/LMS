@@ -76,6 +76,19 @@ describe("LessonContentGeneratorService", () => {
     expect(options.temperature).toBe(0.7);
   });
 
+  it("only stores URLs returned by research, not model-invented sources", async () => {
+    mockGenerateText.mockResolvedValue({
+      content: JSON.stringify({ content: "Lesson", keyTakeaways: ["Takeaway"], sources: [{ title: "Invented", url: "https://made-up.example" }] }),
+      sources: [{ title: "Read page", url: "https://example.com/read" }],
+    });
+    const result = await service.generateLessonContent({
+      courseTitle: "Test", courseDescription: "Test", moduleTitle: "Test",
+      lessonTitle: "Test", lessonOutline: "Test", targetLevel: "beginner",
+    });
+    expect(mockGenerateText.mock.calls[0][1]).toMatchObject({ webResearch: true });
+    expect(result.content.sources).toEqual([{ title: "Read page", url: "https://example.com/read" }]);
+  });
+
   it("throws on missing content field", async () => {
     mockGenerateText.mockResolvedValue({
       content: JSON.stringify({ keyTakeaways: ["point 1"] }), // missing content

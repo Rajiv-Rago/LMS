@@ -30,7 +30,7 @@ export class GeminiProvider extends LangChainProvider {
   }
 
   async chatStream(messages: AIMessage[], options?: AICompletionOptions): Promise<AIStreamResult> {
-    if (!options?.googleSearch) return super.chatStream(messages, options);
+    if (options?.webResearch || !options?.googleSearch) return super.chatStream(messages, options);
     let active: AIStreamResult;
     try {
       active = await super.chatStream(messages, options);

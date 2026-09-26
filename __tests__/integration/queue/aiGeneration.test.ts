@@ -587,13 +587,15 @@ describe("ai.generate-lesson-content handler", () => {
     expect(mockGenerateLessonContent).toHaveBeenCalledWith(
       expect.objectContaining({
         previousLessonsSummary: expect.stringContaining("Takeaway 1A"),
-      })
+      }),
+      []
     );
 
     expect(mockGenerateLessonContent).toHaveBeenCalledWith(
       expect.objectContaining({
         previousLessonsSummary: expect.stringContaining("Takeaway 2A"),
-      })
+      }),
+      []
     );
   });
 
@@ -615,7 +617,8 @@ describe("ai.generate-lesson-content handler", () => {
       expect.objectContaining({
         feedback: "Make it simpler",
         previousContent: "Previous content",
-      })
+      }),
+      []
     );
   });
 

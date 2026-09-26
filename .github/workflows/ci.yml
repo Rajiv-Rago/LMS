@@ -51,7 +51,7 @@ jobs:
           --health-start-period 10s
     env:
       MONGODB_URI: mongodb://localhost:27017/lms-test
-      JWT_SECRET: ci-test-secret-value-for-github-actions-minimum-length
+      AUTH_SECRET: ci-test-secret-value-for-github-actions-minimum-length
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -67,7 +67,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       MONGODB_URI: mongodb://localhost:27017/lms
-      JWT_SECRET: ci-build-secret-value-for-github-actions-minimum-length
+      AUTH_SECRET: ci-build-secret-value-for-github-actions-minimum-length
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

@@ -112,6 +112,7 @@ registerHandler(
         defaultProvider: resolved.provider,
         defaultModel: resolved.model,
       },
+      references: syllabus.references ?? [],
       isPublished: true,
     });
 
@@ -358,7 +359,7 @@ registerHandler(
               previousLessonsSummary: summaryForPrompt || undefined,
               targetLevel,
               tier: (tier as AITier) || undefined,
-            });
+            }, course.references ?? []);
 
           lesson.content = content.content;
           lesson.keyTakeaways = content.keyTakeaways;
@@ -541,7 +542,7 @@ registerHandler(
         feedback: feedback || undefined,
         previousContent: feedback ? lesson.content : undefined,
         tier: (tier as AITier) || undefined,
-      });
+      }, course.references ?? []);
 
       if (lesson.content) {
         lesson.previousContent = lesson.content;

@@ -1,5 +1,7 @@
 import { SyllabusGeneratorService } from "./syllabusGenerator";
 
+jest.mock("./webResearch", () => ({ researchTopic: jest.fn().mockResolvedValue([]) }));
+
 // Mock createAIProvider to return our mock provider
 const mockGenerateText = jest.fn();
 jest.mock("../index", () => ({

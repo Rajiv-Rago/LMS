@@ -207,7 +207,7 @@ export async function POST(
             feedback: validation.data.feedback || undefined,
             previousContent: validation.data.feedback ? lesson.previousContent : undefined,
             tier: (reqTier as AITier) || undefined,
-          });
+          }, course.references ?? []);
 
           for await (const event of generator) {
             if (closed) break;

@@ -93,11 +93,18 @@ See [`.env.example`](.env.example) for all options. Key variables:
 | `GROQ_API_KEY` | No* | Groq API key |
 | `CEREBRAS_API_KEY` | No* | Cerebras API key |
 | `GEMINI_API_KEY` | No* | Google Gemini API key |
+| `BRAVE_SEARCH_API_KEY` | No | Brave Search API key for reliable server-side course reference search; without it, DuckDuckGo HTML search is best effort |
 | `STORAGE_PROVIDER` | No | `local` (default) or `s3` |
 | `EMAIL_PROVIDER` | No | `console` (default), `resend`, `sendgrid`, or `ses` |
 | `APP_URL` | No | Public URL for email links (default: `http://localhost:3000`) |
 
 \* At least one AI provider key is required for AI features.
+
+### Course web research
+
+When a syllabus is generated, the server searches for up to five sources and reads up to three public HTML pages. It saves URLs and short page excerpts in `Course.references`; lesson generation receives the most relevant references as optional context. A source being read does **not** mean its claims were verified. Search failure leaves references empty and does not block course creation.
+
+Set `BRAVE_SEARCH_API_KEY` in the Vercel project environment for a reliable indexed search backend. The no-key DuckDuckGo HTML fallback may be blocked or change without notice. The code in `packages/web-search` is a separate LM Studio plugin and is not invoked by Kantigo. Neither the search key nor arbitrary page-fetch URLs are exposed to the browser.
 
 ## Scripts
 

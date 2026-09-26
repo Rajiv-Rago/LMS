@@ -2,6 +2,7 @@ import { AIProvider, AIProviderName } from "../types";
 import { createAIProvider } from "../index";
 import { parseAIJsonResponse } from "../utils/jsonParser";
 import { Complexity, TargetLevel, complexityToLevel } from "../utils/promptUtils";
+import { researchTopic, type WebSource } from "./webResearch";
 
 export type { Complexity, TargetLevel } from "../utils/promptUtils";
 
@@ -38,6 +39,7 @@ export interface GeneratedSyllabus {
   courseDescription: string;
   modules: GeneratedModule[];
   syllabusReferencesReady?: boolean;
+  references?: WebSource[];
 }
 
 export interface SyllabusGeneratorConfig {
@@ -131,8 +133,15 @@ export class SyllabusGeneratorService {
 
     const syllabus = this.parseResponse(response.content);
 
-    // Trigger web-search agent for syllabus-level references (stored in Course.references later by caller)
-    syllabus.syllabusReferencesReady = true;
+    try {
+      // Research after the syllabus is generated so the query can use its actual title.
+      syllabus.references = await researchTopic(`${syllabus.courseTitle} ${request.topic}`);
+      syllabus.syllabusReferencesReady = syllabus.references.length > 0;
+    } catch {
+      // Search outages must not prevent a learner from creating a course.
+      syllabus.references = [];
+      syllabus.syllabusReferencesReady = false;
+    }
 
     return {
       syllabus,

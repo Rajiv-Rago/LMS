@@ -939,7 +939,7 @@ export default function LessonDetailPage({
                                 rel="noopener noreferrer"
                                 className="text-indigo-600 dark:text-indigo-400 hover:underline"
                               >
-                                {source.title}
+                                {i + 1}. {source.title}
                               </a>
                             </li>
                           ))}

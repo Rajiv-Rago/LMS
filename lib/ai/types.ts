@@ -8,6 +8,7 @@ export interface AICompletionOptions {
   temperature?: number;
   systemPrompt?: string;
   googleSearch?: boolean;
+  webResearch?: boolean;
 }
 
 export interface AISource {

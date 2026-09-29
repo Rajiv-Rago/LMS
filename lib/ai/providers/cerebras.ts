@@ -1,85 +1,22 @@
-import OpenAI from "openai";
-import {
-  AIProvider,
-  AIMessage,
-  AICompletionOptions,
-  AICompletionResponse,
-} from "../types";
-import { AIProviderError, classifyProviderError } from "../errors";
+import { ChatOpenAI } from "@langchain/openai";
+import type { AICompletionOptions } from "../types";
+import { LangChainProvider } from "./langchain";
 
-const DEFAULT_MODEL = "gpt-oss-120b";
-
-export class CerebrasProvider implements AIProvider {
+export class CerebrasProvider extends LangChainProvider {
   name = "cerebras" as const;
-  private client: OpenAI;
-  private model: string;
 
-  constructor(apiKey: string, model?: string) {
-    this.client = new OpenAI({
-      apiKey,
-      baseURL: "https://api.cerebras.ai/v1",
-    });
-    this.model = model || DEFAULT_MODEL;
+  constructor(apiKey: string, model = "gpt-oss-120b") {
+    super(apiKey, model);
   }
 
-  async chat(
-    messages: AIMessage[],
-    options?: AICompletionOptions
-  ): Promise<AICompletionResponse> {
-    try {
-      const systemMessages: OpenAI.Chat.ChatCompletionMessageParam[] =
-        options?.systemPrompt
-          ? [{ role: "system", content: options.systemPrompt }]
-          : [];
-
-      const chatMessages: OpenAI.Chat.ChatCompletionMessageParam[] = messages.map(
-        (msg) => ({
-          role: msg.role,
-          content: msg.content,
-        })
-      );
-
-      const response = await this.client.chat.completions.create({
-        model: this.model,
-        messages: [...systemMessages, ...chatMessages],
-        max_tokens: options?.maxTokens || 2048,
-        temperature: options?.temperature ?? 0.7,
-      });
-
-      const choice = response.choices[0];
-
-      return {
-        content: choice.message.content || "",
-        finishReason: choice.finish_reason || undefined,
-        usage: response.usage
-          ? {
-              promptTokens: response.usage.prompt_tokens,
-              completionTokens: response.usage.completion_tokens,
-              totalTokens: response.usage.total_tokens,
-            }
-          : undefined,
-      };
-    } catch (error) {
-      throw this.wrapError(error, "chat");
-    }
-  }
-
-  async generateText(
-    prompt: string,
-    options?: AICompletionOptions
-  ): Promise<AICompletionResponse> {
-    return this.chat([{ role: "user", content: prompt }], options);
-  }
-
-  private wrapError(error: unknown, operation: "chat" | "generateText" | "chatStream"): AIProviderError {
-    if (error instanceof AIProviderError) return error;
-    const classified = classifyProviderError(error, "cerebras");
-    return new AIProviderError({
-      provider: "cerebras",
+  protected createModel(options?: AICompletionOptions): ChatOpenAI {
+    return new ChatOpenAI({
+      apiKey: this.apiKey,
       model: this.model,
-      operation,
-      originalError: error,
-      ...classified,
+      maxTokens: options?.maxTokens || 2048,
+      temperature: options?.temperature ?? 0.7,
+      streamUsage: false,
+      configuration: { baseURL: "https://api.cerebras.ai/v1" },
     });
   }
 }

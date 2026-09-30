@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ModelSelector, ModelSelectorValue } from "@/components/ai/ModelSelector";
 import { useUserAIDefaults } from "@/lib/hooks/useUserAIDefaults";
+import MarkdownContent from "@/components/ui/MarkdownContent";
 import Button from "@/components/ui/Button";
 import { Skeleton } from "@/components/ui/Skeleton";
 
@@ -33,6 +34,7 @@ export default function AITutorPage({
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const [loadingSessions, setLoadingSessions] = useState(true);
   const userDefaults = useUserAIDefaults();
   const [modelValue, setModelValue] = useState<ModelSelectorValue>({
@@ -53,6 +55,18 @@ export default function AITutorPage({
         if (res.ok) {
           const data = await res.json();
           setSessions(data.sessions);
+          const activeResponse = await fetch(`/api/ai/chat/sessions?courseId=${id}&active=true&limit=1`);
+          if (activeResponse.ok) {
+            const active = await activeResponse.json();
+            if (active.sessions[0]) {
+              const chatResponse = await fetch(`/api/ai/chat/${active.sessions[0]._id}`);
+              if (chatResponse.ok) {
+                const chat = await chatResponse.json();
+                setCurrentSessionId(active.sessions[0]._id);
+                setMessages(chat.session.messages.filter((message: Message) => message.role !== ("system" as string)));
+              }
+            }
+          }
         }
       } catch { } finally {
         setLoadingSessions(false);
@@ -83,7 +97,8 @@ export default function AITutorPage({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || loading) return;
+    if (!input.trim() || loading || loadingSessions) return;
+    setError("");
 
     const userMessage = input.trim();
     setInput("");
@@ -125,30 +140,31 @@ export default function AITutorPage({
           ]);
         }
       } else {
-        setMessages((prev) => [
-          ...prev,
-          {
-            role: "assistant",
-            content: "Sorry, I encountered an error. Please try again.",
-          },
-        ]);
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Could not send your question. Please retry.");
       }
-    } catch {
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "assistant",
-          content: "Sorry, I encountered an error. Please try again.",
-        },
-      ]);
+    } catch (error) {
+      setMessages(previous => previous.slice(0, -1));
+      setInput(userMessage);
+      setError(error instanceof Error ? error.message : "Could not send your question. Please retry.");
     } finally {
       setLoading(false);
     }
   };
 
-  const startNewChat = () => {
-    setCurrentSessionId(null);
-    setMessages([]);
+  const startNewChat = async () => {
+    if (loading || loadingSessions) return;
+    setLoading(true);
+    try {
+      const response = await fetch("/api/ai/chat/sessions", {
+        method: "POST", headers: { "Content-Type": "application/json", "X-Requested-With": "XMLHttpRequest" }, body: JSON.stringify({ courseId: id }),
+      });
+      if (!response.ok) throw new Error("Could not start a new chat. Please retry.");
+      setCurrentSessionId(null);
+      setMessages([]);
+      setError("");
+    } catch (error) { setError(error instanceof Error ? error.message : "Could not start a new chat."); }
+    finally { setLoading(false); }
   };
 
   return (
@@ -168,7 +184,7 @@ export default function AITutorPage({
         </div>
 
         <div className="p-4 space-y-3">
-          <Button onClick={startNewChat} className="w-full">
+          <Button onClick={startNewChat} disabled={loading || loadingSessions} className="w-full">
             New Chat
           </Button>
           <ModelSelector
@@ -197,6 +213,7 @@ export default function AITutorPage({
               {sessions.map((session) => (
                 <li key={session._id}>
                   <button
+                    disabled={loading}
                     onClick={() => loadSession(session._id)}
                     className={`w-full text-left px-3 py-2 text-sm rounded-md truncate ${
                       currentSessionId === session._id
@@ -215,6 +232,7 @@ export default function AITutorPage({
 
       {/* Chat Area */}
       <div className="flex-1 flex flex-col bg-zinc-50 dark:bg-zinc-950 min-h-0">
+        {error && <p role="alert" className="p-4 text-sm text-red-600 dark:text-red-400">{error}</p>}
         {/* Messages */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {messages.length === 0 ? (
@@ -249,7 +267,7 @@ export default function AITutorPage({
                         : "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white border border-zinc-200 dark:border-zinc-800"
                     }`}
                   >
-                    <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
+                    {message.role === "assistant" ? <MarkdownContent content={message.content} /> : <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>}
                   </div>
                 </div>
               ))}

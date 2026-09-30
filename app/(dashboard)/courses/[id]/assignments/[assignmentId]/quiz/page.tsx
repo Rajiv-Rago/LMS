@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { QuestionCard, QuizTimer, QuizResults } from "@/components/quiz";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { useQuizTutorVisibility } from "@/components/tutor/FloatingTutor";
 import Button from "@/components/ui/Button";
 
 interface Question {
@@ -83,7 +84,10 @@ export default function QuizPage({
   // UI state
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [hasActiveAttempt, setHasActiveAttempt] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useQuizTutorVisibility(loading || !!currentAttempt || hasActiveAttempt || (!!error && !quizInfo));
 
   // Fetch quiz info
   useEffect(() => {
@@ -108,6 +112,7 @@ export default function QuizPage({
           return;
         }
 
+        setHasActiveAttempt(!!data.hasActiveAttempt);
         setQuizInfo(data.quiz);
         setAttempts(data.attempts || []);
         setBestScore(data.bestScore);
@@ -137,10 +142,12 @@ export default function QuizPage({
       }
 
       const data = await res.json();
+      setHasActiveAttempt(true);
       setCurrentAttempt(data.attempt);
       setQuestions(data.questions);
       setAnswers({});
-    } catch (err) {      setError(err instanceof Error ? err.message : "Failed to start quiz");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to start quiz");
     } finally {
       setLoading(false);
     }
@@ -169,7 +176,9 @@ export default function QuizPage({
       const data = await res.json();
       setResult(data);
       setCurrentAttempt(null);
-    } catch (err) {      setError(err instanceof Error ? err.message : "Failed to submit quiz");
+      setHasActiveAttempt(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to submit quiz");
     } finally {
       setSubmitting(false);
     }

@@ -12,6 +12,7 @@ describe("providerResolver", () => {
     delete process.env.ANTHROPIC_API_KEY;
     delete process.env.CEREBRAS_API_KEY;
     delete process.env.GEMINI_API_KEY;
+    delete process.env.OPENROUTER_API_KEY;
   });
 
   afterAll(() => {
@@ -19,6 +20,27 @@ describe("providerResolver", () => {
   });
 
   describe("resolveProvider", () => {
+    it("resolves OpenRouter from environment configuration", () => {
+      process.env.AI_PROVIDER = "openrouter";
+      process.env.OPENROUTER_API_KEY = "router-test";
+      process.env.AI_MODEL = "openrouter/free";
+      expect(resolveProvider({})).toMatchObject({
+        provider: "openrouter", apiKey: "router-test", model: "openrouter/free",
+      });
+    });
+
+    it.each([
+      { requestProvider: "gemini" as const, requestModel: "" },
+      { coursePreferences: { defaultProvider: "gemini" as const, defaultModel: "" } },
+      { userPreferences: { defaultProvider: "gemini" as const, defaultModel: "  " } },
+      {},
+    ])("treats a blank model as unspecified: %j", (options) => {
+      process.env.AI_PROVIDER = "gemini";
+      process.env.GEMINI_API_KEY = "test-key";
+      process.env.AI_MODEL = "";
+      expect(resolveProvider(options)?.model).toBeUndefined();
+    });
+
     it("uses request provider with highest priority", () => {
       process.env.ANTHROPIC_API_KEY = "sk-ant-test";
       process.env.OPENAI_API_KEY = "sk-openai-test";

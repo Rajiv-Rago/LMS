@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import mongoose from "mongoose";
 import { dbConnect } from "@/lib/db";
-import { Course, Lesson } from "@/lib/models";
+import { Course, Lesson, Module } from "@/lib/models";
 import { authenticate, requireCsrf } from "@/lib/auth";
 import { getCoursePermissions } from "@/lib/auth/coursePermissions";
 import { captureException } from "@/lib/logger";
@@ -48,6 +48,12 @@ export async function POST(
       return NextResponse.json({ error: "Lesson not found" }, { status: 404 });
     }
 
+    if (!await Module.findOne({ _id: lesson.module, course: courseId })) {
+      return NextResponse.json({ error: "Lesson does not belong to this course" }, { status: 404 });
+    }
+    if (lesson.generationStatus === "generating" || lesson.resourceRefreshStartedAt && Date.now() - lesson.resourceRefreshStartedAt.getTime() < 120000) {
+      return NextResponse.json({ error: "Lesson is busy" }, { status: 409 });
+    }
     if (!lesson.previousContent) {
       return NextResponse.json(
         { error: "No previous version available" },
@@ -57,6 +63,10 @@ export async function POST(
 
     lesson.content = lesson.previousContent;
     lesson.keyTakeaways = lesson.previousKeyTakeaways || [];
+    lesson.sources = lesson.previousSources || [];
+    lesson.learningResources = lesson.previousLearningResources || [];
+    lesson.previousSources = undefined;
+    lesson.previousLearningResources = undefined;
     lesson.previousContent = undefined;
     lesson.previousKeyTakeaways = undefined;
 

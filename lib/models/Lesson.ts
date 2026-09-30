@@ -1,6 +1,8 @@
 import mongoose, { Document, Model } from "mongoose";
 import { AIProviderName } from "@/lib/ai/types";
 
+import type { LearningResource } from "@/lib/ai/services/learningResources";
+
 export type LessonContentType = "text" | "video" | "file";
 export type LessonGenerationStatus = "skeleton" | "generating" | "completed" | "failed";
 
@@ -25,6 +27,10 @@ export interface ILesson extends Document {
   lessonOutline?: string;
   generationConfig?: LessonGenerationConfig;
   previousContent?: string;
+  previousSources?: { title: string; url: string }[];
+  previousLearningResources?: LearningResource[];
+  learningResources?: LearningResource[];
+  resourceRefreshStartedAt?: Date;
   previousKeyTakeaways?: string[];
   keyTakeaways?: string[];
   sources?: { title: string; url: string }[];
@@ -42,6 +48,14 @@ export interface ILesson extends Document {
 }
 
 type LessonModel = Model<ILesson>;
+
+const learningResourceSchema = new mongoose.Schema({
+  title: { type: String, required: true },
+  url: { type: String, required: true },
+  description: { type: String, required: true },
+  type: { type: String, enum: ["tutorial", "explanation", "video", "course", "exercise"], required: true },
+  requiresSignup: { type: Boolean, default: false },
+}, { _id: false });
 
 const lessonSchema = new mongoose.Schema<ILesson, LessonModel>(
   {
@@ -104,12 +118,16 @@ const lessonSchema = new mongoose.Schema<ILesson, LessonModel>(
     generationConfig: {
       provider: {
         type: String,
-        enum: ["openai", "anthropic", "cerebras", "gemini"],
+        enum: ["openai", "anthropic", "cerebras", "gemini", "openrouter"],
       },
       model: {
         type: String,
       },
     },
+    learningResources: { type: [learningResourceSchema], default: undefined },
+    previousLearningResources: { type: [learningResourceSchema], default: undefined },
+    previousSources: { type: [{ title: String, url: String }], default: undefined },
+    resourceRefreshStartedAt: Date,
     previousContent: {
       type: String,
     },

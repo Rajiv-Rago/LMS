@@ -9,7 +9,9 @@ FROM node:22-alpine AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-RUN npm run build
+RUN MONGODB_URI=mongodb://127.0.0.1:27017/build \
+    AUTH_SECRET=build-only-placeholder-secret-32chars \
+    npm run build
 
 # Stage 3: Production
 FROM node:22-alpine AS runner

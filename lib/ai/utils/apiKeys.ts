@@ -5,6 +5,7 @@ export const API_KEY_ENV_MAP: Record<AIProviderName, string> = {
   anthropic: "ANTHROPIC_API_KEY",
   cerebras: "CEREBRAS_API_KEY",
   gemini: "GEMINI_API_KEY",
+  openrouter: "OPENROUTER_API_KEY",
 };
 
 /**

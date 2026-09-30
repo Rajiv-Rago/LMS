@@ -1,3 +1,4 @@
+import type { AIProviderName } from "@/lib/ai/types";
 import mongoose, { Document, Model } from "mongoose";
 
 export interface AIMessage {
@@ -13,7 +14,7 @@ export interface IAIChatSession extends Document {
   lesson?: mongoose.Types.ObjectId;
   title: string;
   messages: AIMessage[];
-  provider: "openai" | "anthropic";
+  provider: AIProviderName;
   aiModel?: string;
   isActive: boolean;
   createdAt: Date;
@@ -68,7 +69,7 @@ const aiChatSessionSchema = new mongoose.Schema<
     messages: [messageSchema],
     provider: {
       type: String,
-      enum: ["openai", "anthropic"],
+      enum: ["openai", "anthropic", "cerebras", "gemini", "openrouter"],
       required: true,
     },
     aiModel: {

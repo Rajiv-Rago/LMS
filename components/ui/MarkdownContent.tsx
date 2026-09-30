@@ -2,9 +2,34 @@
 
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
+import type { Root, RootContent, Link, Text } from "mdast";
 import type { PluggableList } from "unified";
 
-const plugins: PluggableList = [remarkGfm];
+interface CitationSource { title: string; url: string }
+
+function citationLinks(sources: CitationSource[]) {
+  return () => (tree: Root) => {
+    function walk(node: Root | RootContent) {
+      if (node.type === "link" || !("children" in node)) return;
+      const children: RootContent[] = [];
+      for (const child of node.children) {
+        if (child.type !== "text") { walk(child); children.push(child); continue; }
+        let offset = 0;
+        for (const match of child.value.matchAll(/\[(\d+)\]/g)) {
+          const source = sources[Number(match[1]) - 1];
+          if (!source || !/^https?:\/\//.test(source.url)) continue;
+          const index = match.index!;
+          if (index > offset) children.push({ type: "text", value: child.value.slice(offset, index) } as Text);
+          children.push({ type: "link", url: source.url, children: [{ type: "text", value: match[1] }] } as Link);
+          offset = index + match[0].length;
+        }
+        if (offset < child.value.length) children.push({ type: "text", value: child.value.slice(offset) } as Text);
+      }
+      node.children = children as typeof node.children;
+    }
+    walk(tree);
+  };
+}
 
 // Shared with the lesson TOC so anchor ids match the rendered headings.
 export function slugify(text: string) {
@@ -38,6 +63,11 @@ const heading = (Tag: "h2" | "h3"): Components["h2"] =>
   };
 
 const components: Components = {
+  a({ children, href, title }) {
+    const label = nodeText(children);
+    if (/^\d+$/.test(label)) return <sup><a href={href} title={title} aria-label={`Source ${label}`} target="_blank" rel="noopener noreferrer">{label}</a></sup>;
+    return <a href={href} title={title}>{children}</a>;
+  },
   h2: heading("h2"),
   h3: heading("h3"),
   code({ className: codeClassName, children, ...props }) {
@@ -70,12 +100,15 @@ const components: Components = {
 interface MarkdownContentProps {
   content: string;
   className?: string;
+  sources?: CitationSource[];
 }
 
 export default function MarkdownContent({
   content,
   className = "",
+  sources = [],
 }: MarkdownContentProps) {
+  const plugins: PluggableList = [remarkGfm, citationLinks(sources)];
   return (
     <div className={`prose dark:prose-invert max-w-none ${className}`}>
       <ReactMarkdown remarkPlugins={plugins} components={components}>

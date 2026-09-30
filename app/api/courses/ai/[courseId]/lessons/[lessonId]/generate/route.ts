@@ -136,13 +136,13 @@ export async function POST(
 
     // Atomic check-and-set to prevent concurrent generation
     const claimed = await Lesson.findOneAndUpdate(
-      { _id: lessonId, generationStatus: { $ne: "generating" } },
+      { _id: lessonId, generationStatus: { $ne: "generating" }, $or: [{ resourceRefreshStartedAt: null }, { resourceRefreshStartedAt: { $lt: new Date(Date.now() - 120000) } }] },
       {
         $set: {
           generationStatus: "generating",
           generationConfig: { provider: resolved.provider, model: resolved.model },
           ...(lesson.content
-            ? { previousContent: lesson.content, previousKeyTakeaways: lesson.keyTakeaways || [] }
+            ? { previousContent: lesson.content, previousKeyTakeaways: lesson.keyTakeaways || [], previousSources: lesson.sources || [], previousLearningResources: lesson.learningResources || [] }
             : {}),
         },
       },
@@ -205,7 +205,7 @@ export async function POST(
             previousLessonsSummary: previousLessonsSummary || undefined,
             targetLevel,
             feedback: validation.data.feedback || undefined,
-            previousContent: validation.data.feedback ? lesson.previousContent : undefined,
+            previousContent: validation.data.feedback ? lesson.content : undefined,
             tier: (reqTier as AITier) || undefined,
           }, course.references ?? []);
 
@@ -215,15 +215,21 @@ export async function POST(
             if (event.type === "chunk") {
               send("chunk", { text: event.text });
             } else if (event.type === "complete") {
+              lesson.previousContent = claimed.previousContent;
+              lesson.previousKeyTakeaways = claimed.previousKeyTakeaways;
+              lesson.previousSources = claimed.previousSources;
+              lesson.previousLearningResources = claimed.previousLearningResources;
               lesson.content = event.content;
               lesson.keyTakeaways = event.keyTakeaways;
               lesson.sources = event.sources?.length ? event.sources : undefined;
+              lesson.learningResources = event.learningResources || [];
               lesson.generationStatus = "completed";
               await lesson.save();
 
               send("done", {
                 keyTakeaways: event.keyTakeaways,
                 sources: event.sources || [],
+                learningResources: event.learningResources || [],
               });
 
               after(async () => {

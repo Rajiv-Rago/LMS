@@ -42,6 +42,10 @@ async function createLessonWithPreviousContent(ownerId: string) {
     previousContent: "Original content before regeneration",
     keyTakeaways: ["new takeaway"],
     previousKeyTakeaways: ["old takeaway"],
+    sources: [{ title: "New citation", url: "https://example.com/new" }],
+    previousSources: [{ title: "Old citation", url: "https://example.com/old" }],
+    learningResources: [{ title: "New resource", url: "https://example.com/new", description: "New", type: "tutorial", requiresSignup: false }],
+    previousLearningResources: [{ title: "Old resource", url: "https://example.com/old", description: "Old", type: "exercise", requiresSignup: true }],
     order: 0,
     isPublished: true,
     generationStatus: "completed",
@@ -105,6 +109,8 @@ describe("POST /api/courses/ai/[courseId]/lessons/[lessonId]/revert", () => {
         previousContent?: string;
         keyTakeaways: string[];
         previousKeyTakeaways?: string[];
+        sources: { title: string }[];
+        learningResources: { title: string; requiresSignup: boolean }[];
       };
     }>(response);
 
@@ -113,6 +119,19 @@ describe("POST /api/courses/ai/[courseId]/lessons/[lessonId]/revert", () => {
     expect(data.lesson.keyTakeaways).toEqual(["old takeaway"]);
     expect(data.lesson.previousContent).toBeUndefined();
     expect(data.lesson.previousKeyTakeaways).toBeUndefined();
+    expect(data.lesson.sources[0].title).toBe("Old citation");
+    expect(data.lesson.learningResources[0]).toMatchObject({ title: "Old resource", requiresSignup: true });
+  });
+
+  it("rejects a lesson from another course even when the user owns both", async () => {
+    const { user, token } = await createTestUser();
+    const first = await createLessonWithPreviousContent(user._id.toString());
+    const second = await createLessonWithPreviousContent(user._id.toString());
+    const response = await revertPOST(buildRequest("POST", "/api/revert", { token }), {
+      params: Promise.resolve({ courseId: first.course._id.toString(), lessonId: second.lesson._id.toString() }),
+    });
+    expect(response.status).toBe(404);
+    expect((await Lesson.findById(second.lesson._id))?.content).toBe("New content after regeneration");
   });
 
   it("swaps content for sharedWith user", async () => {

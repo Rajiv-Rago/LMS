@@ -53,9 +53,11 @@ export function resolveProvider(
   options: ResolveProviderOptions
 ): ResolvedProvider | null {
   const skipped: string[] = [];
+  const envModel = process.env.AI_MODEL?.trim() || undefined;
 
   // 1. Request explicit provider+model — fail fast if user explicitly asked for it
   if (options.requestProvider) {
+    const model = options.requestModel?.trim() || undefined;
     const apiKey = getApiKey(options.requestProvider);
     if (!apiKey) {
       logger.error("Provider resolution failed: explicit provider not configured", {
@@ -68,13 +70,13 @@ export function resolveProvider(
     logger.info("Provider resolved", {
       source: "request-explicit",
       provider: options.requestProvider,
-      model: options.requestModel,
+      model,
     });
     return {
       provider: options.requestProvider,
-      model: options.requestModel,
+      model,
       apiKey,
-      ...withDisplayNames(options.requestProvider, options.requestModel),
+      ...withDisplayNames(options.requestProvider, model),
     };
   }
 
@@ -100,20 +102,21 @@ export function resolveProvider(
 
   // 3. Course preferences
   if (options.coursePreferences?.defaultProvider) {
+    const model = options.coursePreferences.defaultModel?.trim() || undefined;
     const apiKey = getApiKey(options.coursePreferences.defaultProvider);
     if (apiKey) {
       logger.info("Provider resolved", {
         source: "course-prefs",
         provider: options.coursePreferences.defaultProvider,
-        model: options.coursePreferences.defaultModel,
+        model,
       });
       return {
         provider: options.coursePreferences.defaultProvider,
-        model: options.coursePreferences.defaultModel,
+        model,
         apiKey,
         ...withDisplayNames(
           options.coursePreferences.defaultProvider,
-          options.coursePreferences.defaultModel
+          model
         ),
       };
     }
@@ -145,20 +148,21 @@ export function resolveProvider(
     skipped.push(`user-prefs-tier:${options.userPreferences.defaultTier}`);
   }
   if (options.userPreferences?.defaultProvider) {
+    const model = options.userPreferences.defaultModel?.trim() || undefined;
     const apiKey = getApiKey(options.userPreferences.defaultProvider);
     if (apiKey) {
       logger.info("Provider resolved", {
         source: "user-prefs-provider",
         provider: options.userPreferences.defaultProvider,
-        model: options.userPreferences.defaultModel,
+        model,
       });
       return {
         provider: options.userPreferences.defaultProvider,
-        model: options.userPreferences.defaultModel,
+        model,
         apiKey,
         ...withDisplayNames(
           options.userPreferences.defaultProvider,
-          options.userPreferences.defaultModel
+          model
         ),
       };
     }
@@ -178,13 +182,13 @@ export function resolveProvider(
       logger.info("Provider resolved", {
         source: "env-var",
         provider: envProvider,
-        model: process.env.AI_MODEL,
+        model: envModel,
       });
       return {
         provider: envProvider,
-        model: process.env.AI_MODEL,
+        model: envModel,
         apiKey,
-        ...withDisplayNames(envProvider, process.env.AI_MODEL),
+        ...withDisplayNames(envProvider, envModel),
       };
     }
     logger.warn("Provider resolution: skipped", {
@@ -215,12 +219,12 @@ export function resolveProvider(
   logger.info("Provider resolved", {
     source: "fallback",
     provider: "openai",
-    model: process.env.AI_MODEL,
+    model: envModel,
   });
   return {
     provider: "openai",
-    model: process.env.AI_MODEL,
+    model: envModel,
     apiKey,
-    ...withDisplayNames("openai", process.env.AI_MODEL),
+    ...withDisplayNames("openai", envModel),
   };
 }

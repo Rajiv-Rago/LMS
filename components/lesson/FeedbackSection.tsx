@@ -7,6 +7,7 @@ interface FeedbackSectionProps {
   creditsRemaining: number;
   disabled: boolean;
   generating: boolean;
+  dialogMode?: boolean;
 }
 
 const SUGGESTION_CHIPS = [
@@ -21,8 +22,9 @@ export default function FeedbackSection({
   creditsRemaining,
   disabled,
   generating,
+  dialogMode = false,
 }: FeedbackSectionProps) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(dialogMode);
   const [text, setText] = useState("");
   const [chipSelected, setChipSelected] = useState(false);
   const [validationError, setValidationError] = useState("");
@@ -55,11 +57,11 @@ export default function FeedbackSection({
 
   const buttonText = noCredits
     ? "No credits left -- resets tomorrow"
-    : `Improve with AI (${creditsRemaining} left today)`;
+    : `Improve with AI (${Number.isFinite(creditsRemaining) ? `${creditsRemaining} left today` : "unlimited credits"})`;
 
   return (
-    <div className="mt-6 rounded-lg border border-zinc-200 dark:border-zinc-700">
-      <button
+    <div className={dialogMode ? "pt-3" : "mt-6 rounded-lg border border-zinc-200 dark:border-zinc-700"}>
+      {!dialogMode && <button
         type="button"
         onClick={() => setOpen((v) => !v)}
         className="w-full flex items-center justify-between px-4 py-3 text-left"
@@ -76,7 +78,7 @@ export default function FeedbackSection({
         >
           <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
         </svg>
-      </button>
+      </button>}
 
       {open && (
         <div
@@ -104,6 +106,7 @@ export default function FeedbackSection({
 
           <div>
             <textarea
+              aria-label="Lesson feedback"
               rows={3}
               value={text}
               onChange={(e) => handleTextChange(e.target.value)}

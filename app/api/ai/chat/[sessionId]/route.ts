@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { dbConnect } from "@/lib/db";
-import { AIChatSession } from "@/lib/models";
+import { AIChatSession, Course } from "@/lib/models";
 import { authenticate, requireCsrf } from "@/lib/auth";
+import { getCoursePermissions } from "@/lib/auth/coursePermissions";
+import { validateObjectId } from "@/lib/utils/validateObjectId";
 import { captureException } from "@/lib/logger";
 
 export async function GET(
@@ -10,6 +12,8 @@ export async function GET(
 ) {
   try {
     const { sessionId } = await params;
+    const invalid = validateObjectId(sessionId, "Session ID");
+    if (invalid) return invalid;
     const user = await authenticate(request);
 
     if (!user) {
@@ -32,6 +36,8 @@ export async function GET(
       );
     }
 
+    const course = await Course.findById(session.course._id);
+    if (!course || !(await getCoursePermissions(course, user)).canView) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     return NextResponse.json({ session });
   } catch (error) {
     captureException(error, { operation: "Get chat session error" });
@@ -51,6 +57,8 @@ export async function DELETE(
     if (csrfError) return csrfError;
 
     const { sessionId } = await params;
+    const invalid = validateObjectId(sessionId, "Session ID");
+    if (invalid) return invalid;
     const user = await authenticate(request);
 
     if (!user) {

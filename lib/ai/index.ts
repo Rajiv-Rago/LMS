@@ -3,6 +3,7 @@ import { OpenAIProvider } from "./providers/openai";
 import { AnthropicProvider } from "./providers/anthropic";
 import { CerebrasProvider } from "./providers/cerebras";
 import { GeminiProvider } from "./providers/gemini";
+import { OpenRouterProvider } from "./providers/openrouter";
 import { API_KEY_ENV_MAP } from "./utils/apiKeys";
 
 export type { AIProvider, AIMessage, AICompletionOptions, AICompletionResponse, AIProviderConfig, AIProviderName, AITier, UserAIPreferences, AISource } from "./types";
@@ -10,6 +11,7 @@ export { OpenAIProvider } from "./providers/openai";
 export { AnthropicProvider } from "./providers/anthropic";
 export { CerebrasProvider } from "./providers/cerebras";
 export { GeminiProvider } from "./providers/gemini";
+export { OpenRouterProvider } from "./providers/openrouter";
 
 // Re-export utilities for convenience
 export { API_KEY_ENV_MAP, resolveProvider, getApiKey } from "./utils/providerResolver";
@@ -20,15 +22,18 @@ export { resolveTier, getAvailableTiers, getConfiguredProviders, TIER_CATALOG, T
 export type { TierCandidate, TierMetadata } from "./utils/tierCatalog";
 
 export function createAIProvider(config: AIProviderConfig): AIProvider {
+  const model = config.model?.trim() || undefined;
   switch (config.provider) {
     case "openai":
-      return new OpenAIProvider(config.apiKey, config.model);
+      return new OpenAIProvider(config.apiKey, model);
     case "anthropic":
-      return new AnthropicProvider(config.apiKey, config.model);
+      return new AnthropicProvider(config.apiKey, model);
     case "cerebras":
-      return new CerebrasProvider(config.apiKey, config.model);
+      return new CerebrasProvider(config.apiKey, model);
     case "gemini":
-      return new GeminiProvider(config.apiKey, config.model);
+      return new GeminiProvider(config.apiKey, model);
+    case "openrouter":
+      return new OpenRouterProvider(config.apiKey, model);
     default:
       throw new Error(`Unknown AI provider: ${config.provider}`);
   }

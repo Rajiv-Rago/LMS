@@ -148,7 +148,7 @@ beforeEach(async () => {
   mockFilterAndDedup.mockImplementation((input: unknown) => input as typeof youtubeResult[]);
 
   mockGenerateLessonContent.mockResolvedValue({
-    content: { content: "Generated lesson content...", keyTakeaways: ["Key point 1", "Key point 2"] },
+    content: { content: "Generated lesson content...", keyTakeaways: ["Key point 1", "Key point 2"], sources: [{ title: "Citation", url: "https://example.com/source" }], learningResources: [{ title: "Practice", url: "https://example.com/practice", description: "Practice this topic.", type: "exercise", requiresSignup: false }] },
     usage: { promptTokens: 100, completionTokens: 200, totalTokens: 300 },
   });
 });
@@ -392,6 +392,8 @@ describe("ai.generate-module-content handler", () => {
       expect(lesson.generationStatus).toBe("completed");
       expect(lesson.content).toBe("Generated lesson content...");
       expect(lesson.keyTakeaways).toEqual(["Key point 1", "Key point 2"]);
+      expect(lesson.sources?.[0].title).toBe("Citation");
+      expect(lesson.learningResources?.[0].title).toBe("Practice");
     }
   });
 
@@ -575,6 +577,9 @@ describe("ai.generate-lesson-content handler", () => {
     expect(lesson!.generationStatus).toBe("completed");
     expect(lesson!.content).toBe("Generated lesson content...");
     expect(lesson!.keyTakeaways).toEqual(["Key point 1", "Key point 2"]);
+    expect(lesson!.sources?.[0].title).toBe("Citation");
+    expect(lesson!.learningResources?.[0].title).toBe("Practice");
+    expect(result.learningResources).toEqual(expect.arrayContaining([expect.objectContaining({ title: "Practice" })]));
   });
 
   it("includes previous lessons summary as context", async () => {
@@ -603,6 +608,8 @@ describe("ai.generate-lesson-content handler", () => {
     // Give the third lesson existing content (simulating regeneration)
     await Lesson.findByIdAndUpdate(thirdLessonId, {
       content: "Previous content",
+      sources: [{ title: "Old source", url: "https://example.com/old" }],
+      learningResources: [{ title: "Old resource", url: "https://example.com/old", description: "Old", type: "tutorial", requiresSignup: false }],
       generationStatus: "completed",
     });
 
@@ -620,6 +627,9 @@ describe("ai.generate-lesson-content handler", () => {
       }),
       []
     );
+    const updated = await Lesson.findById(thirdLessonId);
+    expect(updated?.previousSources?.[0].title).toBe("Old source");
+    expect(updated?.previousLearningResources?.[0].title).toBe("Old resource");
   });
 
   it("marks lesson failed and re-throws on error", async () => {

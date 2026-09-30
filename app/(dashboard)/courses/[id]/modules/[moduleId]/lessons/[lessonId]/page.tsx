@@ -7,9 +7,14 @@ import { ChevronDown, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import MarkdownContent, { slugify } from "@/components/ui/MarkdownContent";
 import YouTubeVideoPicker from "@/components/lesson/YouTubeVideoPicker";
 import ContentGenerationSkeleton from "@/components/lesson/ContentGenerationSkeleton";
+import LessonActions from "@/components/lesson/LessonActions";
+import LearningResources from "@/components/lesson/LearningResources";
+import Dialog from "@/components/ui/Dialog";
+import type { LearningResource } from "@/lib/ai/services/learningResources";
 import FeedbackSection from "@/components/lesson/FeedbackSection";
 import Button from "@/components/ui/Button";
 import { Skeleton, SkeletonText } from "@/components/ui/Skeleton";
+import { useTutorFocus } from "@/components/tutor/FloatingTutor";
 import { useToast } from "@/lib/hooks/useToast";
 import { useBreadcrumbs } from "@/components/nav/breadcrumbs";
 
@@ -35,6 +40,7 @@ interface Lesson {
   generationStatus?: "skeleton" | "generating" | "completed" | "failed";
   lessonOutline?: string;
   keyTakeaways?: string[];
+  learningResources?: LearningResource[];
   sources?: { title: string; url: string }[];
   youtubeMetadata?: YouTubeMetadata;
 }
@@ -63,6 +69,7 @@ export default function LessonDetailPage({
   const { id, moduleId, lessonId } = use(params);
   const router = useRouter();
   const [lesson, setLesson] = useState<Lesson | null>(null);
+  useTutorFocus(lesson?._id === lessonId ? lesson.title : undefined);
   const [permissions, setPermissions] = useState<Permissions | null>(null);
   const [isOwnedCourse, setIsOwnedCourse] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -87,6 +94,10 @@ export default function LessonDetailPage({
   const [genError, setGenError] = useState("");
   const [genErrorTransient, setGenErrorTransient] = useState(true);
   const [genCorrelationId, setGenCorrelationId] = useState("");
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [refreshingResources, setRefreshingResources] = useState(false);
+  const resourceRefreshRef = useRef(false);
+  const [resourceError, setResourceError] = useState("");
   const [showVideoPicker, setShowVideoPicker] = useState(false);
   const [swapping, setSwapping] = useState(false);
   const [creditsRemaining, setCreditsRemaining] = useState(0);
@@ -154,14 +165,13 @@ export default function LessonDetailPage({
 
   // Fetch AI credits when permissions are available
   useEffect(() => {
-    const canFeedback =
-      isOwnedCourse && (permissions?.canEdit || permissions?.isSharedWith);
+    const canFeedback = permissions?.canEdit || permissions?.isSharedWith;
     if (!canFeedback) return;
 
     fetch("/api/ai/credits")
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (data?.remaining != null) setCreditsRemaining(data.remaining);
+        if (data && "remaining" in data) setCreditsRemaining(data.remaining === null ? Infinity : data.remaining);
       })
       .catch(() => {});
   }, [isOwnedCourse, permissions]);
@@ -189,14 +199,6 @@ export default function LessonDetailPage({
     try {
       const res = await patchLesson(formData);
       if (res.ok) setEditing(false);
-    } catch {
-      /* ignore */
-    }
-  };
-
-  const handlePublish = async () => {
-    try {
-      await patchLesson({ isPublished: !lesson?.isPublished });
     } catch {
       /* ignore */
     }
@@ -231,7 +233,7 @@ export default function LessonDetailPage({
     const payload: Record<string, string> = {};
     if (withFeedback) payload.feedback = withFeedback;
 
-    if (generating) return;
+    if (generating || swapping || resourceRefreshRef.current || lesson?.generationStatus === "generating") return;
     setGenerating(true);
 
     const abort = new AbortController();
@@ -306,7 +308,7 @@ export default function LessonDetailPage({
               } else if (eventType === "done") {
                 receivedTerminalEvent = true;
                 await fetchLesson();
-                setCreditsRemaining((prev) => Math.max(0, prev - 1));
+                if (rateLimitHeader === null) setCreditsRemaining((prev) => Math.max(0, prev - 1));
                 setUndoAvailable(true);
                 if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
                 undoTimerRef.current = setTimeout(() => setUndoAvailable(false), 30000);
@@ -405,9 +407,10 @@ export default function LessonDetailPage({
     thumbnailUrl: string;
     duration: string;
   }) => {
+    if (swapping || generating || resourceRefreshRef.current || lesson?.generationStatus === "generating") return;
     setSwapping(true);
     try {
-      await patchLesson({
+      const res = await patchLesson({
         contentType: "video",
         videoUrl: `https://www.youtube.com/embed/${video.videoId}`,
         content: video.title,
@@ -419,27 +422,56 @@ export default function LessonDetailPage({
           videoDuration: video.duration,
         },
       });
-      setShowVideoPicker(false);
+      if (res.ok) { setShowVideoPicker(false); setUndoAvailable(false); }
+      else toast.error("Could not replace the lesson. Please try again.");
     } catch {
-      /* ignore */
+      toast.error("Could not replace the lesson. Please try again.");
     } finally {
       setSwapping(false);
     }
   };
 
   const handleConvertToText = async () => {
+    if (swapping || generating || resourceRefreshRef.current || lesson?.generationStatus === "generating") return;
     setSwapping(true);
     try {
-      await patchLesson({
+      const res = await patchLesson({
         contentType: "text",
         videoUrl: null,
         content: "",
         youtubeMetadata: null,
       });
+      if (res.ok) { autoGenTriedRef.current = false; setUndoAvailable(false); }
+      else toast.error("Could not replace the lesson. Please try again.");
     } catch {
-      /* ignore */
+      toast.error("Could not replace the lesson. Please try again.");
     } finally {
       setSwapping(false);
+    }
+  };
+
+  const handleRefreshResources = async () => {
+    if (resourceRefreshRef.current || generating || swapping) return;
+    resourceRefreshRef.current = true;
+    setRefreshingResources(true);
+    setResourceError("");
+    try {
+      const res = await fetch(`/api/courses/ai/${id}/lessons/${lessonId}/resources`, {
+        method: "POST", headers: { "X-Requested-With": "XMLHttpRequest" },
+      });
+      const remaining = res.headers.get("X-RateLimit-Remaining");
+      if (remaining !== null) setCreditsRemaining(Number(remaining));
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Could not find resources.");
+      setLesson(previous => previous ? { ...previous, learningResources: data.learningResources } : previous);
+    } catch (error) {
+      setResourceError(error instanceof Error ? error.message : "Could not find resources. Please retry.");
+      fetch("/api/ai/credits").then(res => res.json()).then(data => {
+        if ("remaining" in data) setCreditsRemaining(data.remaining === null ? Infinity : data.remaining);
+      }).catch(() => {});
+    } finally {
+      resourceRefreshRef.current = false;
+      setRefreshingResources(false);
     }
   };
 
@@ -771,9 +803,9 @@ export default function LessonDetailPage({
               </div>
             ) : (
               <>
-                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
+                <div className="flex items-start justify-between gap-4 mb-6">
                   <div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">
                         {lesson.title}
                       </h1>
@@ -787,19 +819,16 @@ export default function LessonDetailPage({
                       {lesson.contentType} content
                     </p>
                   </div>
-                  {permissions?.canEdit && (
-                    <div className="flex flex-wrap gap-2 shrink-0">
-                      <Button variant="secondary" size="sm" onClick={handlePublish}>
-                        {lesson.isPublished ? "Unpublish" : "Publish"}
-                      </Button>
-                      <Button variant="secondary" size="sm" onClick={() => setEditing(true)}>
-                        Edit
-                      </Button>
-                      <Button variant="danger" size="sm" onClick={handleDelete}>
-                        Delete
-                      </Button>
-                    </div>
-                  )}
+                      <LessonActions
+                        disabled={generating || swapping || refreshingResources || lesson.generationStatus === "generating"}
+                        actions={[
+                          ...(permissions?.canEdit ? [{ label: "Edit", onSelect: () => setEditing(true) }, { label: "Delete", onSelect: handleDelete }] : []),
+                          ...(canFeedback && isAITextLesson && (isCompleted || isFailed) ? [{ label: "Improve this lesson", onSelect: () => setShowFeedback(true) }] : []),
+                          ...(permissions?.canEdit && isOwnedCourse && lesson.contentType === "text" ? [{ label: "Replace with YouTube video", onSelect: () => setShowVideoPicker(true) }] : []),
+                          ...(permissions?.canEdit && isOwnedCourse && lesson.contentType === "video" ? [{ label: "Replace with AI text", onSelect: handleConvertToText }] : []),
+                        ]}
+                      />
+
                 </div>
 
                 {/* Streaming content or skeleton */}
@@ -900,6 +929,7 @@ export default function LessonDetailPage({
                     {/* Content */}
                     {lesson.content && (
                       <MarkdownContent
+                        sources={lesson.sources}
                         content={lesson.content.replace(/^#[^\n]*\n+/, "")}
                         className={generating ? "opacity-50" : ""}
                       />
@@ -924,28 +954,15 @@ export default function LessonDetailPage({
                       </div>
                     )}
 
-                    {/* Sources & Further Reading */}
-                    {lesson.sources && lesson.sources.length > 0 && (
-                      <div className="mt-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-lg p-4">
-                        <h3 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-2">
-                          Sources &amp; Further Reading
-                        </h3>
-                        <ul className="space-y-1">
-                          {lesson.sources.map((source, i) => (
-                            <li key={i} className="text-sm">
-                              <a
-                                href={source.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-indigo-600 dark:text-indigo-400 hover:underline"
-                              >
-                                {i + 1}. {source.title}
-                              </a>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
+                    <LearningResources
+                      resources={lesson.learningResources}
+                      sources={lesson.sources}
+                      canRefresh={!!(permissions?.canEdit || permissions?.isSharedWith)}
+                      creditsRemaining={creditsRemaining}
+                      refreshing={refreshingResources}
+                      error={resourceError}
+                      onRefresh={handleRefreshResources}
+                    />
 
                     {/* Undo bar after regeneration */}
                     {undoAvailable && (
@@ -964,71 +981,15 @@ export default function LessonDetailPage({
                       </div>
                     )}
 
-                    {/* Inline feedback section for completed/failed AI text lessons */}
-                    {canFeedback &&
-                      isAITextLesson &&
-                      (isCompleted || isFailed) &&
-                      !generating && (
-                        <FeedbackSection
-                          onSubmit={(fb) => handleGenerate(fb)}
-                          creditsRemaining={creditsRemaining}
-                          disabled={generating}
-                          generating={generating}
-                        />
-                      )}
                   </>
                 )}
 
-                {/* Lesson type swap actions */}
-                {permissions?.canEdit && isOwnedCourse && !generating && !showVideoPicker && (
-                  <div className="mt-6 flex flex-col sm:flex-row gap-2">
-                    {lesson.contentType === "text" && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setShowVideoPicker(true)}
-                        disabled={swapping}
-                        className="text-red-700 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20"
-                      >
-                        Replace with YouTube video
-                      </Button>
-                    )}
-                    {lesson.contentType === "video" && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={handleConvertToText}
-                        disabled={swapping}
-                        className="text-violet-700 dark:text-violet-300 hover:bg-violet-50 dark:hover:bg-violet-900/20"
-                      >
-                        {swapping ? "Converting..." : "Replace with AI text"}
-                      </Button>
-                    )}
-                  </div>
-                )}
-
-                {/* YouTube video picker */}
-                {showVideoPicker && (
-                  <div className="mt-4 p-4 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/50">
-                    <YouTubeVideoPicker
-                      defaultQuery={lesson.title}
-                      onSelect={handleSelectVideo}
-                      onCancel={() => setShowVideoPicker(false)}
-                    />
-                  </div>
-                )}
-
-                {/* AI Tutor Link */}
-                {lesson.content && (
-                  <div className="mt-8 pt-6 border-t border-zinc-200 dark:border-zinc-800">
-                    <Link
-                      href={`/courses/${id}/ai/tutor?lessonId=${lessonId}`}
-                      className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-500 min-h-[44px]"
-                    >
-                      Ask AI Tutor about this lesson
-                    </Link>
-                  </div>
-                )}
+                {showFeedback && <Dialog title="Improve this lesson" onClose={() => setShowFeedback(false)} busy={generating}>
+                  <FeedbackSection dialogMode onSubmit={feedback => { setShowFeedback(false); handleGenerate(feedback); }} creditsRemaining={creditsRemaining} disabled={generating} generating={generating} />
+                </Dialog>}
+                {showVideoPicker && <Dialog title="Replace with YouTube video" onClose={() => setShowVideoPicker(false)} busy={swapping}>
+                  <YouTubeVideoPicker defaultQuery={lesson.title} onSelect={handleSelectVideo} onCancel={() => { if (!swapping) setShowVideoPicker(false); }} />
+                </Dialog>}
               </>
             )}
           </div>

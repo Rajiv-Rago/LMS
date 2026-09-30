@@ -17,7 +17,7 @@ export interface IUser extends Document {
   lockUntil?: Date;
   aiPreferences?: {
     defaultTier?: "concise" | "balanced" | "thorough";
-    defaultProvider?: "openai" | "anthropic" | "cerebras" | "gemini";
+    defaultProvider?: "openai" | "anthropic" | "cerebras" | "gemini" | "openrouter";
     defaultModel?: string;
   };
   termsAcceptedAt?: Date;
@@ -107,7 +107,7 @@ const userSchema = new mongoose.Schema<IUser, UserModel, IUserMethods>(
       },
       defaultProvider: {
         type: String,
-        enum: ["openai", "anthropic", "cerebras", "gemini"],
+        enum: ["openai", "anthropic", "cerebras", "gemini", "openrouter"],
       },
       defaultModel: {
         type: String,

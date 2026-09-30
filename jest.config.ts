@@ -39,4 +39,14 @@ const customJestConfig = {
   ],
 };
 
-export default createJestConfig(customJestConfig);
+const resolveJestConfig = createJestConfig(customJestConfig);
+async function jestConfig() {
+  const config = await resolveJestConfig();
+  config.transformIgnorePatterns = [
+    "/node_modules/(?!(react-markdown|estree-[^/]+|remark-[^/]+|rehype-[^/]+|mdast-[^/]+|hast-[^/]+|unist-[^/]+|micromark[^/]*|unified|vfile[^/]*|bail|trough|zwitch|devlop|is-plain-obj|extend|property-information|space-separated-tokens|comma-separated-tokens|decode-named-character-reference|character-entities[^/]*|html-url-attributes|inline-style-parser|style-to-[^/]+|trim-lines|longest-streak|markdown-table|ccount|escape-string-regexp|stringify-entities)/)",
+    "^.+\\.module\\.(css|sass|scss)$",
+  ];
+  return config;
+}
+
+export default jestConfig;

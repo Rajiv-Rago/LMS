@@ -47,7 +47,8 @@ jest.mock("@/lib/ai/services/lessonContentGenerator", () => ({
         type: "complete",
         content: "Updated lesson content",
         keyTakeaways: ["updated takeaway"],
-        sources: [],
+        sources: [{ title: "New citation", url: "https://example.com/new" }],
+        learningResources: [{ title: "Practice", url: "https://example.com/practice", description: "Practice this topic.", type: "exercise", requiresSignup: false }],
         usage: { promptTokens: 1, completionTokens: 1, totalTokens: 2 },
       };
     },
@@ -94,6 +95,8 @@ async function createLessonFixture(ownerId: string) {
     isPublished: true,
     generationStatus: "completed",
     keyTakeaways: ["takeaway 1"],
+    sources: [{ title: "Original citation", url: "https://example.com/old" }],
+    learningResources: [{ title: "Original resource", url: "https://example.com/old", description: "Original", type: "tutorial", requiresSignup: false }],
   });
 
   return { course, module, lesson };
@@ -108,6 +111,21 @@ async function parseSseResponse(response: Response) {
 }
 
 describe("POST /api/courses/ai/[courseId]/lessons/[lessonId]/generate", () => {
+  it("persists recommendations and snapshots citations and resources during streaming regeneration", async () => {
+    const { user, token } = await createTestUser();
+    const { course, lesson } = await createLessonFixture(user._id.toString());
+    const response = await generatePOST(buildRequest("POST", "/api/generate", { token, body: { feedback: "Please add examples" } }), {
+      params: Promise.resolve({ courseId: course._id.toString(), lessonId: lesson._id.toString() }),
+    });
+    const body = await response.text();
+    expect(body).toContain('"learningResources"');
+    const updated = await Lesson.findById(lesson._id);
+    expect(updated?.sources?.[0].title).toBe("New citation");
+    expect(updated?.learningResources?.[0].title).toBe("Practice");
+    expect(updated?.previousSources?.[0].title).toBe("Original citation");
+    expect(updated?.previousLearningResources?.[0].title).toBe("Original resource");
+  });
+
   it("streams generated lesson content for course owner", async () => {
     const { user, token } = await createTestUser({ role: "user" });
     const { course, lesson } = await createLessonFixture(

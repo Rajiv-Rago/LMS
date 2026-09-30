@@ -361,6 +361,14 @@ registerHandler(
               tier: (tier as AITier) || undefined,
             }, course.references ?? []);
 
+          if (lesson.content) {
+            lesson.previousContent = lesson.content;
+            lesson.previousKeyTakeaways = lesson.keyTakeaways || [];
+            lesson.previousSources = lesson.sources || [];
+            lesson.previousLearningResources = lesson.learningResources || [];
+          }
+          lesson.sources = content.sources || [];
+          lesson.learningResources = content.learningResources || [];
           lesson.content = content.content;
           lesson.keyTakeaways = content.keyTakeaways;
           lesson.generationStatus = "completed";
@@ -547,10 +555,13 @@ registerHandler(
       if (lesson.content) {
         lesson.previousContent = lesson.content;
         lesson.previousKeyTakeaways = lesson.keyTakeaways || [];
+        lesson.previousSources = lesson.sources || [];
+        lesson.previousLearningResources = lesson.learningResources || [];
       }
       lesson.content = content.content;
       lesson.keyTakeaways = content.keyTakeaways;
       lesson.sources = content.sources?.length ? content.sources : undefined;
+      lesson.learningResources = content.learningResources || [];
       lesson.generationStatus = "completed";
       await lesson.save();
 
@@ -573,6 +584,8 @@ registerHandler(
 
       return {
         lessonId,
+        learningResources: content.learningResources || [],
+        sources: content.sources || [],
         durationMs: Date.now() - startTime,
       };
     } catch (generateError) {

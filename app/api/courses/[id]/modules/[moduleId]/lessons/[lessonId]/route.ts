@@ -141,8 +141,21 @@ export async function PATCH(
       return NextResponse.json({ error: "Lesson not found" }, { status: 404 });
     }
 
+    if (lesson.generationStatus === "generating" || lesson.resourceRefreshStartedAt && Date.now() - lesson.resourceRefreshStartedAt.getTime() < 120000) {
+      return NextResponse.json({ error: "Lesson is busy. Please try again shortly." }, { status: 409 });
+    }
+
     const { title, contentType, content, videoUrl, fileUrl, duration, order, isPublished, aiContext, youtubeMetadata } = validation.data;
     if (title !== undefined) lesson.title = title;
+    if (contentType !== undefined && contentType !== lesson.contentType) {
+      lesson.sources = [];
+      lesson.learningResources = [];
+      lesson.keyTakeaways = [];
+      lesson.previousContent = undefined;
+      lesson.previousKeyTakeaways = undefined;
+      lesson.previousSources = undefined;
+      lesson.previousLearningResources = undefined;
+    }
     if (contentType !== undefined) lesson.contentType = contentType;
     if (content !== undefined) lesson.content = content;
     if (videoUrl !== undefined) lesson.videoUrl = videoUrl ?? undefined;

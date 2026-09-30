@@ -1,3 +1,4 @@
+import { selectLearningResources, LearningResource } from "./learningResources";
 import { AIProvider, AIProviderName, AISource, AIStreamResult, AITier } from "../types";
 import { createAIProvider } from "../index";
 import { parseAIJsonResponse } from "../utils/jsonParser";
@@ -20,6 +21,7 @@ export interface GeneratedLessonContent {
   content: string;
   keyTakeaways: string[];
   sources: AISource[];
+  learningResources?: LearningResource[];
 }
 
 export interface LessonContentGeneratorConfig {
@@ -93,6 +95,7 @@ export interface StreamCompleteEvent {
   content: string;
   keyTakeaways: string[];
   sources: AISource[];
+  learningResources?: LearningResource[];
   usage?: { promptTokens: number; completionTokens: number; totalTokens: number };
 }
 
@@ -127,11 +130,20 @@ export class LessonContentGeneratorService {
 
     // The model may invent a URL. Save only pages actually read by the research tool.
     content.sources = response.sources ?? [];
+    content.learningResources = await this.findResources(request);
 
     return {
       content,
       usage: response.usage,
     };
+  }
+
+  private async findResources(request: LessonContentRequest): Promise<LearningResource[]> {
+    try {
+      return await selectLearningResources(this.provider, request);
+    } catch {
+      return [];
+    }
   }
 
   private getTierInstructions(tier?: AITier): string {
@@ -228,6 +240,7 @@ Please regenerate the lesson content addressing this feedback while maintaining 
         content,
         keyTakeaways,
         sources: response.sources || [],
+        learningResources: await this.findResources(request),
         usage: response.usage,
       };
       return;
@@ -255,6 +268,7 @@ Please regenerate the lesson content addressing this feedback while maintaining 
       content,
       keyTakeaways,
       sources,
+      learningResources: await this.findResources(request),
       usage,
     };
   }

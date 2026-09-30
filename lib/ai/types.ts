@@ -27,7 +27,7 @@ export interface AICompletionResponse {
   sources?: AISource[];
 }
 
-export type AIProviderName = "openai" | "anthropic" | "cerebras" | "gemini";
+export type AIProviderName = "openai" | "anthropic" | "cerebras" | "gemini" | "openrouter";
 
 export interface AIStreamResult {
   stream: AsyncIterable<string>;

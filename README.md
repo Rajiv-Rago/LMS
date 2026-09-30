@@ -7,7 +7,9 @@ A full-stack learning management system with AI-powered content generation. Teac
 - **Course Management** — hierarchical course structure (courses → modules → lessons) with publish controls
 - **AI Syllabus Generation** — generate full course structure from a text prompt
 - **AI Lesson Content** — generate individual or bulk lesson content with one click
-- **AI Tutor** — per-course chat sessions with full context of course material
+- **AI Tutor** — floating course chat that preserves conversations across pages, uses current saved page context, and hides during quiz attempts
+- **Lesson Improvements** — title menu for feedback and video/text replacement, with Undo after regeneration
+- **Keep Learning** — free recommendations and numbered citations in one section, with superscript citation links; refresh aims for five resources and costs one AI credit
 - **Quizzes** — timed quizzes with auto-grading, multiple attempts, and score tracking
 - **Lab Projects** — file-upload assignments with multi-file support
 - **Gradebook** — teacher gradebook with per-student submission views
@@ -69,12 +71,12 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 ## Docker
 
 ```bash
-# Start MongoDB only (for local development)
-docker compose up -d mongo
-
-# Start full stack (MongoDB + production app)
-docker compose --profile prod up
+docker compose up -d --build app
 ```
+
+The app container uses `MONGODB_URI` and `AUTH_SECRET` from `.env` at runtime. Set `MONGODB_URI` to a database the container can reach.
+
+Compose sets `AUTH_TRUST_HOST=true`, as required by Auth.js for Docker deployments. After changing the Compose environment, run `docker compose up -d app` to recreate the container.
 
 ## Environment Variables
 
@@ -87,12 +89,14 @@ See [`.env.example`](.env.example) for all options. Key variables:
 | `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` | No | Google OAuth credentials |
 | `AUTH_GITHUB_ID` / `AUTH_GITHUB_SECRET` | No | GitHub OAuth credentials |
 | `AUTH_FACEBOOK_ID` / `AUTH_FACEBOOK_SECRET` | No | Facebook OAuth credentials |
-| `AI_PROVIDER` | No | Default AI provider (`openai`, `anthropic`, `cerebras`, `gemini`) |
+| `AI_PROVIDER` | No | Default AI provider (`openai`, `anthropic`, `cerebras`, `gemini`, `openrouter`) |
+| `AI_MODEL` | No | Default model ID; blank uses the provider default |
 | `OPENAI_API_KEY` | No* | OpenAI API key |
 | `ANTHROPIC_API_KEY` | No* | Anthropic API key |
 | `GROQ_API_KEY` | No* | Groq API key |
 | `CEREBRAS_API_KEY` | No* | Cerebras API key |
 | `GEMINI_API_KEY` | No* | Google Gemini API key |
+| `OPENROUTER_API_KEY` | No* | OpenRouter API key; defaults to `openrouter/free` |
 | `LANGSMITH_TRACING` | No | Set `true` to trace LangChain AI calls to LangSmith; disabled by default |
 | `LANGSMITH_API_KEY` | No | Required only when tracing is enabled |
 | `LANGSMITH_PROJECT` | No | Trace project name (for example, `kantigo`) |
@@ -105,7 +109,22 @@ See [`.env.example`](.env.example) for all options. Key variables:
 
 \* At least one AI provider key is required for AI features.
 
-LangSmith tracing captures prompts, course context, and model responses. Enable it only after configuring the key and checking your data retention and disclosure settings. The app uses LangChain chat models for OpenAI, Anthropic, Cerebras, and Gemini; the existing provider selection and response format remain the same.
+LangSmith tracing captures prompts, course context, and model responses. Enable it only after configuring the key and checking your data retention and disclosure settings. The app uses LangChain chat models for OpenAI, Anthropic, Cerebras, Gemini, and OpenRouter; the existing provider selection and response format remain the same.
+
+### Model selection
+
+Set your default in **Settings → AI Preferences → Advanced**, or select a provider and model on the course creation, content generation, or tutor screen. Resolution follows this order: explicit request provider/model, request tier, saved course preferences, user preferences, `AI_PROVIDER`/`AI_MODEL`, then OpenAI. New AI courses save the resolved provider and model for later lesson generation. Diagnostics use the environment default.
+
+The model list lives in `lib/ai/utils/modelRegistry.ts`; tier priorities live in `lib/ai/utils/tierCatalog.ts`. There are no separate environment settings for syllabus, lesson, quiz, and tutor models.
+
+For OpenRouter testing, add `OPENROUTER_API_KEY` to `.env`, then choose **OpenRouter → OpenRouter Free Router** in Advanced. It is available for explicit selection and is excluded from automatic tier selection. To use OpenRouter as the environment default:
+
+```dotenv
+AI_PROVIDER=openrouter
+AI_MODEL=openrouter/free
+```
+
+An explicit OpenRouter model ID can replace `openrouter/free` in `AI_MODEL` or an API request. The free router can select different underlying models between requests. See [OpenRouter's free router documentation](https://openrouter.ai/docs/guides/routing/routers/free-router). Rebuild Docker after code changes with `docker compose up -d --build app`; recreate the container after environment changes with `docker compose up -d --force-recreate app`.
 
 ### Course web research
 

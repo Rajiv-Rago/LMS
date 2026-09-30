@@ -1,3 +1,5 @@
+import { selectLearningResources } from "./learningResources";
+jest.mock("./learningResources", () => ({ selectLearningResources: jest.fn().mockResolvedValue([]) }));
 import { LessonContentGeneratorService } from "./lessonContentGenerator";
 
 const mockGenerateText = jest.fn();
@@ -160,5 +162,29 @@ describe("LessonContentGeneratorService", () => {
 
     const [prompt] = mockGenerateText.mock.calls[0];
     expect(prompt).not.toContain("previous lessons");
+  });
+});
+
+describe("learning recommendations in generation", () => {
+  const request = { courseTitle: "Calculus", courseDescription: "", moduleTitle: "Limits", lessonTitle: "Limits", lessonOutline: "", targetLevel: "beginner" as const };
+  const resource = { title: "Practice", url: "https://example.com", description: "Practice limits.", type: "exercise", requiresSignup: false };
+  beforeEach(() => { mockGenerateText.mockResolvedValue({ content: JSON.stringify({ content: "Lesson", keyTakeaways: [] }) }); });
+  it("includes recommendations in queued generation", async () => {
+    (selectLearningResources as jest.Mock).mockResolvedValue([resource]);
+    const service = new LessonContentGeneratorService({ provider: "openai", apiKey: "test" });
+    expect((await service.generateLessonContent(request)).content.learningResources).toEqual([resource]);
+  });
+  it("includes recommendations in streaming completion", async () => {
+    mockGenerateText.mockResolvedValue({ content: "Lesson body" });
+    (selectLearningResources as jest.Mock).mockResolvedValue([resource]);
+    const service = new LessonContentGeneratorService({ provider: "openai", apiKey: "test" });
+    const events = [];
+    for await (const event of service.streamLessonContent(request)) events.push(event);
+    expect(events.at(-1)).toEqual(expect.objectContaining({ learningResources: [resource] }));
+  });
+  it("does not fail the lesson when resource search fails", async () => {
+    (selectLearningResources as jest.Mock).mockRejectedValue(new Error("search unavailable"));
+    const service = new LessonContentGeneratorService({ provider: "openai", apiKey: "test" });
+    expect((await service.generateLessonContent(request)).content.learningResources).toEqual([]);
   });
 });

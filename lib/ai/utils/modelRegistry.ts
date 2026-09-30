@@ -12,6 +12,7 @@ export interface ModelInfo {
  * Each entry maps an API model ID to a human-friendly display name and tier membership.
  */
 export const MODEL_REGISTRY: ModelInfo[] = [
+  { id: "openrouter/free", displayName: "OpenRouter Free Router", provider: "openrouter", tiers: [] },
   // OpenAI
   { id: "gpt-4.1-nano-2025-04-14", displayName: "GPT 4.1 Nano", provider: "openai", tiers: ["concise"] },
   { id: "gpt-4.1-mini-2025-04-14", displayName: "GPT 4.1 Mini", provider: "openai", tiers: ["balanced"] },
@@ -54,6 +55,7 @@ const PROVIDER_DISPLAY_NAMES: Record<AIProviderName, string> = {
   anthropic: "Anthropic",
   gemini: "Google Gemini",
   cerebras: "Cerebras",
+  openrouter: "OpenRouter",
 };
 
 /**

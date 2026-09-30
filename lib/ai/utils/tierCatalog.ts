@@ -116,6 +116,7 @@ export function getConfiguredProviders(): AIProviderName[] {
     "anthropic",
     "cerebras",
     "gemini",
+    "openrouter",
   ];
   return providers.filter((p) => getApiKey(p) !== null);
 }

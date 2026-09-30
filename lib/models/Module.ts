@@ -65,7 +65,7 @@ const moduleSchema = new mongoose.Schema<IModule, ModuleModel>(
     generationConfig: {
       provider: {
         type: String,
-        enum: ["openai", "anthropic", "cerebras", "gemini"],
+        enum: ["openai", "anthropic", "cerebras", "gemini", "openrouter"],
       },
       model: {
         type: String,

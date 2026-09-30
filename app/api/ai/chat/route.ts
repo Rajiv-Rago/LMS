@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { dbConnect } from "@/lib/db";
-import { Course, Lesson, AIChatSession } from "@/lib/models";
+import { Course, AIChatSession } from "@/lib/models";
 import { authenticate, requireCsrf, requireVerifiedEmail } from "@/lib/auth";
 import { getCoursePermissions } from "@/lib/auth/coursePermissions";
 import { validateObjectId } from "@/lib/utils/validateObjectId";
@@ -15,15 +15,21 @@ import { captureException } from "@/lib/logger";
 import { getCorrelationId, CORRELATION_HEADER } from "@/lib/telemetry/correlationId";
 import { ErrorCodes } from "@/lib/telemetry/errorCodes";
 
+import { pageContextSchema, resolveTutorContext, TutorContextError } from "@/lib/ai/services/tutorContext";
+
 const createChatSchema = z
   .object({
     courseId: z.string(),
     lessonId: z.string().optional(),
+    pageContext: pageContextSchema.optional(),
     message: z.string().min(1).max(5000),
     sessionId: z.string().optional(),
     tier: aiTierSchema.optional(),
     provider: aiProviderSchema.optional(),
     model: z.string().max(256).optional(),
+  })
+  .refine(data => !(data.lessonId && data.pageContext && (data.pageContext.type !== "lesson" || data.pageContext.entityId !== data.lessonId)), {
+    message: "Lesson ID must match page context", path: ["pageContext"],
   })
   .refine((data) => !(data.tier && data.provider), {
     message: "Cannot specify both tier and provider",
@@ -61,7 +67,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { courseId, lessonId, message, sessionId, tier, provider: reqProvider, model: reqModel } = validation.data;
+    const { courseId, lessonId, pageContext, message, sessionId, tier, provider: reqProvider, model: reqModel } = validation.data;
 
     const invalidCourseId = validateObjectId(courseId, "Course ID");
     if (invalidCourseId) return invalidCourseId;
@@ -80,9 +86,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    let lesson = null;
-    if (lessonId) {
-      lesson = await Lesson.findById(lessonId);
+    const context = await resolveTutorContext(course, pageContext || (lessonId ? { type: "lesson", entityId: lessonId } : { type: "overview" }), perms.canEdit || perms.isSharedWith);
+    if (sessionId) {
+      const invalidSessionId = validateObjectId(sessionId, "Session ID");
+      if (invalidSessionId) return invalidSessionId;
     }
 
     const userPreferences = (tier || reqProvider) ? undefined : await getUserAIPreferences(user.userId);
@@ -125,10 +132,11 @@ export async function POST(request: NextRequest) {
         );
       }
     } else {
-      session = await AIChatSession.create({
+      session = await AIChatSession.findOne({ user: user.userId, course: courseId, isActive: true }).sort({ updatedAt: -1 });
+      if (!session) session = await AIChatSession.create({
         user: user.userId,
         course: courseId,
-        lesson: lessonId,
+        lesson: pageContext?.type === "lesson" ? pageContext.entityId : lessonId,
         title: message.slice(0, 50) + (message.length > 50 ? "..." : ""),
         messages: [],
         provider: resolved.provider,
@@ -153,12 +161,7 @@ export async function POST(request: NextRequest) {
       content: m.content,
     }));
 
-    const response = await tutorService.chat(conversationHistory, {
-      courseName: course.title,
-      lessonTitle: lesson?.title,
-      lessonContent: lesson?.content,
-      aiContext: lesson?.aiContext,
-    });
+    const response = await tutorService.chat(conversationHistory, context);
 
     session.messages.push({
       role: "assistant",
@@ -166,6 +169,10 @@ export async function POST(request: NextRequest) {
       timestamp: new Date(),
     });
 
+    session.provider = resolved.provider;
+    session.aiModel = resolved.model;
+    await AIChatSession.updateMany({ user: user.userId, course: courseId, _id: { $ne: session._id }, isActive: true }, { $set: { isActive: false } });
+    session.isActive = true;
     await session.save();
 
     const jsonResponse = NextResponse.json({
@@ -179,6 +186,7 @@ export async function POST(request: NextRequest) {
     addRateLimitHeaders(jsonResponse, rateCheck.result);
     return jsonResponse;
   } catch (error) {
+    if (error instanceof TutorContextError) return NextResponse.json({ error: error.message }, { status: error.status });
     captureException(error, { operation: "AI chat error", correlationId });
     return NextResponse.json(
       { error: "Something went wrong. Please try again later.", correlationId },

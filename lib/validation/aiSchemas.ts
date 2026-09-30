@@ -8,6 +8,7 @@ export const aiProviderSchema = z.enum([
   "anthropic",
   "cerebras",
   "gemini",
+  "openrouter",
 ]);
 
 /**

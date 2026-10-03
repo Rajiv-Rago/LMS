@@ -12,7 +12,8 @@ interface Course {
   title: string;
   description?: string;
   modules?: CourseModule[];
-  instructor?: { name: string };
+  instructor?: { name?: string } | null;
+  owner?: { name?: string } | null;
 }
 
 interface CourseSectionProps {
@@ -115,7 +116,7 @@ export default function CourseSection({
                 )}
                 <div className="mt-3 flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400">
                   <span>{lessons} lessons</span>
-                  {course.instructor && <span>By {course.instructor.name}</span>}
+                  <span>By {course.owner?.name?.trim() || course.instructor?.name?.trim() || "Unknown creator"}</span>
                 </div>
               </div>
             );

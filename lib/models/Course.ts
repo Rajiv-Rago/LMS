@@ -1,3 +1,4 @@
+import type { LearnerProfile } from "@/lib/ai/intake/profile";
 import mongoose, { Document, Model } from "mongoose";
 import { AIProviderName } from "@/lib/ai/types";
 
@@ -26,6 +27,7 @@ export interface ICourse extends Document {
   syllabusStatus?: SyllabusStatus;
   syllabusPrompt?: string;
   passingScore: number;
+  learnerProfile?: LearnerProfile;
   aiPreferences?: AIPreferences;
   youtubeMetadata?: {
     skillLevel: string;
@@ -107,6 +109,7 @@ const courseSchema = new mongoose.Schema<ICourse, CourseModel>(
         message: "Syllabus status must be draft, generating, completed, or failed",
       },
     },
+    learnerProfile: { type: mongoose.Schema.Types.Mixed },
     syllabusPrompt: {
       type: String,
       maxlength: [5000, "Syllabus prompt cannot exceed 5000 characters"],

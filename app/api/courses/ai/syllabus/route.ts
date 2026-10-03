@@ -1,3 +1,4 @@
+import { learnerProfileSchema } from "@/lib/ai/intake/profile";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { authenticate, requireCsrf } from "@/lib/auth";
@@ -20,6 +21,7 @@ const createSyllabusSchema = z
     additionalContext: z.string().max(5000).optional(),
     includeVideos: z.boolean().optional(),
     passingScore: z.number().min(0).max(100).optional(),
+    learnerProfile: learnerProfileSchema.optional(),
     knowledgeProfile: z.string().max(5000).optional(),
     tier: aiTierSchema.optional(),
     provider: aiProviderSchema.optional(),
@@ -58,10 +60,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { topic, targetLevel, complexity, estimatedDuration, additionalContext, includeVideos, passingScore, knowledgeProfile, tier, provider, model } =
+    const { topic, targetLevel, complexity, estimatedDuration, additionalContext, includeVideos, passingScore, knowledgeProfile, learnerProfile, tier, provider, model } =
       validation.data;
     const { complexityToLevel } = await import("@/lib/ai/utils/promptUtils");
-    const effectiveLevel = complexityToLevel(
+    const effectiveLevel = learnerProfile?.startingLevel ?? complexityToLevel(
       (complexity ?? targetLevel ?? "standard") as "foundations" | "standard" | "deep"
     );
 
@@ -93,7 +95,7 @@ export async function POST(request: NextRequest) {
 
     const jobId = await enqueueJob({
       type: "ai.generate-syllabus",
-      data: { topic, targetLevel: effectiveLevel, complexity: complexity ?? targetLevel ?? "standard", estimatedDuration, additionalContext, includeVideos, passingScore, knowledgeProfile, tier, provider, model },
+      data: { topic, targetLevel: effectiveLevel, complexity: complexity ?? targetLevel ?? "standard", estimatedDuration, additionalContext, includeVideos, passingScore, knowledgeProfile, learnerProfile, tier, provider, model },
       userId: user.userId,
     });
 

@@ -1,3 +1,4 @@
+import type { LearnerProfile } from "@/lib/ai/intake/profile";
 import { dbConnect } from "@/lib/db";
 import { Assignment, Course, Module, Lesson } from "@/lib/models";
 import { AIProviderName, AITier } from "@/lib/ai/types";
@@ -8,7 +9,7 @@ import {
   TargetLevel,
 } from "@/lib/ai/services/syllabusGenerator";
 import { LessonContentGeneratorService } from "@/lib/ai/services/lessonContentGenerator";
-import { extractTargetLevel } from "@/lib/ai/utils/promptUtils";
+import { extractTargetLevel, extractComplexity } from "@/lib/ai/utils/promptUtils";
 import { logAIGeneration } from "@/lib/utils/aiGenerationLogger";
 import { recalculateModuleStatus } from "@/lib/utils/moduleStatusUpdater";
 import { markModuleCompletedIfReady } from "@/lib/utils/moduleStatusUpdater";
@@ -37,6 +38,7 @@ registerHandler(
       includeVideos,
       passingScore,
       knowledgeProfile,
+      learnerProfile,
       tier,
       provider,
       model,
@@ -50,6 +52,7 @@ registerHandler(
       includeVideos?: boolean;
       passingScore?: number;
       knowledgeProfile?: string;
+      learnerProfile?: LearnerProfile;
       tier?: string;
       provider?: string;
       model?: string;
@@ -93,6 +96,7 @@ registerHandler(
       includeVideos,
       passingScore,
       knowledgeProfile,
+      learnerProfile,
     });
 
     const effectivePassingScore =
@@ -106,6 +110,7 @@ registerHandler(
       instructor: userId,
       owner: userId,
       syllabusStatus: "completed",
+      learnerProfile,
       syllabusPrompt: `Topic: ${topic}\nLevel: ${targetLevel}\nComplexity: ${complexity ?? targetLevel}\nDuration: ${estimatedDuration}\nPassing Score: ${effectivePassingScore}${additionalContext ? `\nContext: ${additionalContext}` : ""}${knowledgeProfile ? `\nKnowledge Profile: ${knowledgeProfile}` : ""}`,
       passingScore: effectivePassingScore,
       aiPreferences: {
@@ -358,6 +363,8 @@ registerHandler(
               lessonOutline: lesson.lessonOutline || "",
               previousLessonsSummary: summaryForPrompt || undefined,
               targetLevel,
+              courseDepth: extractComplexity(course.syllabusPrompt),
+              learnerProfile: course.learnerProfile,
               tier: (tier as AITier) || undefined,
             }, course.references ?? []);
 
@@ -547,6 +554,8 @@ registerHandler(
         lessonOutline: lesson.lessonOutline || "",
         previousLessonsSummary: previousLessonsSummary || undefined,
         targetLevel,
+        courseDepth: extractComplexity(course.syllabusPrompt),
+        learnerProfile: course.learnerProfile,
         feedback: feedback || undefined,
         previousContent: feedback ? lesson.content : undefined,
         tier: (tier as AITier) || undefined,

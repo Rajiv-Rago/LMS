@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { BookOpen } from "lucide-react";
 import GenerationInput from "@/components/dashboard/GenerationInput";
 import CourseConfigModal, { CourseConfig } from "@/components/dashboard/CourseConfigModal";
+import type { LearnerProfile } from "@/lib/ai/intake/profile";
 import DiagnosticRunner from "@/components/dashboard/DiagnosticRunner";
 import GeneratingCard from "@/components/dashboard/GeneratingCard";
 import CourseSection from "@/components/dashboard/CourseSection";
@@ -147,7 +148,7 @@ function DashboardContent() {
     setGeneratingTopic(config.topic);
   }
 
-  async function handleDiagnosticComplete(knowledgeProfile: string) {
+  async function handleDiagnosticComplete(learnerProfile: LearnerProfile) {
     if (!courseConfig) return;
     const { topic, complexity, passingScore, additionalContext } = courseConfig;
     setError("");
@@ -166,7 +167,7 @@ function DashboardContent() {
           complexity,
           passingScore,
           additionalContext: additionalContext || undefined,
-          knowledgeProfile: knowledgeProfile || undefined,
+          learnerProfile,
         }),
       });
 

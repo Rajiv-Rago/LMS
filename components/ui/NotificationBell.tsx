@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { isCourseCreationNotification } from "@/lib/utils/courseNotifications";
+import { usePathname, useRouter } from "next/navigation";
 
 interface Notification {
   id: string;
@@ -28,36 +29,61 @@ function timeAgo(dateStr: string, now: number): string {
 
 export function NotificationBell() {
   const router = useRouter();
+  const pathname = usePathname();
+  const courseId = pathname?.match(/^\/courses\/([a-fA-F0-9]{24})(?:\/|$)/)?.[1];
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [open, setOpen] = useState(false);
   const [now, setNow] = useState(() => Date.now());
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    async function doFetch() {
-      try {
-        const res = await fetch("/api/notifications?limit=10");
-        if (!res.ok || cancelled) return;
-        const data = await res.json();
-        if (!cancelled) {
-          setNotifications(data.data);
-          setUnreadCount(data.unreadCount);
-        }
-      } catch {
-        // Silently fail — polling is best-effort
-      }
-    }
-
-    doFetch();
-    const interval = setInterval(doFetch, POLL_INTERVAL_MS);
-    return () => {
-      cancelled = true;
-      clearInterval(interval);
-    };
+  const refreshNotifications = useCallback(async () => {
+    const res = await fetch("/api/notifications?limit=10");
+    if (!res.ok) return [];
+    const data = await res.json();
+    setNotifications(data.data);
+    setUnreadCount(data.unreadCount);
+    return data.data as Notification[];
   }, []);
+
+  const markCourseNotificationsRead = useCallback(async (selection: { ids: string[] } | { courseId: string }) => {
+    await fetch("/api/notifications", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", "X-Requested-With": "XMLHttpRequest" },
+      body: JSON.stringify(selection),
+    });
+    // Always refresh the server state, even if the read update was rejected.
+    await refreshNotifications();
+  }, [refreshNotifications]);
+
+  useEffect(() => {
+    const poll = async () => {
+      try {
+        // Also handles a generation finishing while the user is on its course.
+        if (courseId) await markCourseNotificationsRead({ courseId });
+        else await refreshNotifications();
+      } catch {
+        // Polling and read updates are best effort.
+      }
+    };
+    void poll();
+    const interval = setInterval(poll, POLL_INTERVAL_MS);
+    return () => clearInterval(interval);
+  }, [courseId, markCourseNotificationsRead, refreshNotifications]);
+
+  useEffect(() => {
+    if (!open) return;
+    const markVisible = async () => {
+      try {
+        const visible = await refreshNotifications();
+        const ids = visible.filter((n) => !n.read && isCourseCreationNotification(n)).map((n) => n.id);
+        if (ids.length) await markCourseNotificationsRead({ ids });
+      } catch {
+        // A failed update must leave notifications unread.
+      }
+    };
+    void markVisible();
+  }, [open, refreshNotifications, markCourseNotificationsRead]);
 
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 60_000);
@@ -84,10 +110,11 @@ export function NotificationBell() {
   const handleNotificationClick = async (notification: Notification) => {
     if (!notification.read) {
       try {
-        await fetch(`/api/notifications/${notification.id}`, {
+        const res = await fetch(`/api/notifications/${notification.id}`, {
           method: "PATCH",
           headers: { "X-Requested-With": "XMLHttpRequest" },
         });
+        if (!res.ok) throw new Error("Read update failed");
         setNotifications((prev) =>
           prev.map((n) => (n.id === notification.id ? { ...n, read: true } : n))
         );
@@ -104,10 +131,11 @@ export function NotificationBell() {
 
   const handleMarkAllRead = async () => {
     try {
-      await fetch("/api/notifications", {
+      const res = await fetch("/api/notifications", {
         method: "POST",
         headers: { "X-Requested-With": "XMLHttpRequest" },
       });
+      if (!res.ok) return;
       setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
       setUnreadCount(0);
     } catch {

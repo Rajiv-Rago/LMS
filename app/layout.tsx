@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Kantigo — From curious to capable",
+  title: "Kantigo",
   description: "Turn any topic into a structured learning path with AI-generated lessons, curated YouTube courses, and hands-on projects.",
 };
 

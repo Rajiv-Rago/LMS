@@ -48,7 +48,10 @@ export function useTheme() {
     return getStoredTheme();
   });
 
+  const [isDark, setIsDark] = useState(false);
+
   useEffect(() => {
+    setIsDark(resolveEffectiveTheme(mode));
     applyTheme(resolveEffectiveTheme(mode));
   }, [mode]);
 
@@ -56,7 +59,10 @@ export function useTheme() {
     if (mode !== "system") return;
 
     const mql = window.matchMedia(DARK_MEDIA);
-    const handler = (e: MediaQueryListEvent) => applyTheme(e.matches);
+    const handler = (e: MediaQueryListEvent) => {
+      applyTheme(e.matches);
+      setIsDark(e.matches);
+    };
     mql.addEventListener("change", handler);
     return () => mql.removeEventListener("change", handler);
   }, [mode]);
@@ -68,5 +74,12 @@ export function useTheme() {
     setMode(next);
   }, [mode]);
 
-  return { mode, cycle };
+  const toggle = useCallback(() => {
+    const next = resolveEffectiveTheme(mode) ? "light" : "dark";
+    setStoredTheme(next);
+    applyTheme(next === "dark");
+    setMode(next);
+  }, [mode]);
+
+  return { mode, cycle, isDark, toggle };
 }

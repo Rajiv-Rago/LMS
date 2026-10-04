@@ -29,6 +29,8 @@ export async function GET(request: NextRequest) {
 
     const total = await Course.countDocuments(query);
     const courses = await Course.find(query)
+      .populate("owner", "name")
+      .populate("instructor", "name")
       .populate({
         path: "modules",
         populate: {

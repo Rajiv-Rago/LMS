@@ -61,40 +61,6 @@ function mockFetchWithPost(
     (url: string | URL | Request, init?: RequestInit) => {
       const urlStr = typeof url === "string" ? url : url.toString();
 
-      if (init?.method === "POST" && urlStr.includes("/api/courses/diagnostic")) {
-        const body = JSON.parse((init?.body as string) ?? "{}");
-        if (body.action === "questions") {
-          return Promise.resolve({
-            ok: true,
-            status: 200,
-            json: () =>
-              Promise.resolve({
-                mcqs: [
-                  { question: "Q1", options: ["a", "b", "c", "d"], correctIndex: 0 },
-                  { question: "Q2", options: ["a", "b", "c", "d"], correctIndex: 1 },
-                  { question: "Q3", options: ["a", "b", "c", "d"], correctIndex: 2 },
-                ],
-                essayPrompt: "Explain X",
-                round: 1,
-                done: false,
-              }),
-          });
-        }
-        return Promise.resolve({
-          ok: true,
-          status: 200,
-          json: () =>
-            Promise.resolve({
-              mcqScore: 66,
-              essayDepthScore: 70,
-              weakTopics: [],
-              knowledgeProfile: "MCQ 66%",
-              done: true,
-              nextRound: null,
-            }),
-        });
-      }
-
       if (init?.method === "POST") {
         return Promise.resolve({
           ok: postResponse.status >= 200 && postResponse.status < 300,
@@ -278,8 +244,9 @@ describe("DashboardPage", () => {
       );
       fireEvent.click(screen.getByRole("button", { name: /^Generate$/ }));
 
-      fireEvent.click(await screen.findByRole("button", { name: "Continue to assessment" }));
-      fireEvent.click(await screen.findByRole("button", { name: "Skip" }));
+      fireEvent.click(await screen.findByRole("button", { name: "Continue to course planning" }));
+      fireEvent.click(await screen.findByRole("button", { name: "Skip to course plan" }));
+      fireEvent.click(await screen.findByRole("button", { name: "Generate course" }));
 
       await waitFor(() => {
         expect(global.fetch).toHaveBeenCalledWith(
@@ -297,6 +264,8 @@ describe("DashboardPage", () => {
       const payload = JSON.parse(call[1].body as string);
       expect(payload.complexity).toBe("standard");
       expect(payload.passingScore).toBe(70);
+      expect(payload.learnerProfile.startingLevel).toBe("beginner");
+      expect(payload.learnerProfile.assessmentSkipped).toBe(true);
     });
 
     it("shows generating card after successful submission", async () => {
@@ -318,8 +287,9 @@ describe("DashboardPage", () => {
       );
       fireEvent.click(screen.getByRole("button", { name: /^Generate$/ }));
 
-      fireEvent.click(await screen.findByRole("button", { name: "Continue to assessment" }));
-      fireEvent.click(await screen.findByRole("button", { name: "Skip" }));
+      fireEvent.click(await screen.findByRole("button", { name: "Continue to course planning" }));
+      fireEvent.click(await screen.findByRole("button", { name: "Skip to course plan" }));
+      fireEvent.click(await screen.findByRole("button", { name: "Generate course" }));
 
       await waitFor(() => {
         expect(screen.getAllByText(/generating/i).length).toBeGreaterThan(0);

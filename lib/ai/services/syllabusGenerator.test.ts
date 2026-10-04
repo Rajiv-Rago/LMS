@@ -96,6 +96,22 @@ describe("SyllabusGeneratorService", () => {
     expect(options.temperature).toBe(0.7);
   });
 
+  it("keeps a beginner's deep course focused on the selected goal", async () => {
+    mockGenerateText.mockResolvedValue({ content: validSyllabusJson });
+    await service.generateSyllabus({
+      topic: "Python", targetLevel: "advanced", complexity: "deep", estimatedDuration: "6 hours",
+      learnerProfile: {
+        goals: ["Automate spreadsheets"], startingLevel: "beginner", selfReportedLevel: "unsure",
+        observedStrengths: ["Loops"], observedGaps: ["Files"], assumptions: ["Tentative"], assessmentSkipped: false,
+      },
+    });
+    const [prompt, options] = mockGenerateText.mock.calls[0];
+    expect(prompt).toContain("Target Level: beginner");
+    expect(prompt).toContain("Course Depth: deep");
+    expect(prompt).toContain("Automate spreadsheets");
+    expect(options.systemPrompt).toContain("retain short prerequisite refreshers");
+  });
+
   it("throws on missing required fields in response", async () => {
     mockGenerateText.mockResolvedValue({
       content: JSON.stringify({ courseTitle: "Test" }), // missing courseDescription and modules

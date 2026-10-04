@@ -78,6 +78,22 @@ describe("LessonContentGeneratorService", () => {
     expect(options.temperature).toBe(0.7);
   });
 
+  it("uses deep content with beginner explanations and the learner's goals", async () => {
+    mockGenerateText.mockResolvedValue({ content: validContentJson });
+    await service.generateLessonContent({
+      courseTitle: "Python", courseDescription: "Automation", moduleTitle: "Basics",
+      lessonTitle: "Loops", lessonOutline: "Loop over files", targetLevel: "beginner", courseDepth: "deep",
+      learnerProfile: {
+        goals: ["Automate payroll"], startingLevel: "beginner", selfReportedLevel: "unsure",
+        observedStrengths: [], observedGaps: [], assumptions: [], assessmentSkipped: true,
+      },
+    });
+    const [prompt] = mockGenerateText.mock.calls[0];
+    expect(prompt).toContain("Target Level: beginner");
+    expect(prompt).toContain("Content Depth: THOROUGH");
+    expect(prompt).toContain("Automate payroll");
+  });
+
   it("only stores URLs returned by research, not model-invented sources", async () => {
     mockGenerateText.mockResolvedValue({
       content: JSON.stringify({ content: "Lesson", keyTakeaways: ["Takeaway"], sources: [{ title: "Invented", url: "https://made-up.example" }] }),

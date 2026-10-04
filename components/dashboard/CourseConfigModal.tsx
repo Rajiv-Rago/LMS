@@ -83,7 +83,7 @@ export default function CourseConfigModal({ initialTopic, onClose, onContinue }:
 
           <div>
             <span className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
-              Complexity
+              Course depth
             </span>
             <div className="grid grid-cols-3 gap-2">
               {COMPLEXITY_OPTIONS.map(({ value, label, hint }) => (
@@ -151,7 +151,7 @@ export default function CourseConfigModal({ initialTopic, onClose, onContinue }:
               disabled={!topic.trim()}
               className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 rounded-md disabled:opacity-50 transition-all"
             >
-              Continue to assessment
+              Continue to course planning
             </button>
           </div>
         </form>

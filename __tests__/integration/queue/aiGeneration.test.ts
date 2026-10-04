@@ -30,7 +30,7 @@ import { SyllabusGeneratorService } from "@/lib/ai/services/syllabusGenerator";
 import { LessonContentGeneratorService } from "@/lib/ai/services/lessonContentGenerator";
 import { resolveProvider } from "@/lib/ai/utils/providerResolver";
 import { getUserAIPreferences } from "@/lib/ai/utils/userPreferences";
-import { extractTargetLevel } from "@/lib/ai/utils/promptUtils";
+import { extractTargetLevel, extractComplexity } from "@/lib/ai/utils/promptUtils";
 import { logAIGeneration } from "@/lib/utils/aiGenerationLogger";
 import {
   recalculateModuleStatus,
@@ -134,6 +134,7 @@ beforeEach(async () => {
 
   mockGetUserAIPreferences.mockResolvedValue(undefined);
   mockExtractTargetLevel.mockReturnValue("beginner");
+  (extractComplexity as jest.Mock).mockReturnValue("deep");
   mockLogAIGeneration.mockResolvedValue(undefined);
   mockRecalculateModuleStatus.mockResolvedValue("completed");
   mockMarkModuleCompletedIfReady.mockResolvedValue(true);
@@ -160,6 +161,27 @@ afterAll(async () => {
 // ──────── ai.generate-syllabus ────────
 
 describe("ai.generate-syllabus handler", () => {
+  it("persists the learner plan and reuses it for module and lesson generation", async () => {
+    const learnerProfile = {
+      goals: ["Automate payroll"], startingLevel: "beginner", selfReportedLevel: "unsure",
+      observedStrengths: [], observedGaps: ["Files"], assumptions: ["Tentative"], assessmentSkipped: false,
+    };
+    const result = await syllabusHandler({
+      topic: "Python", targetLevel: "beginner", complexity: "deep", estimatedDuration: "6 hours",
+      learnerProfile, userId: testUserId,
+    });
+    const course = await Course.findById(result.courseId);
+    expect(course!.learnerProfile).toEqual(learnerProfile);
+    expect(mockGenerateSyllabus).toHaveBeenCalledWith(expect.objectContaining({ learnerProfile, targetLevel: "beginner", complexity: "deep" }));
+    const moduleId = course!.modules[0].toString();
+    await moduleContentHandler({ courseId: result.courseId, moduleId, userId: testUserId });
+    expect(mockGenerateLessonContent).toHaveBeenCalledWith(expect.objectContaining({ learnerProfile, targetLevel: "beginner", courseDepth: "deep" }), expect.any(Array));
+    const lesson = await Lesson.findOne({ module: moduleId });
+    mockGenerateLessonContent.mockClear();
+    await lessonContentHandler({ courseId: result.courseId, lessonId: lesson!._id.toString(), userId: testUserId });
+    expect(mockGenerateLessonContent).toHaveBeenCalledWith(expect.objectContaining({ learnerProfile, targetLevel: "beginner", courseDepth: "deep" }), expect.any(Array));
+  });
+
   it("creates course with modules and lessons", async () => {
     const result = await syllabusHandler({
       topic: "TypeScript",

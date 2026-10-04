@@ -141,6 +141,21 @@ describe("POST /api/courses/generate", () => {
     );
   });
 
+  it("enqueues an independent starting level and structured learner plan", async () => {
+    const { token } = await createTestUser();
+    const learnerProfile = {
+      goals: ["Automate spreadsheets"], startingLevel: "beginner", selfReportedLevel: "unsure",
+      observedStrengths: [], observedGaps: ["Files"], assumptions: ["Rough estimate"], assessmentSkipped: false,
+    };
+    const response = await POST(buildRequest("POST", "/api/courses/generate", {
+      token, body: { topic: "Python", complexity: "deep", learnerProfile },
+    }));
+    expect(response.status).toBe(202);
+    expect(enqueueJob).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ targetLevel: "beginner", complexity: "deep", learnerProfile }),
+    }));
+  });
+
   it("returns 429 when user has 5 generated courses", async () => {
     const { user, token } = await createTestUser();
 

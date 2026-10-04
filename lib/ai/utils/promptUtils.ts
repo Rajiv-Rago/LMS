@@ -57,8 +57,10 @@ export function extractTargetLevel(syllabusPrompt?: string): TargetLevel {
 
   const lowerPrompt = syllabusPrompt.toLowerCase();
 
-  if (lowerPrompt.includes("level: beginner") || lowerPrompt.includes("complexity: foundations")) return "beginner";
-  if (lowerPrompt.includes("level: advanced") || lowerPrompt.includes("complexity: deep")) return "advanced";
+  const explicitLevel = lowerPrompt.match(/(?:^|\n)level: (beginner|intermediate|advanced)(?:\n|$)/)?.[1];
+  if (explicitLevel) return explicitLevel as TargetLevel;
+  if (lowerPrompt.includes("complexity: foundations")) return "beginner";
+  if (lowerPrompt.includes("complexity: deep")) return "advanced";
 
   return "intermediate";
 }
@@ -68,5 +70,6 @@ export function extractTargetLevel(syllabusPrompt?: string): TargetLevel {
  * Defaults to "standard".
  */
 export function extractComplexity(syllabusPrompt?: string): Complexity {
-  return levelToComplexity(extractTargetLevel(syllabusPrompt));
+  const explicitDepth = syllabusPrompt?.toLowerCase().match(/(?:^|\n)complexity: (foundations|standard|deep|beginner|intermediate|advanced)(?:\n|$)/)?.[1];
+  return explicitDepth ? normalizeComplexity(explicitDepth) : levelToComplexity(extractTargetLevel(syllabusPrompt));
 }

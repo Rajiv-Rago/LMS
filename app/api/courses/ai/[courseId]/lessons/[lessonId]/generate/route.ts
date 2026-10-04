@@ -10,7 +10,7 @@ import { resolveProvider } from "@/lib/ai/utils/providerResolver";
 import { getUserAIPreferences } from "@/lib/ai/utils/userPreferences";
 import { generateContentSchema } from "@/lib/validation/aiSchemas";
 import { LessonContentGeneratorService } from "@/lib/ai/services/lessonContentGenerator";
-import { extractTargetLevel } from "@/lib/ai/utils/promptUtils";
+import { extractTargetLevel, extractComplexity } from "@/lib/ai/utils/promptUtils";
 import { enforceAIRateLimit } from "@/lib/ai/rateLimit";
 import { logAIGeneration } from "@/lib/utils/aiGenerationLogger";
 import { markModuleCompletedIfReady } from "@/lib/utils/moduleStatusUpdater";
@@ -204,6 +204,8 @@ export async function POST(
             lessonOutline: lesson.lessonOutline || "",
             previousLessonsSummary: previousLessonsSummary || undefined,
             targetLevel,
+            courseDepth: extractComplexity(course.syllabusPrompt),
+            learnerProfile: course.learnerProfile,
             feedback: validation.data.feedback || undefined,
             previousContent: validation.data.feedback ? lesson.content : undefined,
             tier: (reqTier as AITier) || undefined,

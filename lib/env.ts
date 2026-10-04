@@ -40,10 +40,10 @@ const envSchema = z.object({
   // AI rate limiting
   AI_RATE_LIMIT_ENABLED: z.string().default("true").transform(v => v === "true"),
 
-  // Diagnostic assessment agentic loop cap (MCQ batches + essay rounds)
-  DIAGNOSTIC_MAX_ITERATIONS: z.string().default("5").transform((v) => {
+  // Course intake rounds; hard ceiling of 3 also applies in the API.
+  DIAGNOSTIC_MAX_ITERATIONS: z.string().default("3").transform((v) => {
     const n = parseInt(v, 10);
-    return Number.isFinite(n) && n > 0 ? n : 5;
+    return Number.isFinite(n) && n > 0 ? Math.min(n, 3) : 3;
   }),
 
   // Email

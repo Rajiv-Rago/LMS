@@ -1,3 +1,4 @@
+import { learnerProfileSchema } from "@/lib/ai/intake/profile";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { authenticate, requireCsrf, requireVerifiedEmail } from "@/lib/auth";
@@ -26,6 +27,7 @@ const generateCourseSchema = z.object({
   additionalContext: z.string().max(5000).optional(),
   estimatedDuration: z.string().max(100).optional(),
   includeVideos: z.boolean().optional(),
+  learnerProfile: learnerProfileSchema.optional(),
   knowledgeProfile: z.string().max(5000).optional(),
 });
 
@@ -53,9 +55,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { topic, complexity, skillLevel, passingScore, additionalContext, estimatedDuration, includeVideos, knowledgeProfile } = validation.data;
+    const { topic, complexity, skillLevel, passingScore, additionalContext, estimatedDuration, includeVideos, knowledgeProfile, learnerProfile } = validation.data;
     const { complexityToLevel } = await import("@/lib/ai/utils/promptUtils");
-    const targetLevel = complexityToLevel((complexity ?? skillLevel ?? "standard") as "foundations" | "standard" | "deep");
+    const targetLevel = learnerProfile?.startingLevel ?? complexityToLevel((complexity ?? skillLevel ?? "standard") as "foundations" | "standard" | "deep");
 
     await dbConnect();
 
@@ -108,6 +110,7 @@ export async function POST(request: NextRequest) {
         passingScore,
         additionalContext,
         knowledgeProfile,
+        learnerProfile,
       },
       userId: user.userId,
     });

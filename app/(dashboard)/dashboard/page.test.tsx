@@ -50,32 +50,20 @@ beforeEach(() => {
 
     if (urlString === "/api/courses/diagnostic") {
       const body = JSON.parse((init?.body as string) ?? "{}");
-      if (body.action === "questions") {
-        return Promise.resolve({
-          ok: true,
-          json: async () => ({
-            mcqs: [
-              { question: "Q1", options: ["a", "b", "c", "d"], correctIndex: 0 },
-              { question: "Q2", options: ["a", "b", "c", "d"], correctIndex: 1 },
-              { question: "Q3", options: ["a", "b", "c", "d"], correctIndex: 2 },
-            ],
-            essayPrompt: "Explain X",
-            round: 1,
-            done: false,
-          }),
-        } as Response);
-      }
-      return Promise.resolve({
-        ok: true,
-        json: async () => ({
-          mcqScore: 66,
-          essayDepthScore: 70,
-          weakTopics: [],
-          knowledgeProfile: "MCQ 66%",
-          done: true,
-          nextRound: null,
-        }),
-      } as Response);
+      const profile = {
+        goals: ["Use matrices in graphics"], startingLevel: "beginner", selfReportedLevel: "unsure",
+        observedStrengths: [], observedGaps: ["Matrices"], assumptions: ["Rough estimate"], assessmentSkipped: false,
+      };
+      const data = body.action === "start"
+        ? { phase: "goals", token: "goals-token", round: 1, goalOptions: ["Use matrices in graphics", "Give me a broad introduction / help me choose"] }
+        : body.action === "goals"
+          ? { phase: "knowledge", token: "knowledge-token", round: 2, maxRounds: 3, questions: [
+            { question: "Q1", options: ["a", "b", "c", "d"] },
+            { question: "Q2", options: ["a", "b", "c", "d"] },
+            { question: "Q3", options: ["a", "b", "c", "d"] },
+          ] }
+          : { phase: "summary", round: 2, profile };
+      return Promise.resolve({ ok: true, json: async () => data } as Response);
     }
 
     if (urlString === "/api/courses/generate") {
@@ -120,21 +108,21 @@ describe("DashboardPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "Generate" }));
 
     // Modal defaults to Standard complexity; continue to assessment
-    fireEvent.click(await screen.findByRole("button", { name: "Continue to assessment" }));
-    expect(await screen.findByText(/Quick knowledge check/)).toBeInTheDocument();
+    fireEvent.click(await screen.findByRole("button", { name: "Continue to course planning" }));
+    expect(await screen.findByText(/Plan your course:/)).toBeInTheDocument();
 
-    // Start assessment, answer MCQs + essay, submit round -> triggers syllabus job
-    fireEvent.click(screen.getByRole("button", { name: "Start assessment" }));
+    fireEvent.click(screen.getByRole("button", { name: "Plan my course" }));
+    fireEvent.click(await screen.findByLabelText("Use matrices in graphics"));
+    fireEvent.click(screen.getByRole("button", { name: "Continue to knowledge check" }));
     expect(await screen.findByText(/Q1/)).toBeInTheDocument();
-
     const radios = screen.getAllByRole("radio");
     fireEvent.click(radios[0]);
-    fireEvent.click(radios[5]);
-    fireEvent.click(radios[10]);
-    fireEvent.change(screen.getByPlaceholderText(/Explain in your own words/), {
-      target: { value: "My explanation" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: "Submit round" }));
+    fireEvent.click(radios[6]);
+    fireEvent.click(radios[12]);
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+    expect(await screen.findByText("Review your course plan")).toBeInTheDocument();
+    expect((global.fetch as jest.Mock).mock.calls.some(([url]) => url === "/api/courses/generate")).toBe(false);
+    fireEvent.click(screen.getByRole("button", { name: "Generate course" }));
 
     await waitFor(() => {
       expect(mockRefresh).toHaveBeenCalled();
@@ -150,5 +138,7 @@ describe("DashboardPage", () => {
     expect(payload.complexity).toBe("standard");
     expect(payload.passingScore).toBe(70);
     expect(payload.topic).toBe("Linear Algebra");
+    expect(payload.learnerProfile.goals).toEqual(["Use matrices in graphics"]);
+    expect(payload.learnerProfile.startingLevel).toBe("beginner");
   });
 });

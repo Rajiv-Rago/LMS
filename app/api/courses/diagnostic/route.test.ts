@@ -245,6 +245,12 @@ it("uses the selected router for goals and restores it from signed state for que
   await post({ action: "goals", token: r.token, goalIndex: 0, experience: "beginner" });
   expect(resolveProvider).toHaveBeenNthCalledWith(1, { requestProvider: "openrouter", requestModel: "openrouter/free", requestTier: undefined });
   expect(resolveProvider).toHaveBeenNthCalledWith(2, { requestProvider: "openrouter", requestModel: "openrouter/free", requestTier: undefined });
+  expect(mockGenerate.mock.calls[0][1].responseSchema).toMatchObject({
+    type: "object", required: ["goals"], additionalProperties: false,
+  });
+  expect(mockGenerate.mock.calls[1][1].responseSchema).toMatchObject({
+    required: ["questions"], properties: { questions: { minItems: 3, maxItems: 3 } },
+  });
 });
 
 it("rejects conflicting tier/provider choices before calling the model", async () => {

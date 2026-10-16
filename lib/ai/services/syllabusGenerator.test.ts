@@ -94,6 +94,24 @@ describe("SyllabusGeneratorService", () => {
     expect(prompt).toContain("Focus on type-level programming");
     expect(options.maxTokens).toBe(4096);
     expect(options.temperature).toBe(0.7);
+    expect(options.responseSchema).toMatchObject({
+      type: "object", required: ["courseTitle", "courseDescription", "modules"], additionalProperties: false,
+    });
+  });
+
+  it("requests the hybrid lesson fields when videos are enabled", async () => {
+    mockGenerateText.mockResolvedValue({ content: validSyllabusJson });
+    await service.generateSyllabus({ topic: "Python", targetLevel: "beginner", estimatedDuration: "4 weeks", includeVideos: true });
+    const schema = mockGenerateText.mock.calls[0][1].responseSchema;
+    expect(schema.properties.modules.items.properties.lessons.items.required).toEqual([
+      "title", "outline", "order", "contentType", "videoSearchQuery",
+    ]);
+  });
+
+  it("identifies output-token truncation before attempting to parse incomplete JSON", async () => {
+    mockGenerateText.mockResolvedValue({ content: '{"courseTitle":', finishReason: "length" });
+    await expect(service.generateSyllabus({ topic: "Python", targetLevel: "beginner", estimatedDuration: "4 weeks" }))
+      .rejects.toThrow("Syllabus output was truncated");
   });
 
   it("keeps a beginner's deep course focused on the selected goal", async () => {

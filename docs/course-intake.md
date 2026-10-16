@@ -25,3 +25,5 @@ Choose **Try free models** (or Advanced → OpenRouter → OpenRouter Free Route
 - UI tests cover optional explanations, editable summaries, skips, recoverable errors, and prevention of empty goals.
 - Generation tests cover independent starting level and depth, plus goal/profile propagation to the syllabus and lessons.
 - Live model quality is not implied by mocked tests; review real generated questions for relevance and difficulty during a pilot.
+
+OpenRouter intake and syllabus calls send a strict `response_format` JSON schema and `provider.require_parameters: true`, so routing requires structured-output support. Server-side validation remains necessary because endpoint enforcement varies. Ordinary prose/chat calls do not request JSON. Syllabus truncation is identified separately from malformed JSON. Inline job failures are logged with job ID, job type, requested provider/model, and classified provider-error metadata while the client continues to receive a generic error. No learner prompt or API key is added to those logs.

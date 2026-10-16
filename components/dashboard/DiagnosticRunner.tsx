@@ -182,6 +182,7 @@ export default function DiagnosticRunner({
                 action: "start",
                 topic: config.topic,
                 additionalContext: config.additionalContext || undefined,
+                aiSelection: config.aiSelection,
               })
             }
           >

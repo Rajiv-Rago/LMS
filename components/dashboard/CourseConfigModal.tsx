@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { coursePlanningError, MAX_COURSE_TOPIC_LENGTH, MAX_COURSE_CONTEXT_LENGTH } from "@/lib/validation/coursePlanning";
+import { ModelSelector, type ModelSelectorValue } from "@/components/ai/ModelSelector";
 
 export type ComplexityOption = "foundations" | "standard" | "deep";
 
@@ -10,6 +11,7 @@ export interface CourseConfig {
   complexity: ComplexityOption;
   passingScore: number;
   additionalContext: string;
+  aiSelection?: ModelSelectorValue;
 }
 
 interface CourseConfigModalProps {
@@ -29,6 +31,7 @@ export default function CourseConfigModal({ initialTopic, onClose, onContinue }:
   const [complexity, setComplexity] = useState<ComplexityOption>("standard");
   const [passingScore, setPassingScore] = useState(70);
   const [additionalContext, setAdditionalContext] = useState("");
+  const [aiSelection, setAISelection] = useState<ModelSelectorValue>({});
   const validationError = coursePlanningError(topic, additionalContext);
   const dialogRef = useRef<HTMLDivElement>(null);
 
@@ -48,6 +51,7 @@ export default function CourseConfigModal({ initialTopic, onClose, onContinue }:
       complexity,
       passingScore,
       additionalContext: additionalContext.trim(),
+      aiSelection,
     });
   }
 
@@ -150,6 +154,7 @@ export default function CourseConfigModal({ initialTopic, onClose, onContinue }:
             </p>
           </div>
 
+          <ModelSelector value={aiSelection} onChange={setAISelection} />
           {validationError && topic.trim() && (
             <p role="alert" className="text-sm text-red-600 dark:text-red-400">{validationError}</p>
           )}

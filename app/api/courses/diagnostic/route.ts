@@ -6,6 +6,7 @@ import { resolveProvider } from "@/lib/ai/utils/providerResolver";
 import { createAIProvider } from "@/lib/ai";
 import { parseAIJsonResponse } from "@/lib/ai/utils/jsonParser";
 import { env } from "@/lib/env";
+import { aiSelectionSchema } from "@/lib/validation/aiSchemas";
 import { captureException } from "@/lib/logger";
 import {
   BROAD_GOAL,
@@ -27,6 +28,7 @@ const requestSchema = z.discriminatedUnion("action", [
     action: z.literal("start"),
     topic: courseTopicSchema,
     additionalContext: courseContextSchema.optional(),
+    aiSelection: aiSelectionSchema.optional(),
   }),
   z.object({
     action: z.literal("goals"),
@@ -64,13 +66,18 @@ export async function POST(request: NextRequest) {
         { status: 400 },
       );
     const body = validation.data;
+    let aiSelection = body.action === "start" ? body.aiSelection : undefined;
     const maxRounds = Math.min(
       env.DIAGNOSTIC_MAX_ITERATIONS,
       MAX_INTAKE_ROUNDS,
     );
     // Provider is needed only when generating questions, never for skip/evaluate.
     async function generate(prompt: string) {
-      const resolved = resolveProvider({});
+      const resolved = resolveProvider({
+        requestProvider: aiSelection?.provider,
+        requestModel: aiSelection?.model,
+        requestTier: aiSelection?.tier,
+      });
       if (!resolved)
         throw new Error(
           "AI service is temporarily unavailable. You can skip the knowledge check.",
@@ -165,6 +172,7 @@ export async function POST(request: NextRequest) {
         expiresAt: Date.now() + 3600000,
         topic: body.topic,
         context: body.additionalContext || "",
+        aiSelection,
         round: 1,
         questionCount: 2,
         goalOptions,
@@ -175,6 +183,7 @@ export async function POST(request: NextRequest) {
     let session: IntakeSession;
     try {
       session = decodeSession(body.token, user.userId);
+      aiSelection = session.aiSelection;
     } catch (e) {
       return NextResponse.json(
         { error: e instanceof Error ? e.message : "Invalid intake session" },

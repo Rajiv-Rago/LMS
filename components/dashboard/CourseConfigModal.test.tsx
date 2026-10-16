@@ -1,6 +1,7 @@
 /** @jest-environment jsdom */
 import { fireEvent, render, screen } from "@testing-library/react";
 import CourseConfigModal from "./CourseConfigModal";
+jest.mock("@/components/ai/ModelSelector", () => ({ ModelSelector: () => null }));
 
 it("allows a pasted description beyond the old limit without losing text", () => {
   const onContinue = jest.fn();

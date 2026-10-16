@@ -16,6 +16,15 @@ export const aiProviderSchema = z.enum([
  */
 export const aiTierSchema = z.enum(["concise", "balanced", "thorough"]);
 
+export const aiSelectionSchema = z.object({
+  tier: aiTierSchema.optional(),
+  provider: aiProviderSchema.optional(),
+  model: z.string().max(256).optional(),
+}).refine((data) => !(data.tier && data.provider), {
+  message: "Cannot specify both tier and provider",
+  path: ["tier"],
+});
+
 /**
  * Schema for content generation requests (module or lesson).
  * Supports tier OR provider+model, but not both.

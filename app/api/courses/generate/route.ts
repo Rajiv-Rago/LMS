@@ -12,6 +12,7 @@ import { captureException } from "@/lib/logger";
 import { getCorrelationId, CORRELATION_HEADER } from "@/lib/telemetry/correlationId";
 import { ErrorCodes } from "@/lib/telemetry/errorCodes";
 import type { SubscriptionTier } from "@/lib/auth/types";
+import { aiSelectionSchema } from "@/lib/validation/aiSchemas";
 
 const MAX_GENERATED_COURSES: Record<SubscriptionTier, number> = {
   free: 5,
@@ -19,7 +20,7 @@ const MAX_GENERATED_COURSES: Record<SubscriptionTier, number> = {
   admin: Infinity,
 };
 
-const generateCourseSchema = z.object({
+const generateCourseSchema = aiSelectionSchema.safeExtend({
   topic: courseTopicSchema,
   // Complexity labels (aliases for beginner/intermediate/advanced). skillLevel kept for back-compat.
   complexity: z.enum(["foundations", "standard", "deep", "beginner", "intermediate", "advanced"]).optional(),
@@ -56,7 +57,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { topic, complexity, skillLevel, passingScore, additionalContext, estimatedDuration, includeVideos, knowledgeProfile, learnerProfile } = validation.data;
+    const { topic, complexity, skillLevel, passingScore, additionalContext, estimatedDuration, includeVideos, knowledgeProfile, learnerProfile, tier, provider, model } = validation.data;
     const { complexityToLevel } = await import("@/lib/ai/utils/promptUtils");
     const targetLevel = learnerProfile?.startingLevel ?? complexityToLevel((complexity ?? skillLevel ?? "standard") as "foundations" | "standard" | "deep");
 
@@ -84,7 +85,7 @@ export async function POST(request: NextRequest) {
     );
     if (rateCheck.blocked) return rateCheck.response;
 
-    const resolved = resolveProvider({});
+    const resolved = resolveProvider({ requestTier: tier, requestProvider: provider, requestModel: model });
     if (!resolved) {
       captureException(new Error("Provider not configured"), {
         operation: "resolve-provider",
@@ -112,6 +113,9 @@ export async function POST(request: NextRequest) {
         additionalContext,
         knowledgeProfile,
         learnerProfile,
+        tier,
+        provider,
+        model,
       },
       userId: user.userId,
     });

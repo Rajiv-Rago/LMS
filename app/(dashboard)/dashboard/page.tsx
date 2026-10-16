@@ -168,6 +168,7 @@ function DashboardContent() {
           passingScore,
           additionalContext: additionalContext || undefined,
           learnerProfile,
+          ...courseConfig.aiSelection,
         }),
       });
 

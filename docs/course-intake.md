@@ -17,6 +17,8 @@ Course depth (`foundations`, `standard`, `deep`) controls breadth and detail ind
 
 Course topics allow up to 500 characters; longer descriptions belong in the details field, which accepts up to 20,000 characters. These limits are shared by intake, signed session validation, both syllabus endpoints, and the course forms. Oversized input receives a field-specific message; forms retain pasted text for editing. The signed token request limit allows for Unicode, JSON escaping, and base64 expansion of the full session. These are input limits, independent of the 1,800-token diagnostic output budget and the three-round assessment cap.
 
+Choose **Try free models** (or Advanced → OpenRouter → OpenRouter Free Router) in the course configuration to use `openrouter/free`. The selected provider/model is signed into intake state, used for goal suggestions and knowledge questions, then passed to the generation job and stored on the course for subsequent content. Leaving the choice unset keeps the existing default behavior. OpenRouter requires `OPENROUTER_API_KEY` in the deployment environment; the option is shown only when that provider is configured. This router samples different free models, so it is an experiment rather than a quality upgrade guarantee.
+
 ## Validation
 
 - API tests cover early stopping, bounded follow-up, unknown answers, skips, lower limits, malformed output, session tampering, ownership, expiry, and model outages.

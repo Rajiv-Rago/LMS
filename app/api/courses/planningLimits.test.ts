@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { POST as generate } from "./generate/route";
 import { POST as syllabus } from "./ai/syllabus/route";
 import { enqueueJob } from "@/lib/queue";
+import { resolveProvider } from "@/lib/ai/utils/providerResolver";
 
 jest.mock("@/lib/auth", () => ({
   authenticate: jest.fn().mockResolvedValue({ userId: "learner-1", role: "admin" }),
@@ -29,6 +30,16 @@ describe.each([["generate", generate], ["syllabus", syllabus]] as const)("%s pla
       body: JSON.stringify({ topic: "Python", estimatedDuration: "4 weeks", ...extra }),
     }));
   }
+  it("routes an explicit free model and preserves it for the worker", async () => {
+    const selection = { provider: "openrouter", model: "openrouter/free" };
+    expect((await post(selection)).status).toBe(202);
+    expect(resolveProvider).toHaveBeenCalledWith(expect.objectContaining({ requestProvider: "openrouter", requestModel: "openrouter/free" }));
+    expect(enqueueJob).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining(selection) }));
+  });
+  it("rejects conflicting tier/provider choices", async () => {
+    expect((await post({ tier: "balanced", provider: "openrouter" })).status).toBe(400);
+    expect(enqueueJob).not.toHaveBeenCalled();
+  });
   it("passes all 20,000 description characters to the generation job", async () => {
     const additionalContext = "学".repeat(20000);
     expect((await post({ additionalContext })).status).toBe(202);

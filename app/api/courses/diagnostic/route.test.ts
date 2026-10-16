@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { POST } from "./route";
 import { decodeSession, encodeSession } from "@/lib/ai/intake/session";
 import { env } from "@/lib/env";
+import { resolveProvider } from "@/lib/ai/utils/providerResolver";
 import { MAX_COURSE_CONTEXT_LENGTH, MAX_INTAKE_TOKEN_LENGTH } from "@/lib/validation/coursePlanning";
 
 const mockGenerate = jest.fn();
@@ -11,7 +12,7 @@ jest.mock("@/lib/auth", () => ({
   requireCsrf: jest.fn().mockReturnValue(null),
 }));
 jest.mock("@/lib/ai/utils/providerResolver", () => ({
-  resolveProvider: () => ({ provider: "openai", apiKey: "test" }),
+  resolveProvider: jest.fn(() => ({ provider: "openai", apiKey: "test" })),
 }));
 jest.mock("@/lib/ai", () => ({
   createAIProvider: () => ({ generateText: mockGenerate }),
@@ -57,6 +58,7 @@ async function knowledge(experience = "intermediate") {
 }
 beforeEach(() => {
   mockGenerate.mockReset();
+  (resolveProvider as jest.Mock).mockClear();
   mockAuthenticate.mockResolvedValue({ userId: "learner-1" });
   env.DIAGNOSTIC_MAX_ITERATIONS = 3;
 });
@@ -231,4 +233,22 @@ it("rejects malformed model questions rather than scoring an invalid answer key"
   });
   expect(final.phase).toBe("summary");
   expect(final.profile.assessmentSkipped).toBe(true);
+});
+
+it("uses the selected router for goals and restores it from signed state for questions", async () => {
+  mockGenerate.mockResolvedValueOnce({ content: JSON.stringify({ goals: ["Automate files", "Build APIs", "Analyze data"] }) });
+  const aiSelection = { provider: "openrouter", model: "openrouter/free" };
+  const r = await post({ action: "start", topic: "Python", aiSelection });
+  expect(r.status).toBe(200);
+  expect(decodeSession(r.token, "learner-1").aiSelection).toEqual(aiSelection);
+  mockGenerate.mockResolvedValueOnce({ content: JSON.stringify({ questions: [question("Loops"), question("Files"), question("Errors")] }) });
+  await post({ action: "goals", token: r.token, goalIndex: 0, experience: "beginner" });
+  expect(resolveProvider).toHaveBeenNthCalledWith(1, { requestProvider: "openrouter", requestModel: "openrouter/free", requestTier: undefined });
+  expect(resolveProvider).toHaveBeenNthCalledWith(2, { requestProvider: "openrouter", requestModel: "openrouter/free", requestTier: undefined });
+});
+
+it("rejects conflicting tier/provider choices before calling the model", async () => {
+  const r = await post({ action: "start", topic: "Python", aiSelection: { tier: "balanced", provider: "openrouter" } });
+  expect(r.status).toBe(400);
+  expect(mockGenerate).not.toHaveBeenCalled();
 });

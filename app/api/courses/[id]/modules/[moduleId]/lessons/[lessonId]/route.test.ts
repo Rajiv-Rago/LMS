@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { PATCH } from './route';
+import { GET, PATCH } from './route';
 import { Lesson } from '@/lib/models';
 jest.mock('@/lib/db', () => ({ dbConnect: jest.fn() }));
 jest.mock('@/lib/models', () => ({ Course: { findById: jest.fn().mockResolvedValue({}) }, Module: { findOne: jest.fn().mockResolvedValue({}) }, Lesson: { findOne: jest.fn() } }));
@@ -19,4 +19,17 @@ it('clears recommendations and citations tied to the previous lesson format', as
   (Lesson.findOne as jest.Mock).mockResolvedValue(lesson);
   expect((await PATCH(request(), params)).status).toBe(200);
   expect(lesson).toEqual(expect.objectContaining({ sources: [], learningResources: [], keyTakeaways: [] }));
+});
+it('reports an expired generation as failed without modifying its content', async () => {
+  const stored = { isPublished: true, generationStatus: 'generating', content: 'Previous content', updatedAt: new Date(Date.now() - 240000) };
+  (Lesson.findOne as jest.Mock).mockResolvedValue({ ...stored, toObject: () => stored });
+  const response = await GET(new NextRequest('http://localhost/api/lesson'), params);
+  expect((await response.json()).lesson).toEqual(expect.objectContaining({ generationStatus: 'failed', content: 'Previous content' }));
+});
+it('allows an editor to replace a lesson after a generation lease expires', async () => {
+  const lesson = { contentType: 'text', generationStatus: 'generating', updatedAt: new Date(Date.now() - 240000), save: jest.fn() };
+  (Lesson.findOne as jest.Mock).mockResolvedValue(lesson);
+  expect((await PATCH(request(), params)).status).toBe(200);
+  expect(lesson.save).toHaveBeenCalled();
+  expect(lesson.generationStatus).toBe('failed');
 });

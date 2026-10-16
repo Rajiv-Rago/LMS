@@ -182,6 +182,45 @@ describe("lesson actions and resource refresh", () => {
     expect(screen.getByRole("menuitem", { name: "Improve this lesson" })).toBeInTheDocument();
     expect(screen.queryByRole("menuitem", { name: "Replace with YouTube video" })).not.toBeInTheDocument();
   });
+  it("keeps recovery controls available for an empty failed text lesson", async () => {
+    currentLesson = { ...currentLesson, content: "", generationStatus: "failed" };
+    render(<LessonDetailPage params={params} />);
+    const retry = await screen.findByRole("button", { name: "Retry generation" });
+    expect(global.fetch).not.toHaveBeenCalledWith(expect.stringContaining("/generate"), expect.anything());
+    const menu = screen.getByRole("button", { name: "Lesson actions" });
+    expect(menu).toBeEnabled();
+    fireEvent.click(menu);
+    expect(screen.getByRole("menuitem", { name: "Replace with YouTube video" })).toBeInTheDocument();
+    fireEvent.click(retry);
+    expect(await screen.findByText("Updated body")).toBeInTheDocument();
+  });
+  it("renders a video even when its text description is empty", async () => {
+    currentLesson = { ...currentLesson, contentType: "video", content: "", videoUrl: "https://www.youtube.com/embed/video" };
+    const { container } = render(<LessonDetailPage params={params} />);
+    await screen.findByRole("button", { name: "Lesson actions" });
+    expect(container.querySelector("iframe")).toHaveAttribute("src", "https://www.youtube.com/embed/video");
+  });
+  it("handles an error event split between network reads and unlocks retry", async () => {
+    const defaultFetch = global.fetch as jest.Mock;
+    const fallback = defaultFetch.getMockImplementation()!;
+    defaultFetch.mockImplementation(async (url, init) => {
+      if (!String(url).endsWith("/generate")) return fallback(url, init);
+      currentLesson = { ...currentLesson, generationStatus: "failed" };
+      const chunks = ['event: error\n', 'data: {"message":"Provider interrupted","isTransient":false}\n\n'];
+      return { ...jsonResponse({}), body: { getReader: () => ({ read: async () => {
+        const chunk = chunks.shift();
+        return chunk ? { done: false, value: new Uint8Array(Buffer.from(chunk)) } : { done: true };
+      } }) } };
+    });
+    render(<LessonDetailPage params={params} />);
+    fireEvent.click(await screen.findByRole("button", { name: "Lesson actions" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Improve this lesson" }));
+    fireEvent.click(screen.getByRole("button", { name: "Too advanced" }));
+    fireEvent.click(screen.getByRole("button", { name: /Improve with AI/ }));
+    expect(await screen.findByText("Provider interrupted")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Retry" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Lesson actions" })).toBeEnabled();
+  });
   it("places Edit and Delete in the right-aligned menu without publishing controls", async () => {
     render(<LessonDetailPage params={params} />);
     const trigger = await screen.findByRole("button", { name: "Lesson actions" });

@@ -92,7 +92,6 @@ export default function LessonDetailPage({
   const [generating, setGenerating] = useState(false);
   const [streamedContent, setStreamedContent] = useState("");
   const [genError, setGenError] = useState("");
-  const [genErrorTransient, setGenErrorTransient] = useState(true);
   const [genCorrelationId, setGenCorrelationId] = useState("");
   const [showFeedback, setShowFeedback] = useState(false);
   const [refreshingResources, setRefreshingResources] = useState(false);
@@ -146,6 +145,14 @@ export default function LessonDetailPage({
   useEffect(() => {
     fetchLesson();
   }, [fetchLesson]);
+
+  // A request can outlive its tab or be terminated by the host. Refresh remote
+  // generation state so completion or an expired lease unlocks recovery.
+  useEffect(() => {
+    if (lesson?.generationStatus !== "generating" || generating) return;
+    const timer = setInterval(() => { void fetchLesson(); }, 5000);
+    return () => clearInterval(timer);
+  }, [lesson?.generationStatus, generating, fetchLesson]);
 
   // Fetch modules for sidebar navigation
   useEffect(() => {
@@ -226,7 +233,6 @@ export default function LessonDetailPage({
 
   const handleGenerate = async (withFeedback?: string) => {
     setGenError("");
-    setGenErrorTransient(true);
     setGenCorrelationId("");
     setStreamedContent("");
 
@@ -262,6 +268,7 @@ export default function LessonDetailPage({
 
       if (res.status === 409) {
         toast.info("This lesson is already being generated");
+        await fetchLesson();
         setGenerating(false);
         return;
       }
@@ -275,7 +282,6 @@ export default function LessonDetailPage({
         const data = await res.json().catch(() => ({}));
         toast.error("Generation failed. Try again later.");
         setGenError(data.error || "Generation request failed");
-        setGenErrorTransient(res.status >= 500 && res.status !== 503);
         if (data.correlationId) setGenCorrelationId(data.correlationId);
         setGenerating(false);
         return;
@@ -285,6 +291,7 @@ export default function LessonDetailPage({
       const decoder = new TextDecoder();
       let buffer = "";
       let receivedTerminalEvent = false;
+      let eventType = "";
 
       while (true) {
         const { done, value } = await reader.read();
@@ -295,7 +302,6 @@ export default function LessonDetailPage({
         const lines = buffer.split("\n");
         buffer = lines.pop() || "";
 
-        let eventType = "";
         for (const line of lines) {
           if (line.startsWith("event: ")) {
             eventType = line.slice(7);
@@ -319,10 +325,10 @@ export default function LessonDetailPage({
                 const msg = data.message || "Generation failed";
                 toast.error(msg);
                 setGenError(msg);
-                setGenErrorTransient(data.isTransient !== false);
                 if (data.correlationId) setGenCorrelationId(data.correlationId);
                 setGenerating(false);
                 setStreamedContent("");
+                await fetchLesson();
               }
             } catch {
               // ignore malformed JSON
@@ -340,6 +346,8 @@ export default function LessonDetailPage({
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") return;
       toast.error("Failed to start generation");
+      setGenError("The connection was interrupted. Please retry generating this lesson.");
+      await fetchLesson();
       setGenerating(false);
       setStreamedContent("");
     }
@@ -354,7 +362,7 @@ export default function LessonDetailPage({
   useEffect(() => {
     if (loading || !lesson) return;
     if (autoGenTriedRef.current) return;
-    if (generating || genError) return;
+    if (generating || swapping || genError) return;
 
     const canGenerateNow = isOwnedCourse && permissions?.canEdit;
     const isAITextLesson = lesson.contentType === "text" && isOwnedCourse;
@@ -363,6 +371,7 @@ export default function LessonDetailPage({
       canGenerateNow &&
       lesson.generationStatus !== "generating" &&
       lesson.generationStatus !== "completed" &&
+      lesson.generationStatus !== "failed" &&
       !lesson.content;
 
     if (needsGeneration) {
@@ -370,7 +379,7 @@ export default function LessonDetailPage({
       handleGenerate();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading, lesson, permissions, isOwnedCourse, generating, genError]);
+  }, [loading, lesson, permissions, isOwnedCourse, generating, swapping, genError]);
 
   const handleUndo = async () => {
     try {
@@ -441,7 +450,7 @@ export default function LessonDetailPage({
         content: "",
         youtubeMetadata: null,
       });
-      if (res.ok) { autoGenTriedRef.current = false; setUndoAvailable(false); }
+      if (res.ok) { autoGenTriedRef.current = false; setGenError(""); setUndoAvailable(false); }
       else toast.error("Could not replace the lesson. Please try again.");
     } catch {
       toast.error("Could not replace the lesson. Please try again.");
@@ -585,7 +594,8 @@ export default function LessonDetailPage({
     isOwnedCourse &&
     (permissions?.canEdit || permissions?.isSharedWith);
   const isSkeleton =
-    lesson.generationStatus === "skeleton" || (!lesson.content && isOwnedCourse);
+    lesson.contentType === "text" &&
+    (lesson.generationStatus === "skeleton" || (!lesson.content?.trim() && isOwnedCourse));
   const isCompleted = lesson.generationStatus === "completed";
   const isFailed = lesson.generationStatus === "failed";
   const isAITextLesson = lesson.contentType === "text" && isOwnedCourse;
@@ -832,6 +842,21 @@ export default function LessonDetailPage({
                 </div>
 
                 {/* Streaming content or skeleton */}
+                {!generating && lesson.generationStatus === "generating" && (
+                  <p role="status" className="mb-4 text-sm text-zinc-600 dark:text-zinc-400">
+                    Generating lesson content. This page will update automatically.
+                  </p>
+                )}
+                {canGenerate && isAITextLesson && !generating && lesson.generationStatus !== "generating" && !genError && (isFailed || !lesson.content?.trim()) && (
+                  <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-900/20">
+                    <p className="mb-3 text-sm text-zinc-700 dark:text-zinc-300">
+                      {isFailed ? "The previous generation did not finish. You can retry or choose another lesson format from the menu." : "This lesson does not have text content yet."}
+                    </p>
+                    <Button onClick={() => handleGenerate()}>
+                      {isFailed ? "Retry generation" : "Generate lesson content"}
+                    </Button>
+                  </div>
+                )}
                 {generating && (
                   streamedContent
                     ? <MarkdownContent content={streamedContent.replace(/^#[^\n]*\n+/, "")} />
@@ -852,7 +877,7 @@ export default function LessonDetailPage({
                           </p>
                         )}
                       </div>
-                      {genErrorTransient && (
+                      {canFeedback && !generating && lesson.generationStatus !== "generating" && (
                         <Button
                           variant="ghost"
                           size="sm"

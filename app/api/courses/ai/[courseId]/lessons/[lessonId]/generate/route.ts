@@ -18,6 +18,7 @@ import { captureException } from "@/lib/logger";
 import { getCorrelationId, CORRELATION_HEADER } from "@/lib/telemetry/correlationId";
 import { ErrorCodes } from "@/lib/telemetry/errorCodes";
 import { AIProviderError } from "@/lib/ai/errors";
+import { availableLessonGenerationFilter } from "@/lib/utils/lessonGeneration";
 
 export const maxDuration = 120;
 
@@ -136,7 +137,7 @@ export async function POST(
 
     // Atomic check-and-set to prevent concurrent generation
     const claimed = await Lesson.findOneAndUpdate(
-      { _id: lessonId, generationStatus: { $ne: "generating" }, $or: [{ resourceRefreshStartedAt: null }, { resourceRefreshStartedAt: { $lt: new Date(Date.now() - 120000) } }] },
+      { _id: lessonId, ...availableLessonGenerationFilter(), $and: [{ $or: [{ resourceRefreshStartedAt: null }, { resourceRefreshStartedAt: { $lt: new Date(Date.now() - 120000) } }] }] },
       {
         $set: {
           generationStatus: "generating",
@@ -155,6 +156,10 @@ export async function POST(
         { status: 409 }
       );
     }
+
+    // A late/disconnected request must never overwrite a newer retry or edit.
+    const claimFilter = { _id: lessonId, generationStatus: "generating", updatedAt: claimed.updatedAt };
+    const releaseClaim = () => Lesson.updateOne(claimFilter, { $set: { generationStatus: "failed" } });
 
     const targetLevel = extractTargetLevel(course.syllabusPrompt);
 
@@ -189,6 +194,19 @@ export async function POST(
           }
         };
 
+        // Finish cleanly before Vercel's hard runtime cutoff, which does not run
+        // catch/finally handlers and would otherwise leave the lesson locked.
+        const deadline = setTimeout(() => {
+          send("error", {
+            message: "Lesson generation timed out. Please retry.",
+            isTransient: true,
+            correlationId,
+          });
+          void releaseClaim().catch(() => {});
+          if (!closed) controller.close();
+          closed = true;
+        }, 105_000);
+
         try {
           const lessonService = new LessonContentGeneratorService({
             provider: resolved.provider,
@@ -217,16 +235,15 @@ export async function POST(
             if (event.type === "chunk") {
               send("chunk", { text: event.text });
             } else if (event.type === "complete") {
-              lesson.previousContent = claimed.previousContent;
-              lesson.previousKeyTakeaways = claimed.previousKeyTakeaways;
-              lesson.previousSources = claimed.previousSources;
-              lesson.previousLearningResources = claimed.previousLearningResources;
-              lesson.content = event.content;
-              lesson.keyTakeaways = event.keyTakeaways;
-              lesson.sources = event.sources?.length ? event.sources : undefined;
-              lesson.learningResources = event.learningResources || [];
-              lesson.generationStatus = "completed";
-              await lesson.save();
+              if (!event.content.trim()) throw new Error("AI returned empty lesson content");
+              const saved = await Lesson.updateOne(claimFilter, { $set: {
+                content: event.content,
+                keyTakeaways: event.keyTakeaways,
+                sources: event.sources || [],
+                learningResources: event.learningResources || [],
+                generationStatus: "completed",
+              } }, { runValidators: true });
+              if (!saved.matchedCount) throw new Error("Lesson generation was interrupted; please retry");
 
               send("done", {
                 keyTakeaways: event.keyTakeaways,
@@ -269,8 +286,7 @@ export async function POST(
           });
 
           try {
-            lesson.generationStatus = "failed";
-            await lesson.save();
+            await releaseClaim();
           } catch {
             // best effort
           }
@@ -285,6 +301,9 @@ export async function POST(
             correlationId,
           });
         } finally {
+          clearTimeout(deadline);
+          // Also covers a stream that ends without a completion event.
+          await releaseClaim().catch(() => {});
           if (!closed) {
             controller.close();
           }
@@ -294,12 +313,7 @@ export async function POST(
 
     request.signal.addEventListener("abort", () => {
       closed = true;
-      Lesson.findById(lessonId).then((l) => {
-        if (l && l.generationStatus === "generating") {
-          l.generationStatus = "failed";
-          l.save().catch(() => {});
-        }
-      }).catch(() => {});
+      void releaseClaim().catch(() => {});
     });
 
     const headers = new Headers({

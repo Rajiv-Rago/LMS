@@ -39,3 +39,16 @@ it("identifies truncation when the SDK rejects a structured response before retu
     fetch.mockRestore();
   }
 });
+
+it("classifies non-JSON model output from the real SDK as a parse failure", async () => {
+  const fetch = jest.spyOn(global, "fetch").mockResolvedValue(new Response(JSON.stringify({
+    id: "test-invalid", object: "chat.completion", created: 1, model: "test/model",
+    choices: [{ index: 0, message: { role: "assistant", content: "User Safety: safe" }, finish_reason: "stop" }],
+  }), { status: 200, headers: { "Content-Type": "application/json" } }));
+  try {
+    await expect(new OpenRouterProvider("test-key").generateText("Suggest goals as JSON", {
+      responseSchema: { type: "object", properties: { goals: { type: "array", items: { type: "string" } } }, required: ["goals"], additionalProperties: false },
+    })).rejects.toMatchObject({ errorCode: "AI_GENERATION_PARSE_FAILED", originalError: expect.any(SyntaxError) });
+    expect(fetch).toHaveBeenCalledTimes(1);
+  } finally { fetch.mockRestore(); }
+});

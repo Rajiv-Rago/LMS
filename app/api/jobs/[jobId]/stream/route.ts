@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { authenticate } from "@/lib/auth";
 import { getJobStatus } from "@/lib/queue";
+import { publicJobError } from "@/lib/queue/publicJobError";
 
 const POLL_MS = 2000;
 const MAX_DURATION_MS = 4.5 * 60 * 1000;
@@ -45,7 +46,7 @@ export async function GET(
         send("status", {
           status: job.status,
           result: job.result,
-          error: job.error ? "Job failed — please try again" : undefined,
+          error: publicJobError(job.error),
         });
         return job.status === "completed" || job.status === "failed";
       };

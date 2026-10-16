@@ -125,6 +125,11 @@ export abstract class LangChainProvider implements AIProvider {
       model: this.model,
       operation,
       originalError: error,
+      // The OpenAI-compatible client may throw before returning finishReason
+      // when a structured response exhausts its completion budget.
+      message: error instanceof Error && (error.name === "LengthFinishReasonError" || error.constructor.name === "LengthFinishReasonError")
+        ? `${this.name}/${this.model} output was truncated at the model's token limit.`
+        : undefined,
       ...classifyProviderError(error, this.name),
     });
   }

@@ -24,3 +24,18 @@ it("sends the schema and routing requirement in the actual OpenRouter HTTP body"
     fetch.mockRestore();
   }
 });
+
+it("identifies truncation when the SDK rejects a structured response before returning it", async () => {
+  const fetch = jest.spyOn(global, "fetch").mockResolvedValue(new Response(JSON.stringify({
+    id: "test-truncated", object: "chat.completion", created: 1, model: "test/structured-model",
+    choices: [{ index: 0, message: { role: "assistant", content: '{"goals":' }, finish_reason: "length" }],
+  }), { status: 200, headers: { "Content-Type": "application/json" } }));
+  try {
+    await expect(new OpenRouterProvider("test-key").generateText("Suggest goals as JSON", {
+      responseSchema: { type: "object", properties: { goals: { type: "array", items: { type: "string" } } }, required: ["goals"], additionalProperties: false },
+    })).rejects.toThrow("output was truncated at the model's token limit");
+    expect(fetch).toHaveBeenCalledTimes(1);
+  } finally {
+    fetch.mockRestore();
+  }
+});

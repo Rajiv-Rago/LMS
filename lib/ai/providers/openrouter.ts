@@ -17,6 +17,9 @@ export class OpenRouterProvider extends LangChainProvider {
       temperature: options?.temperature ?? 0.7,
       configuration: { baseURL: "https://openrouter.ai/api/v1" },
       ...(options?.responseSchema ? {
+        // LangChain otherwise retries SDK JSON/length errors with the same
+        // budget. Surface them immediately instead of repeating paid work.
+        maxRetries: 0,
         modelKwargs: {
           response_format: {
             type: "json_schema",

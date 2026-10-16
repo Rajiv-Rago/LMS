@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { coursePlanningError, MAX_COURSE_TOPIC_LENGTH, MAX_COURSE_CONTEXT_LENGTH } from "@/lib/validation/coursePlanning";
 
 export type ComplexityOption = "foundations" | "standard" | "deep";
 
@@ -28,6 +29,7 @@ export default function CourseConfigModal({ initialTopic, onClose, onContinue }:
   const [complexity, setComplexity] = useState<ComplexityOption>("standard");
   const [passingScore, setPassingScore] = useState(70);
   const [additionalContext, setAdditionalContext] = useState("");
+  const validationError = coursePlanningError(topic, additionalContext);
   const dialogRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -40,7 +42,7 @@ export default function CourseConfigModal({ initialTopic, onClose, onContinue }:
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!topic.trim()) return;
+    if (validationError) return;
     onContinue({
       topic: topic.trim(),
       complexity,
@@ -74,11 +76,16 @@ export default function CourseConfigModal({ initialTopic, onClose, onContinue }:
               id="config-topic"
               type="text"
               required
+              aria-describedby="config-topic-count"
+              aria-invalid={topic.trim().length > MAX_COURSE_TOPIC_LENGTH}
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
               className="block w-full rounded-md border border-zinc-300 dark:border-zinc-700 px-3 py-2 text-sm bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
               placeholder="e.g., Linear Algebra"
             />
+            <p id="config-topic-count" className="mt-1 text-xs text-zinc-500">
+              {topic.trim().length.toLocaleString()} / {MAX_COURSE_TOPIC_LENGTH.toLocaleString()} characters. Put longer descriptions in Details.
+            </p>
           </div>
 
           <div>
@@ -131,13 +138,21 @@ export default function CourseConfigModal({ initialTopic, onClose, onContinue }:
             <textarea
               id="config-context"
               rows={5}
+              aria-describedby="config-context-count"
+              aria-invalid={additionalContext.length > MAX_COURSE_CONTEXT_LENGTH}
               value={additionalContext}
               onChange={(e) => setAdditionalContext(e.target.value)}
               className="block w-full rounded-md border border-zinc-300 dark:border-zinc-700 px-3 py-2 text-sm bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white placeholder-zinc-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
               placeholder="Paste anything you want covered: topics, goals, prerequisites — even a full university course description..."
             />
+            <p id="config-context-count" className="mt-1 text-xs text-zinc-500">
+              {additionalContext.length.toLocaleString()} / {MAX_COURSE_CONTEXT_LENGTH.toLocaleString()} characters
+            </p>
           </div>
 
+          {validationError && topic.trim() && (
+            <p role="alert" className="text-sm text-red-600 dark:text-red-400">{validationError}</p>
+          )}
           <div className="flex justify-end gap-3 pt-1">
             <button
               type="button"
@@ -148,7 +163,7 @@ export default function CourseConfigModal({ initialTopic, onClose, onContinue }:
             </button>
             <button
               type="submit"
-              disabled={!topic.trim()}
+              disabled={!!validationError}
               className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 rounded-md disabled:opacity-50 transition-all"
             >
               Continue to course planning

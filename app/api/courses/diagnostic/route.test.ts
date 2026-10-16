@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { POST } from "./route";
 import { decodeSession, encodeSession } from "@/lib/ai/intake/session";
 import { env } from "@/lib/env";
+import { MAX_COURSE_CONTEXT_LENGTH, MAX_INTAKE_TOKEN_LENGTH } from "@/lib/validation/coursePlanning";
 
 const mockGenerate = jest.fn();
 const mockAuthenticate = jest.fn().mockResolvedValue({ userId: "learner-1" });
@@ -66,6 +67,32 @@ it("offers topic goals, existing requirements, and broad exploration", async () 
   expect(r.goalOptions).toHaveLength(6);
   expect(r.questionCount).toBe(2);
   expect(r.goalOptions[4]).toContain("already provided");
+});
+it("retains a full Unicode description through goals, questions and evaluation", async () => {
+  const context = "学".repeat(MAX_COURSE_CONTEXT_LENGTH);
+  const r = await start(context);
+  expect(r.status).toBe(200);
+  expect(r.token.length).toBeGreaterThan(30000);
+  expect(r.token.length).toBeLessThan(MAX_INTAKE_TOKEN_LENGTH);
+  expect(decodeSession(r.token, "learner-1").context).toBe(context);
+  expect(mockGenerate.mock.calls[0][0]).toContain(context);
+  mockGenerate.mockResolvedValueOnce({ content: JSON.stringify({
+    questions: [question("Loops"), question("Files"), question("Errors")],
+  }) });
+  const next = await post({ action: "goals", token: r.token, goalIndex: 0, experience: "beginner" });
+  expect(next.status).toBe(200);
+  expect(next.phase).toBe("knowledge");
+  expect(decodeSession(next.token, "learner-1").context).toBe(context);
+  expect((await post({ action: "evaluate", token: next.token, answers: [0, 0, 0] })).phase).toBe("summary");
+});
+it.each([
+  [{ topic: "x".repeat(501) }, "Keep the topic to 500 characters"],
+  [{ additionalContext: "x".repeat(MAX_COURSE_CONTEXT_LENGTH + 1) }, "Keep course details to 20,000 characters"],
+])("rejects oversized input with actionable field guidance", async (extra, message) => {
+  const r = await post({ action: "start", topic: "Python", ...extra });
+  expect(r.status).toBe(400);
+  expect(r.error).toContain(message);
+  expect(mockGenerate).not.toHaveBeenCalled();
 });
 it("stops beginners after the initial check even with mixed results", async () => {
   const r = await knowledge("beginner");

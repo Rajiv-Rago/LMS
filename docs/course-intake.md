@@ -15,6 +15,8 @@ The structured `learnerProfile` travels through both syllabus entry points and t
 
 Course depth (`foundations`, `standard`, `deep`) controls breadth and detail independently of starting level (`beginner`, `intermediate`, `advanced`). New intake courses can therefore have beginner explanations with deep coverage. Existing requests using `skillLevel`, `targetLevel`, or a legacy `knowledgeProfile` remain supported; no migration is required.
 
+Course topics allow up to 500 characters; longer descriptions belong in the details field, which accepts up to 20,000 characters. These limits are shared by intake, signed session validation, both syllabus endpoints, and the course forms. Oversized input receives a field-specific message; forms retain pasted text for editing. The signed token request limit allows for Unicode, JSON escaping, and base64 expansion of the full session. These are input limits, independent of the 1,800-token diagnostic output budget and the three-round assessment cap.
+
 ## Validation
 
 - API tests cover early stopping, bounded follow-up, unknown answers, skips, lower limits, malformed output, session tampering, ownership, expiry, and model outages.

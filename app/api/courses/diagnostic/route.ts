@@ -1,3 +1,4 @@
+import { courseTopicSchema, courseContextSchema, MAX_INTAKE_TOKEN_LENGTH } from "@/lib/validation/coursePlanning";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { authenticate, requireCsrf } from "@/lib/auth";
@@ -24,25 +25,25 @@ import {
 const requestSchema = z.discriminatedUnion("action", [
   z.object({
     action: z.literal("start"),
-    topic: z.string().trim().min(1).max(500),
-    additionalContext: z.string().max(5000).optional(),
+    topic: courseTopicSchema,
+    additionalContext: courseContextSchema.optional(),
   }),
   z.object({
     action: z.literal("goals"),
-    token: z.string().max(30000),
+    token: z.string().max(MAX_INTAKE_TOKEN_LENGTH),
     goalIndex: z.number().int().min(0).max(6),
     customGoal: z.string().trim().max(500).optional(),
     experience: z.enum(EXPERIENCE_OPTIONS),
   }),
   z.object({
     action: z.literal("evaluate"),
-    token: z.string().max(30000),
+    token: z.string().max(MAX_INTAKE_TOKEN_LENGTH),
     answers: z.array(z.number().int().min(-1).max(3)).min(1).max(3),
     explanation: z.string().max(1000).optional(),
   }),
   z.object({
     action: z.literal("skip"),
-    token: z.string().max(30000),
+    token: z.string().max(MAX_INTAKE_TOKEN_LENGTH),
     goalIndex: z.number().int().min(0).max(6).optional(),
     customGoal: z.string().trim().max(500).optional(),
     experience: z.enum(EXPERIENCE_OPTIONS).optional(),

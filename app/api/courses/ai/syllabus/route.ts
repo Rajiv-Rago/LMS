@@ -1,3 +1,4 @@
+import { courseTopicSchema, courseContextSchema } from "@/lib/validation/coursePlanning";
 import { learnerProfileSchema } from "@/lib/ai/intake/profile";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
@@ -14,11 +15,11 @@ import { ErrorCodes } from "@/lib/telemetry/errorCodes";
 
 const createSyllabusSchema = z
   .object({
-    topic: z.string().min(1).max(500),
+    topic: courseTopicSchema,
     targetLevel: z.enum(["beginner", "intermediate", "advanced"]).optional(),
     complexity: z.enum(["foundations", "standard", "deep", "beginner", "intermediate", "advanced"]).optional(),
     estimatedDuration: z.string().min(1).max(100),
-    additionalContext: z.string().max(5000).optional(),
+    additionalContext: courseContextSchema.optional(),
     includeVideos: z.boolean().optional(),
     passingScore: z.number().min(0).max(100).optional(),
     learnerProfile: learnerProfileSchema.optional(),

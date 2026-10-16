@@ -1,3 +1,4 @@
+import { courseTopicSchema, courseContextSchema } from "@/lib/validation/coursePlanning";
 import { learnerProfileSchema } from "@/lib/ai/intake/profile";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
@@ -19,12 +20,12 @@ const MAX_GENERATED_COURSES: Record<SubscriptionTier, number> = {
 };
 
 const generateCourseSchema = z.object({
-  topic: z.string().min(1).max(500),
+  topic: courseTopicSchema,
   // Complexity labels (aliases for beginner/intermediate/advanced). skillLevel kept for back-compat.
   complexity: z.enum(["foundations", "standard", "deep", "beginner", "intermediate", "advanced"]).optional(),
   skillLevel: z.enum(["beginner", "intermediate", "advanced"]).optional(),
   passingScore: z.number().min(0).max(100).default(70),
-  additionalContext: z.string().max(5000).optional(),
+  additionalContext: courseContextSchema.optional(),
   estimatedDuration: z.string().max(100).optional(),
   includeVideos: z.boolean().optional(),
   learnerProfile: learnerProfileSchema.optional(),

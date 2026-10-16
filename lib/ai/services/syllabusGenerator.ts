@@ -4,6 +4,7 @@ import { createAIProvider } from "../index";
 import { parseAIJsonResponse } from "../utils/jsonParser";
 import { Complexity, TargetLevel, complexityToLevel, normalizeComplexity } from "../utils/promptUtils";
 import { researchTopic, type WebSource } from "./webResearch";
+import { z } from "zod";
 
 export type { Complexity, TargetLevel } from "../utils/promptUtils";
 
@@ -110,6 +111,22 @@ Updated lesson structure:
   "videoSearchQuery": "string (only for video lessons)"
 }`;
 
+function syllabusResponseSchema(includeVideos: boolean) {
+  const lesson = z.object({ title: z.string(), outline: z.string(), order: z.number().int() });
+  const videoLesson = lesson.extend({
+    contentType: z.enum(["text", "video"]),
+    videoSearchQuery: z.string().describe("Specific YouTube query for video lessons; empty string for text lessons"),
+  });
+  return z.toJSONSchema(z.object({
+    courseTitle: z.string(),
+    courseDescription: z.string(),
+    modules: z.array(z.object({
+      title: z.string(), description: z.string(), order: z.number().int(),
+      lessons: z.array(includeVideos ? videoLesson : lesson),
+    })),
+  }));
+}
+
 export class SyllabusGeneratorService {
   private provider: AIProvider;
 
@@ -134,7 +151,12 @@ export class SyllabusGeneratorService {
       systemPrompt,
       maxTokens: 4096,
       temperature: 0.7,
+      responseSchema: syllabusResponseSchema(!!request.includeVideos),
     });
+
+    if (["length", "max_tokens", "max_output_tokens"].includes(response.finishReason?.toLowerCase() ?? "")) {
+      throw new Error("Syllabus output was truncated at the model's token limit; request a smaller course or increase the syllabus output budget.");
+    }
 
     const syllabus = this.parseResponse(response.content);
 

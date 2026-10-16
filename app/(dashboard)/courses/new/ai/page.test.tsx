@@ -83,3 +83,20 @@ describe("NewAICoursePage", () => {
     }, { timeout: 4000 });
   });
 });
+
+ it("keeps oversized details editable and avoids an invalid generation request", async () => {
+  render(<NewAICoursePage />);
+  fireEvent.change(await screen.findByLabelText("What do you want to learn?"), {
+    target: { value: "Python" },
+  });
+  fireEvent.change(screen.getByLabelText("Estimated Course Length"), {
+    target: { value: "4 weeks" },
+  });
+  const details = screen.getByLabelText("Additional Details (optional)");
+  const description = "x".repeat(20001);
+  fireEvent.change(details, { target: { value: description } });
+  fireEvent.click(screen.getByRole("button", { name: "Generate Course" }));
+  expect(await screen.findByText("Keep course details to 20,000 characters or fewer.")).toBeInTheDocument();
+  expect(details).toHaveValue(description);
+  expect(global.fetch).not.toHaveBeenCalledWith("/api/courses/ai/syllabus", expect.anything());
+});

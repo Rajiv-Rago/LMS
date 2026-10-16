@@ -3,6 +3,8 @@ import { dbConnect } from "@/lib/db";
 import Job from "@/lib/models/Job";
 import { getHandler, handlersReady } from "./handlers";
 import type { QueueAdapter, EnqueueOptions, JobStatusResult } from "./index";
+import { captureException } from "@/lib/logger";
+import { AIProviderError } from "@/lib/ai/errors";
 
 /**
  * SyncShim executes jobs inline (fire-and-forget) when QUEUE_ENABLED=false,
@@ -78,6 +80,20 @@ export class SyncShim implements QueueAdapter {
       },
       async (error) => {
         const errorMessage = error instanceof Error ? error.message : "Unknown error";
+        captureException(error, {
+          operation: "inline-job",
+          jobId: id,
+          jobType: options.type,
+          requestedProvider: options.data.provider,
+          requestedModel: options.data.model,
+          ...(error instanceof AIProviderError ? {
+            provider: error.provider,
+            model: error.model,
+            errorCode: error.errorCode,
+            statusCode: error.statusCode,
+            isTransient: error.isTransient,
+          } : {}),
+        });
         if (useDb) {
           await dbConnect();
           await Job.findByIdAndUpdate(id, {

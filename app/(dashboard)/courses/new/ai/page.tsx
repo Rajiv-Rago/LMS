@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ModelSelector, ModelSelectorValue } from "@/components/ai/ModelSelector";
 import { useUserAIDefaults } from "@/lib/hooks/useUserAIDefaults";
 import Button from "@/components/ui/Button";
+import { coursePlanningError, MAX_COURSE_TOPIC_LENGTH, MAX_COURSE_CONTEXT_LENGTH } from "@/lib/validation/coursePlanning";
 
 type TargetLevel = "beginner" | "intermediate" | "advanced";
 type GenerationPhase = "idle" | "submitting" | "generating" | "complete";
@@ -91,12 +92,17 @@ export default function NewAICoursePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const validationError = coursePlanningError(formData.topic, formData.additionalContext);
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
     setError("");
     setPhase("submitting");
 
     try {
       const payload: Record<string, string | boolean | number> = {
-        topic: formData.topic,
+        topic: formData.topic.trim(),
         targetLevel: formData.targetLevel,
         estimatedDuration: formData.estimatedDuration,
         passingScore: formData.passingScore,
@@ -213,11 +219,16 @@ export default function NewAICoursePage() {
                 type="text"
                 required
                 disabled={isGenerating}
+                aria-describedby="topic-count"
+                aria-invalid={formData.topic.trim().length > MAX_COURSE_TOPIC_LENGTH}
                 value={formData.topic}
                 onChange={(e) => setFormData({ ...formData, topic: e.target.value })}
                 className="mt-1 block w-full rounded-md border border-zinc-300 dark:border-zinc-700 px-3 py-2 text-sm bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white placeholder-zinc-400 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 placeholder="e.g., Python programming for beginners, Machine learning fundamentals"
               />
+              <p id="topic-count" className="mt-1 text-xs text-zinc-500">
+                {formData.topic.trim().length.toLocaleString()} / {MAX_COURSE_TOPIC_LENGTH.toLocaleString()} characters. Put longer descriptions in Additional Details.
+              </p>
             </div>
 
             <div>
@@ -275,6 +286,8 @@ export default function NewAICoursePage() {
                 id="additionalContext"
                 rows={3}
                 disabled={isGenerating}
+                aria-describedby="context-count"
+                aria-invalid={formData.additionalContext.length > MAX_COURSE_CONTEXT_LENGTH}
                 value={formData.additionalContext}
                 onChange={(e) =>
                   setFormData({ ...formData, additionalContext: e.target.value })
@@ -282,6 +295,9 @@ export default function NewAICoursePage() {
                 className="mt-1 block w-full rounded-md border border-zinc-300 dark:border-zinc-700 px-3 py-2 text-sm bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white placeholder-zinc-400 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 placeholder="Paste topics, goals, or a full university course description..."
               />
+              <p id="context-count" className="mt-1 text-xs text-zinc-500">
+                {formData.additionalContext.length.toLocaleString()} / {MAX_COURSE_CONTEXT_LENGTH.toLocaleString()} characters
+              </p>
             </div>
 
             <div>

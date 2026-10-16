@@ -15,9 +15,15 @@ The structured `learnerProfile` travels through both syllabus entry points and t
 
 Course depth (`foundations`, `standard`, `deep`) controls breadth and detail independently of starting level (`beginner`, `intermediate`, `advanced`). New intake courses can therefore have beginner explanations with deep coverage. Existing requests using `skillLevel`, `targetLevel`, or a legacy `knowledgeProfile` remain supported; no migration is required.
 
+Course topics allow up to 500 characters; longer descriptions belong in the details field, which accepts up to 20,000 characters. These limits are shared by intake, signed session validation, both syllabus endpoints, and the course forms. Oversized input receives a field-specific message; forms retain pasted text for editing. The signed token request limit allows for Unicode, JSON escaping, and base64 expansion of the full session. Stored `Course.syllabusPrompt` allows 30,000 characters so the complete details, topic, legacy knowledge profile and planning metadata fit without truncation. The shorter generated course description retains its separate 5,000-character limit. These are input/storage limits, independent of the 1,800-token diagnostic output budget and the three-round assessment cap.
+
+Choose **Try free models** (or Advanced → OpenRouter → OpenRouter Free Router) in the course configuration to use `openrouter/free`. The selected provider/model is signed into intake state, used for goal suggestions and knowledge questions, then passed to the generation job and stored on the course for subsequent content. Leaving the choice unset keeps the existing default behavior. OpenRouter requires `OPENROUTER_API_KEY` in the deployment environment; the option is shown only when that provider is configured. This router samples different free models, so it is an experiment rather than a quality upgrade guarantee.
+
 ## Validation
 
 - API tests cover early stopping, bounded follow-up, unknown answers, skips, lower limits, malformed output, session tampering, ownership, expiry, and model outages.
 - UI tests cover optional explanations, editable summaries, skips, recoverable errors, and prevention of empty goals.
 - Generation tests cover independent starting level and depth, plus goal/profile propagation to the syllabus and lessons.
 - Live model quality is not implied by mocked tests; review real generated questions for relevance and difficulty during a pilot.
+
+OpenRouter intake and syllabus calls send a strict `response_format` JSON schema and `provider.require_parameters: true`, so routing requires structured-output support. Server-side validation remains necessary because endpoint enforcement varies. Ordinary prose/chat calls do not request JSON. Syllabus truncation is identified separately from malformed JSON. Inline job failures are logged with job ID, job type, requested provider/model, and classified provider-error metadata while the client continues to receive a generic error. No learner prompt or API key is added to those logs.

@@ -9,6 +9,8 @@ export interface AICompletionOptions {
   systemPrompt?: string;
   googleSearch?: boolean;
   webResearch?: boolean;
+  /** JSON Schema for providers that support native structured output. */
+  responseSchema?: Record<string, unknown>;
 }
 
 export interface AISource {

@@ -1,6 +1,7 @@
 import type { LearnerProfile } from "@/lib/ai/intake/profile";
 import mongoose, { Document, Model } from "mongoose";
 import { AIProviderName } from "@/lib/ai/types";
+import { MAX_COURSE_SYLLABUS_PROMPT_LENGTH } from "@/lib/validation/coursePlanning";
 
 export type SyllabusStatus = "draft" | "generating" | "completed" | "failed";
 
@@ -112,7 +113,7 @@ const courseSchema = new mongoose.Schema<ICourse, CourseModel>(
     learnerProfile: { type: mongoose.Schema.Types.Mixed },
     syllabusPrompt: {
       type: String,
-      maxlength: [5000, "Syllabus prompt cannot exceed 5000 characters"],
+      maxlength: [MAX_COURSE_SYLLABUS_PROMPT_LENGTH, `Syllabus prompt cannot exceed ${MAX_COURSE_SYLLABUS_PROMPT_LENGTH} characters`],
     },
     // Minimum score (0-100) required on module-end tests for a module to count as completed
     passingScore: {

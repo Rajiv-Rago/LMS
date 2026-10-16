@@ -48,6 +48,23 @@ describe("OpenRouter integration", () => {
     }));
   });
 
+  it("sends a strict schema and requires compatible endpoints for structured tasks", async () => {
+    const schema = { type: "object", properties: { goals: { type: "array", items: { type: "string" } } }, required: ["goals"], additionalProperties: false };
+    await createAIProvider({ provider: "openrouter", apiKey: "test-key" })
+      .generateText("Suggest learning goals as JSON", { responseSchema: schema });
+    expect(mockConstructor).toHaveBeenCalledWith(expect.objectContaining({
+      modelKwargs: {
+        response_format: { type: "json_schema", json_schema: { name: "kantigo_response", strict: true, schema } },
+        provider: { require_parameters: true },
+      },
+    }));
+  });
+
+  it("leaves ordinary lesson and chat output unrestricted", async () => {
+    await createAIProvider({ provider: "openrouter", apiKey: "test-key" }).generateText("Explain loops");
+    expect(mockConstructor.mock.calls[0][0]).not.toHaveProperty("modelKwargs");
+  });
+
   it("streams text and preserves token usage", async () => {
     mockStream.mockResolvedValue((async function* () {
       yield { text: "Hello", usage_metadata: undefined, additional_kwargs: {}, response_metadata: {} };

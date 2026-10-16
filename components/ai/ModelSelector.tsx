@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useId } from "react";
 import type { AITier, AIProviderName } from "@/lib/ai/types";
 
 interface TierDetail {
@@ -64,6 +64,7 @@ export function ModelSelector({
   disabled,
   className = "",
 }: ModelSelectorProps) {
+  const selectorId = useId();
   const cached = getCachedConfig();
   const [config, setConfig] = useState<AIConfig | null>(cached);
   const [loading, setLoading] = useState(!cached);
@@ -180,6 +181,26 @@ export function ModelSelector({
         </p>
       )}
 
+      {config.availableModels.some((m) => m.id === "openrouter/free") && (
+        <button
+          type="button"
+          disabled={disabled}
+          aria-pressed={value.provider === "openrouter" && value.model === "openrouter/free"}
+          onClick={() => {
+            setShowAdvanced(true);
+            onChange({ provider: "openrouter", model: "openrouter/free" });
+          }}
+          className="mt-3 rounded-md border border-zinc-300 dark:border-zinc-700 px-3 py-1.5 text-sm text-zinc-700 dark:text-zinc-300 disabled:opacity-50"
+        >
+          Try free models
+        </button>
+      )}
+      {value.provider === "openrouter" && (!value.model || value.model === "openrouter/free") && (
+        <p className="mt-1.5 text-xs text-zinc-500 dark:text-zinc-400">
+          Uses a varying pool of free models. Quality, response time, and availability can vary.
+        </p>
+      )}
+
       {/* Advanced Toggle */}
       <button
         type="button"
@@ -207,10 +228,11 @@ export function ModelSelector({
       {showAdvanced && (
         <div className="mt-2 space-y-3 pl-4 border-l-2 border-zinc-200 dark:border-zinc-700">
           <div>
-            <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1">
+            <label htmlFor={`${selectorId}-provider`} className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1">
               Provider
             </label>
             <select
+              id={`${selectorId}-provider`}
               disabled={disabled}
               value={value.provider || ""}
               onChange={(e) =>
@@ -230,15 +252,16 @@ export function ModelSelector({
             </select>
           </div>
           <div>
-            <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1">
+            <label htmlFor={`${selectorId}-model`} className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1">
               Model
             </label>
             <select
+              id={`${selectorId}-model`}
               disabled={disabled}
               value={value.model || ""}
               onChange={(e) =>
                 onChange({
-                  provider: value.provider,
+                    provider: value.provider ?? filteredModels.find((m) => m.id === e.target.value)?.provider,
                   model: e.target.value || undefined,
                 })
               }

@@ -1,3 +1,4 @@
+import { courseTopicSchema, courseContextSchema } from "@/lib/validation/coursePlanning";
 import { learnerProfileSchema } from "@/lib/ai/intake/profile";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
@@ -11,6 +12,7 @@ import { captureException } from "@/lib/logger";
 import { getCorrelationId, CORRELATION_HEADER } from "@/lib/telemetry/correlationId";
 import { ErrorCodes } from "@/lib/telemetry/errorCodes";
 import type { SubscriptionTier } from "@/lib/auth/types";
+import { aiSelectionSchema } from "@/lib/validation/aiSchemas";
 
 const MAX_GENERATED_COURSES: Record<SubscriptionTier, number> = {
   free: 5,
@@ -18,13 +20,13 @@ const MAX_GENERATED_COURSES: Record<SubscriptionTier, number> = {
   admin: Infinity,
 };
 
-const generateCourseSchema = z.object({
-  topic: z.string().min(1).max(500),
+const generateCourseSchema = aiSelectionSchema.safeExtend({
+  topic: courseTopicSchema,
   // Complexity labels (aliases for beginner/intermediate/advanced). skillLevel kept for back-compat.
   complexity: z.enum(["foundations", "standard", "deep", "beginner", "intermediate", "advanced"]).optional(),
   skillLevel: z.enum(["beginner", "intermediate", "advanced"]).optional(),
   passingScore: z.number().min(0).max(100).default(70),
-  additionalContext: z.string().max(5000).optional(),
+  additionalContext: courseContextSchema.optional(),
   estimatedDuration: z.string().max(100).optional(),
   includeVideos: z.boolean().optional(),
   learnerProfile: learnerProfileSchema.optional(),
@@ -55,7 +57,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { topic, complexity, skillLevel, passingScore, additionalContext, estimatedDuration, includeVideos, knowledgeProfile, learnerProfile } = validation.data;
+    const { topic, complexity, skillLevel, passingScore, additionalContext, estimatedDuration, includeVideos, knowledgeProfile, learnerProfile, tier, provider, model } = validation.data;
     const { complexityToLevel } = await import("@/lib/ai/utils/promptUtils");
     const targetLevel = learnerProfile?.startingLevel ?? complexityToLevel((complexity ?? skillLevel ?? "standard") as "foundations" | "standard" | "deep");
 
@@ -83,7 +85,7 @@ export async function POST(request: NextRequest) {
     );
     if (rateCheck.blocked) return rateCheck.response;
 
-    const resolved = resolveProvider({});
+    const resolved = resolveProvider({ requestTier: tier, requestProvider: provider, requestModel: model });
     if (!resolved) {
       captureException(new Error("Provider not configured"), {
         operation: "resolve-provider",
@@ -111,6 +113,9 @@ export async function POST(request: NextRequest) {
         additionalContext,
         knowledgeProfile,
         learnerProfile,
+        tier,
+        provider,
+        model,
       },
       userId: user.userId,
     });

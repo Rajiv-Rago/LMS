@@ -7,6 +7,7 @@ import { getCoursePermissions } from "@/lib/auth/coursePermissions";
 import { validateObjectId } from "@/lib/utils/validateObjectId";
 import { captureException } from "@/lib/logger";
 import { httpUrl } from "@/lib/validation/commonSchemas";
+import { isLessonGenerationActive } from "@/lib/utils/lessonGeneration";
 
 const youtubeMetadataSchema = z
   .object({
@@ -73,7 +74,12 @@ export async function GET(
     }
 
     return NextResponse.json({
-      lesson,
+      lesson: {
+        ...lesson.toObject(),
+        generationStatus: lesson.generationStatus === "generating" && !isLessonGenerationActive(lesson)
+          ? "failed"
+          : lesson.generationStatus,
+      },
       isOwnedCourse: !!course.owner,
       permissions: {
         canEdit: perms?.canEdit || false,
@@ -141,11 +147,12 @@ export async function PATCH(
       return NextResponse.json({ error: "Lesson not found" }, { status: 404 });
     }
 
-    if (lesson.generationStatus === "generating" || lesson.resourceRefreshStartedAt && Date.now() - lesson.resourceRefreshStartedAt.getTime() < 120000) {
+    if (isLessonGenerationActive(lesson) || lesson.resourceRefreshStartedAt && Date.now() - lesson.resourceRefreshStartedAt.getTime() < 120000) {
       return NextResponse.json({ error: "Lesson is busy. Please try again shortly." }, { status: 409 });
     }
 
     const { title, contentType, content, videoUrl, fileUrl, duration, order, isPublished, aiContext, youtubeMetadata } = validation.data;
+    if (lesson.generationStatus === "generating") lesson.generationStatus = "failed";
     if (title !== undefined) lesson.title = title;
     if (contentType !== undefined && contentType !== lesson.contentType) {
       lesson.sources = [];

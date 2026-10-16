@@ -111,6 +111,26 @@ async function parseSseResponse(response: Response) {
 }
 
 describe("POST /api/courses/ai/[courseId]/lessons/[lessonId]/generate", () => {
+  it.each([false, true])("only reclaims expired generation attempts (expired=%s)", async expired => {
+    const { user, token } = await createTestUser();
+    const { course, module, lesson } = await createLessonFixture(user._id.toString());
+    await Lesson.updateOne({ _id: lesson._id }, { $set: {
+      content: "", generationStatus: "generating",
+      updatedAt: new Date(Date.now() - (expired ? 240_000 : 1000)),
+    } }, { timestamps: false });
+    const read = await lessonGET(buildRequest("GET", "/api/lesson", { token }), { params: Promise.resolve({
+      id: course._id.toString(), moduleId: module._id.toString(), lessonId: lesson._id.toString(),
+    }) });
+    expect((await read.json()).lesson.generationStatus).toBe(expired ? "failed" : "generating");
+    const response = await generatePOST(buildRequest("POST", "/api/generate", { token, body: {} }), {
+      params: Promise.resolve({ courseId: course._id.toString(), lessonId: lesson._id.toString() }),
+    });
+    expect(response.status).toBe(expired ? 200 : 409);
+    if (expired) {
+      expect(await response.text()).toContain("event: done");
+      expect((await Lesson.findById(lesson._id))?.content).toBe("Updated lesson content");
+    }
+  });
   it("persists recommendations and snapshots citations and resources during streaming regeneration", async () => {
     const { user, token } = await createTestUser();
     const { course, lesson } = await createLessonFixture(user._id.toString());

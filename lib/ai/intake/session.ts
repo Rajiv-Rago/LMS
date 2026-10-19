@@ -1,6 +1,8 @@
+import { MAX_COURSE_TOPIC_LENGTH, MAX_COURSE_CONTEXT_LENGTH } from "@/lib/validation/coursePlanning";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { z } from "zod";
 import { env } from "@/lib/env";
+import { aiSelectionSchema } from "@/lib/validation/aiSchemas";
 import {
   learnerProfileSchema,
   MAX_INTAKE_QUESTIONS,
@@ -22,8 +24,9 @@ export const questionSchema = z.object({
 const sessionSchema = z.object({
   userId: z.string(),
   expiresAt: z.number(),
-  topic: z.string().max(500),
-  context: z.string().max(5000),
+  topic: z.string().max(MAX_COURSE_TOPIC_LENGTH),
+  context: z.string().max(MAX_COURSE_CONTEXT_LENGTH),
+  aiSelection: aiSelectionSchema.optional(),
   round: z.number().int().min(1).max(MAX_INTAKE_ROUNDS),
   questionCount: z.number().int().min(2).max(MAX_INTAKE_QUESTIONS),
   goalOptions: z.array(z.string().max(300)).max(6),

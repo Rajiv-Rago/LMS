@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { authenticate } from "@/lib/auth";
 import { getJobStatus } from "@/lib/queue";
 import { captureException } from "@/lib/logger";
+import { publicJobError } from "@/lib/queue/publicJobError";
 
 export async function GET(
   request: NextRequest,
@@ -23,7 +24,7 @@ export async function GET(
 
     const safeJob = {
       ...job,
-      error: job.error ? "Job failed — please try again" : undefined,
+      error: publicJobError(job.error),
     };
     return NextResponse.json({ job: safeJob });
   } catch (error) {

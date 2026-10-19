@@ -1,4 +1,5 @@
 import { getAxiomLogger, flushAxiom } from "./axiom";
+import { AIProviderError, providerErrorContext } from "./ai/errors";
 
 type LogLevel = "info" | "warn" | "error";
 
@@ -15,6 +16,7 @@ interface ErrorDetails {
   errorName: string;
   errorMessage: string;
   stack?: string;
+  [key: string]: unknown;
 }
 
 function formatError(error: unknown): ErrorDetails {
@@ -22,6 +24,7 @@ function formatError(error: unknown): ErrorDetails {
     return {
       errorName: error.name,
       errorMessage: error.message,
+      ...(error instanceof AIProviderError ? providerErrorContext(error) : {}),
       ...(!isProduction && { stack: error.stack }),
     };
   }

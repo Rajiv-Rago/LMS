@@ -16,6 +16,19 @@ export class OpenRouterProvider extends LangChainProvider {
       maxTokens: options?.maxTokens || 2048,
       temperature: options?.temperature ?? 0.7,
       configuration: { baseURL: "https://openrouter.ai/api/v1" },
+      ...(options?.responseSchema ? {
+        // LangChain otherwise retries SDK JSON/length errors with the same
+        // budget. Surface them immediately instead of repeating paid work.
+        maxRetries: 0,
+        modelKwargs: {
+          response_format: {
+            type: "json_schema",
+            json_schema: { name: "kantigo_response", strict: true, schema: options.responseSchema },
+          },
+          // Do not send a structured task to endpoints that silently ignore the schema.
+          provider: { require_parameters: true },
+        },
+      } : {}),
     });
   }
 }

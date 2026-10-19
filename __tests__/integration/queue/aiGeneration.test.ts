@@ -161,6 +161,27 @@ afterAll(async () => {
 // ──────── ai.generate-syllabus ────────
 
 describe("ai.generate-syllabus handler", () => {
+  it("persists full-length course details together with maximum request metadata", async () => {
+    const topic = "T".repeat(500);
+    const additionalContext = "学".repeat(20_000);
+    const knowledgeProfile = "K".repeat(5_000);
+    const estimatedDuration = "D".repeat(100);
+    const result = await syllabusHandler({
+      topic, additionalContext, knowledgeProfile, estimatedDuration,
+      targetLevel: "advanced", complexity: "deep", passingScore: 100,
+      userId: testUserId,
+    });
+    const course = await Course.findById(result.courseId);
+    expect(course).not.toBeNull();
+    expect(course!.syllabusPrompt).toContain(`Context: ${additionalContext}`);
+    expect(course!.syllabusPrompt).toContain(`Knowledge Profile: ${knowledgeProfile}`);
+    expect(course!.syllabusPrompt!.length).toBeGreaterThan(25_000);
+    expect(course!.modules).toHaveLength(2);
+    expect(await Lesson.countDocuments({ module: { $in: course!.modules } })).toBe(4);
+    expect(mockGenerateSyllabus).toHaveBeenCalledWith(expect.objectContaining({ additionalContext, knowledgeProfile }));
+    expect(mockSendNotification).toHaveBeenCalledWith(expect.objectContaining({ type: "ai.generation.completed" }));
+  });
+
   it("persists the learner plan and reuses it for module and lesson generation", async () => {
     const learnerProfile = {
       goals: ["Automate payroll"], startingLevel: "beginner", selfReportedLevel: "unsure",

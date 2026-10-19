@@ -41,6 +41,10 @@ export function classifyProviderError(
 ): { errorCode: ErrorCode; isTransient: boolean; statusCode?: number } {
   const status = getStatusCode(error, provider);
 
+  if (error instanceof SyntaxError) {
+    return { errorCode: ErrorCodes.AI_GENERATION_PARSE_FAILED, isTransient: false };
+  }
+
   if (status === 401 || status === 403) {
     return {
       errorCode: ErrorCodes.AI_PROVIDER_AUTH_FAILED,
@@ -90,6 +94,31 @@ export function classifyProviderError(
     errorCode: ErrorCodes.AI_UNKNOWN,
     isTransient: false,
     statusCode: status,
+  };
+}
+
+/** Keep the useful SDK cause, without logging headers, bodies or credentials. */
+export function providerErrorContext(error: AIProviderError): Record<string, unknown> {
+  const cause = error.originalError;
+  if (!(cause instanceof Error)) return {};
+  let message = cause instanceof SyntaxError
+    ? "Provider returned invalid structured JSON."
+    : cause.message;
+  for (const key of ["OPENROUTER_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY", "GEMINI_API_KEY", "CEREBRAS_API_KEY"]) {
+    const secret = process.env[key];
+    if (secret) message = message.split(secret).join("[REDACTED]");
+  }
+  message = message
+    .replace(/Bearer\s+\S+/gi, "Bearer [REDACTED]")
+    .replace(/https?:\/\/\S+/gi, "[URL]")
+    .replace(/\b(?:sk-[a-zA-Z0-9_-]+|AIza[a-zA-Z0-9_-]+)\b/g, "[REDACTED]");
+  return {
+    providerErrorName: cause.constructor.name,
+    providerErrorMessage: message.slice(0, 500),
+    provider: error.provider,
+    model: error.model,
+    errorCode: error.errorCode,
+    statusCode: error.statusCode,
   };
 }
 

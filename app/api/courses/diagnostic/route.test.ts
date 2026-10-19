@@ -2,6 +2,8 @@ import { NextRequest } from "next/server";
 import { POST } from "./route";
 import { decodeSession, encodeSession } from "@/lib/ai/intake/session";
 import { env } from "@/lib/env";
+import { resolveProvider } from "@/lib/ai/utils/providerResolver";
+import { MAX_COURSE_CONTEXT_LENGTH, MAX_INTAKE_TOKEN_LENGTH } from "@/lib/validation/coursePlanning";
 
 const mockGenerate = jest.fn();
 const mockAuthenticate = jest.fn().mockResolvedValue({ userId: "learner-1" });
@@ -10,7 +12,7 @@ jest.mock("@/lib/auth", () => ({
   requireCsrf: jest.fn().mockReturnValue(null),
 }));
 jest.mock("@/lib/ai/utils/providerResolver", () => ({
-  resolveProvider: () => ({ provider: "openai", apiKey: "test" }),
+  resolveProvider: jest.fn(() => ({ provider: "openai", apiKey: "test" })),
 }));
 jest.mock("@/lib/ai", () => ({
   createAIProvider: () => ({ generateText: mockGenerate }),
@@ -56,6 +58,7 @@ async function knowledge(experience = "intermediate") {
 }
 beforeEach(() => {
   mockGenerate.mockReset();
+  (resolveProvider as jest.Mock).mockClear();
   mockAuthenticate.mockResolvedValue({ userId: "learner-1" });
   env.DIAGNOSTIC_MAX_ITERATIONS = 3;
 });
@@ -66,6 +69,32 @@ it("offers topic goals, existing requirements, and broad exploration", async () 
   expect(r.goalOptions).toHaveLength(6);
   expect(r.questionCount).toBe(2);
   expect(r.goalOptions[4]).toContain("already provided");
+});
+it("retains a full Unicode description through goals, questions and evaluation", async () => {
+  const context = "学".repeat(MAX_COURSE_CONTEXT_LENGTH);
+  const r = await start(context);
+  expect(r.status).toBe(200);
+  expect(r.token.length).toBeGreaterThan(30000);
+  expect(r.token.length).toBeLessThan(MAX_INTAKE_TOKEN_LENGTH);
+  expect(decodeSession(r.token, "learner-1").context).toBe(context);
+  expect(mockGenerate.mock.calls[0][0]).toContain(context);
+  mockGenerate.mockResolvedValueOnce({ content: JSON.stringify({
+    questions: [question("Loops"), question("Files"), question("Errors")],
+  }) });
+  const next = await post({ action: "goals", token: r.token, goalIndex: 0, experience: "beginner" });
+  expect(next.status).toBe(200);
+  expect(next.phase).toBe("knowledge");
+  expect(decodeSession(next.token, "learner-1").context).toBe(context);
+  expect((await post({ action: "evaluate", token: next.token, answers: [0, 0, 0] })).phase).toBe("summary");
+});
+it.each([
+  [{ topic: "x".repeat(501) }, "Keep the topic to 500 characters"],
+  [{ additionalContext: "x".repeat(MAX_COURSE_CONTEXT_LENGTH + 1) }, "Keep course details to 20,000 characters"],
+])("rejects oversized input with actionable field guidance", async (extra, message) => {
+  const r = await post({ action: "start", topic: "Python", ...extra });
+  expect(r.status).toBe(400);
+  expect(r.error).toContain(message);
+  expect(mockGenerate).not.toHaveBeenCalled();
 });
 it("stops beginners after the initial check even with mixed results", async () => {
   const r = await knowledge("beginner");
@@ -204,4 +233,28 @@ it("rejects malformed model questions rather than scoring an invalid answer key"
   });
   expect(final.phase).toBe("summary");
   expect(final.profile.assessmentSkipped).toBe(true);
+});
+
+it("uses the selected router for goals and restores it from signed state for questions", async () => {
+  mockGenerate.mockResolvedValueOnce({ content: JSON.stringify({ goals: ["Automate files", "Build APIs", "Analyze data"] }) });
+  const aiSelection = { provider: "openrouter", model: "openrouter/free" };
+  const r = await post({ action: "start", topic: "Python", aiSelection });
+  expect(r.status).toBe(200);
+  expect(decodeSession(r.token, "learner-1").aiSelection).toEqual(aiSelection);
+  mockGenerate.mockResolvedValueOnce({ content: JSON.stringify({ questions: [question("Loops"), question("Files"), question("Errors")] }) });
+  await post({ action: "goals", token: r.token, goalIndex: 0, experience: "beginner" });
+  expect(resolveProvider).toHaveBeenNthCalledWith(1, { requestProvider: "openrouter", requestModel: "openrouter/free", requestTier: undefined });
+  expect(resolveProvider).toHaveBeenNthCalledWith(2, { requestProvider: "openrouter", requestModel: "openrouter/free", requestTier: undefined });
+  expect(mockGenerate.mock.calls[0][1].responseSchema).toMatchObject({
+    type: "object", required: ["goals"], additionalProperties: false,
+  });
+  expect(mockGenerate.mock.calls[1][1].responseSchema).toMatchObject({
+    required: ["questions"], properties: { questions: { minItems: 3, maxItems: 3 } },
+  });
+});
+
+it("rejects conflicting tier/provider choices before calling the model", async () => {
+  const r = await post({ action: "start", topic: "Python", aiSelection: { tier: "balanced", provider: "openrouter" } });
+  expect(r.status).toBe(400);
+  expect(mockGenerate).not.toHaveBeenCalled();
 });

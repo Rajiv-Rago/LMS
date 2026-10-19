@@ -89,6 +89,11 @@ function mockFetchWithPost(
 }
 
 const emptyGetResponses = {
+  "/api/ai/config": {
+    tiers: [],
+    configuredProviders: [],
+    availableModels: [],
+  },
   "/api/courses/ai/my-courses": { courses: [] },
   "/api/courses?enrolled=true": { courses: [], pagination: {} },
 };

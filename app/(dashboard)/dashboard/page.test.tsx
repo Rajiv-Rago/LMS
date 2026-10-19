@@ -41,6 +41,9 @@ beforeEach(() => {
       } as Response);
     }
 
+    if (urlString === "/api/ai/config") {
+      return Promise.resolve({ ok: true, json: async () => ({ tiers: [], configuredProviders: ["gemini", "openrouter"], availableModels: [{ id: "openrouter/free", displayName: "OpenRouter Free Router", provider: "openrouter", providerDisplayName: "OpenRouter" }] }) } as Response);
+    }
     if (urlString === "/api/auth/me") {
       return Promise.resolve({
         ok: true,
@@ -107,6 +110,8 @@ describe("DashboardPage", () => {
     fireEvent.change(input, { target: { value: "Linear Algebra" } });
     fireEvent.click(screen.getByRole("button", { name: "Generate" }));
 
+    fireEvent.click(await screen.findByRole("button", { name: "Try free models" }));
+
     // Modal defaults to Standard complexity; continue to assessment
     fireEvent.click(await screen.findByRole("button", { name: "Continue to course planning" }));
     expect(await screen.findByText(/Plan your course:/)).toBeInTheDocument();
@@ -135,6 +140,10 @@ describe("DashboardPage", () => {
     );
     expect(generateCall).toBeDefined();
     const payload = JSON.parse(generateCall[1].body as string);
+    expect(payload.provider).toBe("openrouter");
+    expect(payload.model).toBe("openrouter/free");
+    const diagnosticCall = (global.fetch as jest.Mock).mock.calls.find(([url, init]) => url === "/api/courses/diagnostic" && JSON.parse(init.body).action === "start");
+    expect(JSON.parse(diagnosticCall[1].body).aiSelection).toEqual({ provider: "openrouter", model: "openrouter/free" });
     expect(payload.complexity).toBe("standard");
     expect(payload.passingScore).toBe(70);
     expect(payload.topic).toBe("Linear Algebra");

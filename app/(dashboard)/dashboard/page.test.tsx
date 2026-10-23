@@ -28,6 +28,7 @@ jest.mock("@/lib/hooks/useToast", () => ({
 }));
 
 beforeEach(() => {
+  localStorage.clear();
   jest.clearAllMocks();
   jobStatus = "pending";
 
@@ -150,4 +151,14 @@ describe("DashboardPage", () => {
     expect(payload.learnerProfile.goals).toEqual(["Use matrices in graphics"]);
     expect(payload.learnerProfile.startingLevel).toBe("beginner");
   });
+});
+
+it("restores the dashboard configuration and resumes its assessment after refresh", async () => {
+  const config = { topic: "Linear Algebra", complexity: "standard", passingScore: 70, additionalContext: "" };
+  localStorage.setItem("kantigo-assessment-draft:v1", JSON.stringify({ version: 1, expiresAt: Date.now() + 60000, config }));
+  localStorage.setItem("kantigo-assessment:Linear Algebra", JSON.stringify({ token: "saved-assessment", fingerprint: JSON.stringify(config) }));
+  render(<DashboardPage />);
+  await screen.findByText("Review your course plan");
+  expect((global.fetch as jest.Mock).mock.calls.some(([url, init]) => url === "/api/courses/diagnostic" && JSON.parse(init.body).action === "resume")).toBe(true);
+  expect((global.fetch as jest.Mock).mock.calls.some(([url]) => url === "/api/courses/generate")).toBe(false);
 });

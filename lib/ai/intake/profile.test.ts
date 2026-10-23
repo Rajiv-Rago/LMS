@@ -1,4 +1,4 @@
-import { BROAD_GOAL, buildLearnerProfile, needsClarification } from "./profile";
+import { BROAD_GOAL, buildLearnerProfile } from "./profile";
 import { extractComplexity, extractTargetLevel } from "../utils/promptUtils";
 
 describe("bounded learner profile", () => {
@@ -18,20 +18,6 @@ describe("bounded learner profile", () => {
     expect(p.observedStrengths).toEqual(["Loops"]);
     expect(p.observedGaps).toEqual(["Files", "Errors"]);
     expect(p.startingLevel).toBe("intermediate");
-  });
-  it("only clarifies mixed evidence for non-beginners", () => {
-    const mixed = [
-      { topic: "A", correct: true },
-      { topic: "B", correct: false },
-    ];
-    expect(needsClarification("beginner", mixed)).toBe(false);
-    expect(needsClarification("intermediate", mixed)).toBe(true);
-    expect(needsClarification("unsure", [{ topic: "A", correct: null }])).toBe(
-      false,
-    );
-    expect(
-      needsClarification("advanced", [{ topic: "A", correct: true }]),
-    ).toBe(false);
   });
   it("keeps explicit beginner level independent of deep course depth", () => {
     const prompt =

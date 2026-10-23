@@ -121,12 +121,15 @@ describe("SyllabusGeneratorService", () => {
       learnerProfile: {
         goals: ["Automate spreadsheets"], startingLevel: "beginner", selfReportedLevel: "unsure",
         observedStrengths: ["Loops"], observedGaps: ["Files"], assumptions: ["Tentative"], assessmentSkipped: false,
+        prerequisiteCoverage: ["File handling"], uncertainties: ["Exception handling has not been checked"],
       },
     });
     const [prompt, options] = mockGenerateText.mock.calls[0];
     expect(prompt).toContain("Target Level: beginner");
     expect(prompt).toContain("Course Depth: deep");
     expect(prompt).toContain("Automate spreadsheets");
+    expect(prompt).toContain("File handling");
+    expect(prompt).toContain("Exception handling has not been checked");
     expect(options.systemPrompt).toContain("retain short prerequisite refreshers");
   });
 

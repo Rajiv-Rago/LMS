@@ -1,7 +1,7 @@
 import { z } from "zod";
 
-export const MAX_INTAKE_ROUNDS = 3;
-export const MAX_INTAKE_QUESTIONS = 8;
+export const MAX_INTAKE_ROUNDS = 5;
+export const MAX_INTAKE_QUESTIONS = 10;
 export const BROAD_GOAL = "Give me a broad introduction / help me choose";
 export const EXPERIENCE_OPTIONS = [
   "beginner",
@@ -16,6 +16,8 @@ export const learnerProfileSchema = z.object({
   observedStrengths: z.array(z.string().max(200)).max(5),
   observedGaps: z.array(z.string().max(200)).max(5),
   assumptions: z.array(z.string().max(300)).max(5),
+  prerequisiteCoverage: z.array(z.string().max(200)).max(5).optional(),
+  uncertainties: z.array(z.string().max(300)).max(5).optional(),
   explanation: z.string().max(1000).optional(),
   assessmentSkipped: z.boolean(),
 });
@@ -69,17 +71,4 @@ export function buildLearnerProfile(
     explanation: explanation?.trim() || undefined,
     assessmentSkipped: !observations.length,
   };
-}
-
-// Follow up only when mixed evidence could change prerequisite coverage. Beginners
-// and consistently correct/unknown answers already provide enough direction.
-export function needsClarification(
-  level: LearnerProfile["selfReportedLevel"],
-  observations: Observation[],
-): boolean {
-  return (
-    level !== "beginner" &&
-    observations.some((o) => o.correct === true) &&
-    observations.some((o) => o.correct !== true)
-  );
 }

@@ -4,6 +4,7 @@ export interface AIMessage {
 }
 
 export interface AICompletionOptions {
+  signal?: AbortSignal;
   maxTokens?: number;
   temperature?: number;
   systemPrompt?: string;

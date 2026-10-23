@@ -9,7 +9,8 @@ let mongoServer: MongoMemoryServer | null = null;
  * so route handlers that call dbConnect() reuse the test connection.
  */
 export async function connectTestDb(): Promise<void> {
-  mongoServer = await MongoMemoryServer.create();
+  // Use TCP only: restricted runners may deny creation of Unix socket files.
+  mongoServer = await MongoMemoryServer.create({ instance: { args: ["--nounixsocket"] } });
   const uri = mongoServer.getUri();
 
   // Point env vars to the in-memory URI

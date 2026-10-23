@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { BookOpen } from "lucide-react";
 import GenerationInput from "@/components/dashboard/GenerationInput";
 import CourseConfigModal, { CourseConfig } from "@/components/dashboard/CourseConfigModal";
+import { ASSESSMENT_DRAFT_KEY, assessmentDraftSchema } from "@/lib/ai/intake/browserDraft";
 import type { LearnerProfile } from "@/lib/ai/intake/profile";
 import DiagnosticRunner from "@/components/dashboard/DiagnosticRunner";
 import GeneratingCard from "@/components/dashboard/GeneratingCard";
@@ -55,6 +56,16 @@ function DashboardContent() {
   const [pendingTopic, setPendingTopic] = useState("");
   const [courseConfig, setCourseConfig] = useState<CourseConfig | null>(null);
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
+
+  useEffect(() => {
+    try {
+      const draft = assessmentDraftSchema.safeParse(JSON.parse(localStorage.getItem(ASSESSMENT_DRAFT_KEY) || "null"));
+      if (draft.success) {
+        setCourseConfig(draft.data.config);
+        setGeneratingTopic(draft.data.config.topic);
+      }
+    } catch { /* Storage may be disabled or contain an older draft. */ }
+  }, []);
 
   const handleComplete = useCallback(
     (result: JobResult) => {
@@ -146,6 +157,9 @@ function DashboardContent() {
     setConfigOpen(false);
     setCourseConfig(config);
     setGeneratingTopic(config.topic);
+    try {
+      localStorage.setItem(ASSESSMENT_DRAFT_KEY, JSON.stringify({ version: 1, expiresAt: Date.now() + 7 * 24 * 3600000, config }));
+    } catch { /* Planning remains usable without browser storage. */ }
   }
 
   async function handleDiagnosticComplete(learnerProfile: LearnerProfile) {
@@ -195,6 +209,10 @@ function DashboardContent() {
       }
 
       const data = await res.json();
+      try {
+        localStorage.removeItem(ASSESSMENT_DRAFT_KEY);
+        localStorage.removeItem(`kantigo-assessment:${topic}`);
+      } catch { /* Storage may be disabled. */ }
       setGenerationPhase("generating");
       setActiveJobId(data.jobId);
       addJobs([{ jobId: data.jobId, meta: { topic } }]);
@@ -273,7 +291,10 @@ function DashboardContent() {
       {courseConfig && generationPhase === "idle" && (
         <DiagnosticRunner
           config={courseConfig}
-          onBack={() => setCourseConfig(null)}
+          onBack={() => {
+            try { localStorage.removeItem(ASSESSMENT_DRAFT_KEY); } catch { /* Storage may be disabled. */ }
+            setCourseConfig(null);
+          }}
           onComplete={handleDiagnosticComplete}
         />
       )}

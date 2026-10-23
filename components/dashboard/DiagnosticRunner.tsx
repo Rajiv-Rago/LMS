@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { CourseConfig } from "./CourseConfigModal";
 import {
   BROAD_GOAL,
@@ -12,6 +12,8 @@ import {
 interface IntakeResponse {
   phase: "goals" | "knowledge" | "summary";
   token?: string;
+  revision?: number;
+  completionReason?: string;
   goalOptions?: string[];
   questions?: { question: string; options: string[]; topic: string }[];
   round: number;
@@ -51,13 +53,16 @@ export default function DiagnosticRunner({
   const [error, setError] = useState("");
   const busy = useRef(false);
 
-  async function request(body: Record<string, unknown>) {
+  const storageKey = `kantigo-assessment:${config.topic}`;
+  const fingerprint = JSON.stringify(config);
+  const resumed = useRef(false);
+  const request = useCallback(async (body: Record<string, unknown>) => {
     if (busy.current) return;
     busy.current = true;
     setLoading(true);
     setError("");
     try {
-      const res = await fetch("/api/courses/diagnostic", {
+      let res = await fetch("/api/courses/diagnostic", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -65,9 +70,24 @@ export default function DiagnosticRunner({
         },
         body: JSON.stringify(body),
       });
-      const data = await res.json();
+      let data = await res.json();
+      if (res.status === 409 && body.token) {
+        res = await fetch("/api/courses/diagnostic", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "X-Requested-With": "XMLHttpRequest" },
+          body: JSON.stringify({ action: "resume", token: body.token }),
+        });
+        data = await res.json();
+      }
+      if (res.status === 404) {
+        try { localStorage.removeItem(storageKey); } catch { /* Storage may be disabled. */ }
+      }
       if (!res.ok)
         throw new Error(data.error || "Unable to prepare your course plan");
+      if (data.token) {
+        try { localStorage.setItem(storageKey, JSON.stringify({ token: data.token, fingerprint })); }
+        catch { /* The assessment can still continue with in-memory UI state. */ }
+      }
       setIntake(data);
       if (data.profile) setProfile(data.profile);
       setAnswers(new Array(data.questions?.length ?? 0).fill(-2));
@@ -81,7 +101,16 @@ export default function DiagnosticRunner({
       busy.current = false;
       setLoading(false);
     }
-  }
+  }, [storageKey, fingerprint]);
+  useEffect(() => {
+    if (resumed.current) return;
+    resumed.current = true;
+    try {
+      const cached = JSON.parse(localStorage.getItem(storageKey) || "null");
+      if (cached?.fingerprint === fingerprint && cached.token)
+        void request({ action: "resume", token: cached.token });
+    } catch { /* Ignore unavailable or invalid browser storage. */ }
+  }, [storageKey, fingerprint, request]);
   function skip() {
     if (!intake) {
       setProfile(
@@ -99,6 +128,7 @@ export default function DiagnosticRunner({
       void request({
         action: "skip",
         token: intake.token,
+        revision: intake.revision,
         ...(intake.phase === "goals"
           ? {
               goalIndex: goalIndex ?? undefined,
@@ -115,6 +145,7 @@ export default function DiagnosticRunner({
       void request({
         action: "goals",
         token: intake.token,
+        revision: intake.revision,
         goalIndex: goalIndex ?? intake.goalOptions?.indexOf(BROAD_GOAL),
         customGoal: customGoal || undefined,
         experience,
@@ -123,6 +154,7 @@ export default function DiagnosticRunner({
       void request({
         action: "evaluate",
         token: intake.token,
+        revision: intake.revision,
         answers,
         explanation: explanation || undefined,
       });
@@ -148,7 +180,7 @@ export default function DiagnosticRunner({
               ? "Review your course plan"
               : intake.phase === "goals"
                 ? "What would you like to learn?"
-                : `Knowledge check — round ${intake.round} of at most ${intake.maxRounds ?? 3}`}
+                : `Knowledge check — round ${intake.round} of at most ${intake.maxRounds ?? 5}`}
         </h3>
         {intake?.phase !== "summary" && (
           <button
@@ -170,7 +202,7 @@ export default function DiagnosticRunner({
         <>
           <p className="text-sm text-zinc-600 dark:text-zinc-400">
             Choose a learning direction, then answer a short knowledge check. At
-            most 3 rounds and 8 questions, with no required written answers. You
+            most 5 knowledge rounds and 10 questions, with no required written answers. You
             can skip at any time.
           </p>
           <button
@@ -252,9 +284,8 @@ export default function DiagnosticRunner({
       {intake?.phase === "knowledge" && (
         <>
           <p className="text-sm text-zinc-600 dark:text-zinc-400">
-            {intake.round === 3
-              ? "One final check to choose the right prerequisite coverage."
-              : "These questions estimate a starting point for your chosen goal. “I don’t know yet” is a useful answer."}
+            These questions help choose a starting point for your goal. The check
+            finishes as soon as there is enough information. “I don’t know yet” is a useful answer.
           </p>
           {intake.questions?.map((q, qi) => (
             <fieldset key={`${intake.round}-${qi}`} className="space-y-2">
@@ -285,7 +316,7 @@ export default function DiagnosticRunner({
               })}
             </fieldset>
           ))}
-          {intake.round === 2 && (
+          {intake.round === 1 && (
             <label className="block text-sm space-y-2">
               Anything you’ve tried or want us to know? (Optional)
               <textarea
@@ -368,6 +399,14 @@ export default function DiagnosticRunner({
               <dd>{profile.observedGaps.join(", ") || "Not established"}</dd>
             </div>
             <div>
+              <dt className="font-medium">Recommended prerequisites</dt>
+              <dd>{profile.prerequisiteCoverage?.join(", ") || "Include brief foundation refreshers"}</dd>
+            </div>
+            <div>
+              <dt className="font-medium">Remaining uncertainties</dt>
+              <dd>{profile.uncertainties?.join(" ") || "Starting level remains a tentative estimate."}</dd>
+            </div>
+            <div>
               <dt className="font-medium">Planning assumptions</dt>
               <dd>{profile.assumptions.join(" ")}</dd>
             </div>
@@ -376,12 +415,7 @@ export default function DiagnosticRunner({
             type="button"
             disabled={!profile.goals[0]?.trim()}
             className={buttonClass}
-            onClick={() =>
-              onComplete({
-                ...profile,
-                goals: profile.goals.map((g) => g.trim()),
-              })
-            }
+            onClick={() => onComplete({ ...profile, goals: profile.goals.map((g) => g.trim()) })}
           >
             Generate course
           </button>

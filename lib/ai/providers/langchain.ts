@@ -42,7 +42,7 @@ export abstract class LangChainProvider implements AIProvider {
     const research = options?.webResearch
       ? await researchWithTools(model, this.messages(messages, options))
       : undefined;
-    const response = await model.invoke(research?.messages ?? this.messages(messages, options));
+    const response = await model.invoke(research?.messages ?? this.messages(messages, options), { signal: options?.signal });
     const usage = response.usage_metadata;
     const sources = research?.sources ?? this.sources({ ...response.additional_kwargs, ...response.response_metadata });
     return {

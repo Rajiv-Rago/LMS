@@ -13,14 +13,16 @@ const complete = jest.fn();
 const goals = {
   phase: "goals",
   token: "goals-token",
-  round: 1,
+  round: 0,
+  revision: 0,
   goalOptions: ["Automate files", BROAD_GOAL],
 };
 const knowledge = {
   phase: "knowledge",
   token: "knowledge-token",
-  round: 2,
-  maxRounds: 3,
+  round: 1,
+  revision: 1,
+  maxRounds: 5,
   questions: [
     {
       question: "What is a loop?",
@@ -37,6 +39,7 @@ function response(data: object) {
   return Promise.resolve({ ok: true, json: async () => data });
 }
 beforeEach(() => {
+  localStorage.clear();
   complete.mockReset();
   global.fetch = jest.fn().mockImplementation(() => response(goals));
 });
@@ -133,4 +136,12 @@ it("blocks empty edited goals", () => {
   expect(
     screen.getByRole("button", { name: "Generate course" }),
   ).toBeDisabled();
+});
+
+it("restores a saved pending session after a refresh", async () => {
+  localStorage.setItem(`kantigo-assessment:${config.topic}`, JSON.stringify({ token: "persisted-token", fingerprint: JSON.stringify(config) }));
+  (global.fetch as jest.Mock).mockImplementationOnce(() => response(knowledge));
+  renderIntake();
+  await screen.findByText(/What is a loop/);
+  expect(JSON.parse((global.fetch as jest.Mock).mock.calls[0][1].body)).toEqual({ action: "resume", token: "persisted-token" });
 });

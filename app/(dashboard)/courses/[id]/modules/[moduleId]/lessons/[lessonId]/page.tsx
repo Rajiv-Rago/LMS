@@ -96,6 +96,7 @@ export default function LessonDetailPage({
   const [showFeedback, setShowFeedback] = useState(false);
   const [refreshingResources, setRefreshingResources] = useState(false);
   const resourceRefreshRef = useRef(false);
+  const resourceSearchTriedRef = useRef<string | null>(null);
   const [resourceError, setResourceError] = useState("");
   const [showVideoPicker, setShowVideoPicker] = useState(false);
   const [swapping, setSwapping] = useState(false);
@@ -459,7 +460,7 @@ export default function LessonDetailPage({
     }
   };
 
-  const handleRefreshResources = async () => {
+  const handleRefreshResources = useCallback(async () => {
     if (resourceRefreshRef.current || generating || swapping) return;
     resourceRefreshRef.current = true;
     setRefreshingResources(true);
@@ -482,7 +483,15 @@ export default function LessonDetailPage({
       resourceRefreshRef.current = false;
       setRefreshingResources(false);
     }
-  };
+  }, [id, lessonId, generating, swapping]);
+
+  useEffect(() => {
+    if (!lesson || lesson._id !== lessonId || lesson.learningResources?.length || generating || swapping || lesson.generationStatus === "generating" || lesson.generationStatus === "skeleton") return;
+    if (!permissions?.canEdit && !permissions?.isSharedWith) return;
+    if (resourceSearchTriedRef.current === lessonId) return;
+    resourceSearchTriedRef.current = lessonId;
+    void handleRefreshResources();
+  }, [lesson, lessonId, permissions, generating, swapping, handleRefreshResources]);
 
   const currentModule = modules.find((m) => m._id === moduleId);
 
@@ -979,15 +988,7 @@ export default function LessonDetailPage({
                       </div>
                     )}
 
-                    <LearningResources
-                      resources={lesson.learningResources}
-                      sources={lesson.sources}
-                      canRefresh={!!(permissions?.canEdit || permissions?.isSharedWith)}
-                      creditsRemaining={creditsRemaining}
-                      refreshing={refreshingResources}
-                      error={resourceError}
-                      onRefresh={handleRefreshResources}
-                    />
+
 
                     {/* Undo bar after regeneration */}
                     {undoAvailable && (
@@ -1008,6 +1009,16 @@ export default function LessonDetailPage({
 
                   </>
                 )}
+
+                    <LearningResources
+                      resources={lesson.learningResources}
+                      sources={lesson.sources}
+                      canRefresh={!!(permissions?.canEdit || permissions?.isSharedWith)}
+                      creditsRemaining={creditsRemaining}
+                      refreshing={refreshingResources}
+                      error={resourceError}
+                      onRefresh={handleRefreshResources}
+                    />
 
                 {showFeedback && <Dialog title="Improve this lesson" onClose={() => setShowFeedback(false)} busy={generating}>
                   <FeedbackSection dialogMode onSubmit={feedback => { setShowFeedback(false); handleGenerate(feedback); }} creditsRemaining={creditsRemaining} disabled={generating} generating={generating} />

@@ -175,6 +175,17 @@ describe("lesson actions and resource refresh", () => {
       return jsonResponse({ lesson: currentLesson, permissions, isOwnedCourse: true });
     }) as jest.Mock;
   });
+  it("automatically finds missing recommendations without a click", async () => {
+    currentLesson.learningResources = [];
+    render(<LessonDetailPage params={params} />);
+    await waitFor(() => expect(global.fetch).toHaveBeenCalledWith("/api/courses/ai/course-1/lessons/lesson-1/resources", expect.objectContaining({ method: "POST" })));
+    expect((global.fetch as jest.Mock).mock.calls.filter(([url]) => String(url).endsWith("/resources"))).toHaveLength(1);
+  });
+  it("does not automatically refresh saved recommendations", async () => {
+    render(<LessonDetailPage params={params} />);
+    await screen.findByRole("link", { name: "Practice" });
+    expect((global.fetch as jest.Mock).mock.calls.filter(([url]) => String(url).endsWith("/resources"))).toHaveLength(0);
+  });
   it("offers feedback to shared users while reserving replacement for editors", async () => {
     permissions = { canEdit: false, isSharedWith: true };
     render(<LessonDetailPage params={params} />);

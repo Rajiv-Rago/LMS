@@ -25,7 +25,7 @@ beforeEach(() => {
   (Course.findById as jest.Mock).mockResolvedValue({ title: 'Math' });
   (Lesson.findById as jest.Mock).mockResolvedValue({ title: 'Limits', module: 'module', content: 'Original', learningResources: [{ title: 'Existing' }] });
   (Module.findOne as jest.Mock).mockResolvedValue({ title: 'Module' });
-  (Lesson.findOneAndUpdate as jest.Mock).mockResolvedValue({});
+  (Lesson.findOneAndUpdate as jest.Mock).mockResolvedValue({ learningResources: [{ title: 'Existing' }] });
   (Lesson.updateOne as jest.Mock).mockResolvedValue({});
   (enforceAIRateLimit as jest.Mock).mockResolvedValue({ blocked: false, result: { remaining: 4 } });
   (selectLearningResources as jest.Mock).mockResolvedValue([{ title: 'Practice' }]);
@@ -64,4 +64,18 @@ it('rejects viewers and applies verification and CSRF checks', async () => {
   (requireCsrf as jest.Mock).mockReturnValue(new Response('{}', { status: 403 }));
   expect((await post()).status).toBe(403);
   expect(requireVerifiedEmail).toHaveBeenCalled();
+});
+
+it('finds the first set for free even when credits are exhausted', async () => {
+  (Lesson.findOneAndUpdate as jest.Mock).mockResolvedValue({ learningResources: [] });
+  (enforceAIRateLimit as jest.Mock).mockResolvedValue({ blocked: true, response: new Response('{}', { status: 429 }) });
+  expect((await post()).status).toBe(200);
+  expect(enforceAIRateLimit).not.toHaveBeenCalled();
+  expect(selectLearningResources).toHaveBeenCalled();
+});
+it('allows a free retry after an initial search failure', async () => {
+  (Lesson.findOneAndUpdate as jest.Mock).mockResolvedValue({});
+  (selectLearningResources as jest.Mock).mockResolvedValue([]);
+  expect((await post()).status).toBe(503);
+  expect(enforceAIRateLimit).not.toHaveBeenCalled();
 });

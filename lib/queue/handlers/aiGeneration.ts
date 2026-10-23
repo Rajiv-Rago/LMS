@@ -2,6 +2,8 @@ import type { LearnerProfile } from "@/lib/ai/intake/profile";
 import { dbConnect } from "@/lib/db";
 import { Assignment, Course, Module, Lesson } from "@/lib/models";
 import { AIProviderName, AITier } from "@/lib/ai/types";
+import { createAIProvider } from "@/lib/ai";
+import { selectLearningResources } from "@/lib/ai/services/learningResources";
 import { resolveProvider } from "@/lib/ai/utils/providerResolver";
 import { getUserAIPreferences } from "@/lib/ai/utils/userPreferences";
 import {
@@ -121,6 +123,7 @@ registerHandler(
       isPublished: true,
     });
 
+    const resourceProvider = createAIProvider(resolved);
     const modulePromises = syllabus.modules.map(
       async (moduleData, moduleIndex) => {
         const courseModule = await Module.create({
@@ -139,11 +142,22 @@ registerHandler(
               lessonData.contentType === "video" &&
               lessonData.videoSearchQuery;
 
+            const learningResources = await selectLearningResources(resourceProvider, {
+              courseTitle: syllabus.courseTitle,
+              lessonTitle: lessonData.title,
+              lessonOutline: lessonData.outline,
+              targetLevel,
+            }).catch(error => {
+              captureException(error, { operation: "Find initial learning resources" });
+              return [];
+            });
+
             return Lesson.create({
               title: lessonData.title,
               module: courseModule._id,
               contentType: isVideoLesson ? "video" : "text",
               content: "",
+              learningResources,
               order: lessonData.order ?? lessonIndex,
               generationStatus: "skeleton",
               lessonOutline: isVideoLesson

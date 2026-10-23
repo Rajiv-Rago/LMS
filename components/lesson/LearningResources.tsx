@@ -13,7 +13,7 @@ export default function LearningResources({ resources = [], sources = [], canRef
   return <section className="mt-6 rounded-lg bg-zinc-50 p-4 dark:bg-zinc-800/50" aria-label="Learning resources">
     <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
       <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Sources & resources</h3>
-      {canRefresh && <button type="button" disabled={refreshing || creditsRemaining === 0} onClick={onRefresh} className="min-h-11 rounded px-2 text-sm text-indigo-600 hover:bg-indigo-50 disabled:opacity-50 dark:text-indigo-400 dark:hover:bg-indigo-900/30">{refreshing ? 'Finding resources…' : resources.length ? 'Refresh resources' : 'Find resources'} · 1 AI credit</button>}
+      {canRefresh && <button type="button" disabled={refreshing || (resources.length > 0 && creditsRemaining === 0)} onClick={onRefresh} className="min-h-11 rounded px-2 text-sm text-indigo-600 hover:bg-indigo-50 disabled:opacity-50 dark:text-indigo-400 dark:hover:bg-indigo-900/30">{refreshing ? 'Finding resources…' : resources.length ? 'Refresh resources' : 'Find resources'} · {resources.length ? '1 AI credit' : 'Free'}</button>}
     </div>
     <ul className="space-y-4">{entries.map(entry => <li key={entry.url} className="text-sm">
       <a href={entry.url} target="_blank" rel="noopener noreferrer" className="font-medium text-indigo-600 hover:underline dark:text-indigo-400">{entry.title}</a>

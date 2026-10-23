@@ -40,19 +40,21 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }, { $set: { resourceRefreshStartedAt: startedAt } }, { new: true });
     if (!claimed) return NextResponse.json({ error: 'This lesson is busy. Please try again shortly.' }, { status: 409 });
     claim = { _id: lessonId, resourceRefreshStartedAt: startedAt };
-    const rate = await enforceAIRateLimit(user.userId, user.role === 'admin' ? 'admin' : user.subscriptionTier, 'credits', 1);
-    if (rate.blocked) return rate.response;
+    const rate = claimed.learningResources?.length
+      ? await enforceAIRateLimit(user.userId, user.role === 'admin' ? 'admin' : user.subscriptionTier, 'credits', 1)
+      : undefined;
+    if (rate?.blocked) return rate.response;
     const resources = await selectLearningResources(createAIProvider(resolved), {
       courseTitle: course.title, lessonTitle: lesson.title, lessonOutline: lesson.lessonOutline || lesson.content.slice(0, 2000), targetLevel: course.youtubeMetadata?.skillLevel || extractTargetLevel(course.syllabusPrompt),
     });
     if (!resources.length) {
       const response = NextResponse.json({ error: 'No verified free resources were found. Please try again later.' }, { status: 503 });
-      addRateLimitHeaders(response, rate.result);
+      if (rate) addRateLimitHeaders(response, rate.result);
       return response;
     }
     await Lesson.updateOne(claim, { $set: { learningResources: resources } });
     const response = NextResponse.json({ learningResources: resources });
-    addRateLimitHeaders(response, rate.result);
+    if (rate) addRateLimitHeaders(response, rate.result);
     return response;
   } catch (error) {
     captureException(error, { operation: 'Refresh learning resources' });

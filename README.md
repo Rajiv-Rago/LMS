@@ -10,7 +10,7 @@ A full-stack learning management system with AI-powered content generation. Teac
 - **AI Lesson Content** — generate individual or bulk lesson content with one click
 - **AI Tutor** — floating course chat that preserves conversations across pages, uses current saved page context, and hides during quiz attempts
 - **Lesson Improvements** — title menu for feedback and video/text replacement, with Undo after regeneration
-- **Keep Learning** — free recommendations and numbered citations in one section, with superscript citation links; refresh aims for five resources and costs one AI credit
+- **Keep Learning** — free recommendations and numbered citations in one section, with superscript citation links; new AI courses include suggested resources by default; missing suggestions are found automatically for free, and refreshing an existing set costs one AI credit
 - **Quizzes** — timed quizzes with auto-grading, multiple attempts, and score tracking
 - **Lab Projects** — file-upload assignments with multi-file support
 - **Gradebook** — teacher gradebook with per-student submission views

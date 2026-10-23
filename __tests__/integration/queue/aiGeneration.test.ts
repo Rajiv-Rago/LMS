@@ -7,6 +7,8 @@ import type { JobHandler } from "@/lib/queue/handlers";
 // --- Mocks ---
 
 jest.mock("@/lib/ai/services/syllabusGenerator");
+jest.mock("@/lib/ai/services/learningResources", () => ({ selectLearningResources: jest.fn() }));
+jest.mock("@/lib/ai", () => ({ createAIProvider: jest.fn(() => ({})) }));
 jest.mock("@/lib/ai/services/lessonContentGenerator");
 jest.mock("@/lib/ai/utils/providerResolver");
 jest.mock("@/lib/ai/utils/userPreferences");
@@ -26,6 +28,7 @@ jest.mock("@/lib/env", () => ({
   },
 }));
 
+import { selectLearningResources } from "@/lib/ai/services/learningResources";
 import { SyllabusGeneratorService } from "@/lib/ai/services/syllabusGenerator";
 import { LessonContentGeneratorService } from "@/lib/ai/services/lessonContentGenerator";
 import { resolveProvider } from "@/lib/ai/utils/providerResolver";
@@ -120,6 +123,7 @@ beforeAll(async () => {
 beforeEach(async () => {
   await clearTestDb();
   jest.clearAllMocks();
+  (selectLearningResources as jest.Mock).mockResolvedValue([{ title: "Practice", url: "https://example.com/practice", description: "Practice this topic.", type: "exercise", requiresSignup: false }]);
 
   const { user } = await createTestUser({ role: "admin" });
   testUserId = user._id.toString();
@@ -228,6 +232,10 @@ describe("ai.generate-syllabus handler", () => {
       module: { $in: modules.map((m) => m._id) },
     });
     expect(allLessons).toHaveLength(4);
+    for (const lesson of allLessons) {
+      expect(lesson.learningResources).toEqual([expect.objectContaining({ title: "Practice" })]);
+    }
+    expect(selectLearningResources).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ courseTitle: "TypeScript Fundamentals", lessonTitle: "Lesson 1.1: Types", targetLevel: "beginner", lessonOutline: "Basic types" }));
   });
 
   it("fills video lessons with YouTube data when includeVideos is true", async () => {

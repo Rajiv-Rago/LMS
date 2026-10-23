@@ -34,15 +34,16 @@ export function buildLearnerProfile(
   observations: Observation[] = [],
   explanation?: string,
 ): LearnerProfile {
-  const correct = observations.filter((o) => o.correct === true).length;
+  const scored = observations.filter((o) => o.correct !== null);
+  const correct = scored.filter((o) => o.correct === true).length;
   let startingLevel: LearnerProfile["startingLevel"] =
     selfReportedLevel === "unsure" ? "beginner" : selfReportedLevel;
-  if (observations.length) {
+  if (scored.length) {
     startingLevel =
-      correct >= Math.ceil(observations.length / 2)
+      correct >= Math.ceil(scored.length / 2)
         ? "intermediate"
         : "beginner";
-    if (correct === observations.length && selfReportedLevel === "advanced") {
+    if (correct === scored.length && selfReportedLevel === "advanced") {
       startingLevel = "advanced";
     }
   }
@@ -57,9 +58,10 @@ export function buildLearnerProfile(
     ].slice(0, 5),
     observedGaps: [
       ...new Set(
-        observations.filter((o) => o.correct !== true).map((o) => o.topic),
+        observations.filter((o) => o.correct === false).map((o) => o.topic),
       ),
     ].slice(0, 5),
+    uncertainties: [...new Set(observations.filter((o) => o.correct === null).map((o) => `${o.topic} has not been verified.`))].slice(0, 5),
     assumptions: [
       observations.length
         ? "Starting level is a rough estimate from a small sample; retain prerequisite refreshers."

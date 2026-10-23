@@ -145,3 +145,13 @@ it("restores a saved pending session after a refresh", async () => {
   await screen.findByText(/What is a loop/);
   expect(JSON.parse((global.fetch as jest.Mock).mock.calls[0][1].body)).toEqual({ action: "resume", token: "persisted-token" });
 });
+
+it("can start a fresh assessment from a saved summary", async () => {
+  localStorage.setItem(`kantigo-assessment:${config.topic}`, JSON.stringify({ token: "old-summary", fingerprint: JSON.stringify(config) }));
+  (global.fetch as jest.Mock).mockImplementationOnce(() => response(summary));
+  renderIntake();
+  await screen.findByText("Review your course plan");
+  fireEvent.click(screen.getByRole("button", { name: "Retake knowledge check" }));
+  await screen.findByText("What would you like to learn?");
+  expect(JSON.parse((global.fetch as jest.Mock).mock.calls[1][1].body)).toMatchObject({ action: "start", topic: "Python" });
+});

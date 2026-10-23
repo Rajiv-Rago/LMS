@@ -17,7 +17,7 @@ export const decisionSchema = z.object({
   confidence: z.number().min(0).max(1),
   knowledge_gaps: topics,
   strengths: topics,
-  next_question_focus: z.string().trim().max(200),
+  next_question_focus: z.string().trim().max(1000),
   starting_level: z.enum(["beginner", "intermediate", "advanced"]),
   prerequisite_coverage: topics,
   uncertainties: z.array(z.string().trim().min(1).max(300)).max(5),

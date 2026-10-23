@@ -131,6 +131,7 @@ describe("SyllabusGeneratorService", () => {
     expect(prompt).toContain("File handling");
     expect(prompt).toContain("Exception handling has not been checked");
     expect(options.systemPrompt).toContain("retain short prerequisite refreshers");
+    expect(options.systemPrompt).toContain("Spend most teaching and practice on demonstrated gaps");
   });
 
   it("throws on missing required fields in response", async () => {

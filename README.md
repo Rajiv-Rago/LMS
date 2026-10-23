@@ -6,6 +6,7 @@ A full-stack learning management system with AI-powered content generation. Teac
 
 - **Course Management** — hierarchical course structure (courses → modules → lessons) with publish controls
 - **AI Syllabus Generation** — generate full course structure from a text prompt
+- **Learner Assessment** — check actual answers and targeted follow-ups before planning; focus teaching on demonstrated gaps and build on strengths
 - **AI Lesson Content** — generate individual or bulk lesson content with one click
 - **AI Tutor** — floating course chat that preserves conversations across pages, uses current saved page context, and hides during quiz attempts
 - **Lesson Improvements** — title menu for feedback and video/text replacement, with Undo after regeneration

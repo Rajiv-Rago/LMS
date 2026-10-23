@@ -16,7 +16,8 @@ describe("bounded learner profile", () => {
       { topic: "Errors", correct: false },
     ]);
     expect(p.observedStrengths).toEqual(["Loops"]);
-    expect(p.observedGaps).toEqual(["Files", "Errors"]);
+    expect(p.observedGaps).toEqual(["Errors"]);
+    expect(p.uncertainties).toContain("Files has not been verified.");
     expect(p.startingLevel).toBe("intermediate");
   });
   it("keeps explicit beginner level independent of deep course depth", () => {

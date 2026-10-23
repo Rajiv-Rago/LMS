@@ -111,6 +111,16 @@ export default function DiagnosticRunner({
         void request({ action: "resume", token: cached.token });
     } catch { /* Ignore unavailable or invalid browser storage. */ }
   }, [storageKey, fingerprint, request]);
+  function start() {
+    setGoalIndex(null);
+    setCustomGoal("");
+    void request({
+      action: "start",
+      topic: config.topic,
+      additionalContext: config.additionalContext || undefined,
+      aiSelection: config.aiSelection,
+    });
+  }
   function skip() {
     if (!intake) {
       setProfile(
@@ -209,14 +219,7 @@ export default function DiagnosticRunner({
             type="button"
             disabled={loading}
             className={buttonClass}
-            onClick={() =>
-              request({
-                action: "start",
-                topic: config.topic,
-                additionalContext: config.additionalContext || undefined,
-                aiSelection: config.aiSelection,
-              })
-            }
+            onClick={start}
           >
             {loading ? "Preparing..." : "Plan my course"}
           </button>
@@ -285,7 +288,7 @@ export default function DiagnosticRunner({
         <>
           <p className="text-sm text-zinc-600 dark:text-zinc-400">
             These questions help choose a starting point for your goal. The check
-            finishes as soon as there is enough information. “I don’t know yet” is a useful answer.
+            uses your answers and targeted follow-ups to identify strengths and gaps. “I don’t know yet” is a useful answer.
           </p>
           {intake.questions?.map((q, qi) => (
             <fieldset key={`${intake.round}-${qi}`} className="space-y-2">
@@ -333,6 +336,14 @@ export default function DiagnosticRunner({
       )}
       {intake?.phase === "summary" && profile && (
         <>
+          <button
+            type="button"
+            disabled={loading}
+            onClick={start}
+            className="text-sm text-indigo-600 dark:text-indigo-400 disabled:opacity-50"
+          >
+            Retake knowledge check
+          </button>
           <p className="text-sm text-zinc-600 dark:text-zinc-400">
             We’ll build a {config.complexity} course on {config.topic}, starting
             at {profile.startingLevel} level. Adjust the goal or starting point

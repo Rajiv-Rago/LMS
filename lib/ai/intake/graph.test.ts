@@ -14,14 +14,50 @@ function answer(s: IntakeSession, value = 0): IntakeSession {
   const offset = s.history.length - s.questions.length;
   return { ...s, completedRounds: s.completedRounds + 1, history: s.history.map((q, i) => i < offset ? q : { ...q, answer: value }), observations: [...s.observations, ...s.questions.map(q => ({ topic: q.topic, correct: value === -1 ? null : value === q.correctIndex }))] };
 }
-it("lets the model finish before asking even one question regardless of confidence", async () => {
-  const generate = jest.fn(() => result({ ...decision, sufficient: true, confidence: 0.1 }));
-  const s = await advanceAssessment(initial(), generate);
-  expect(s.phase).toBe("summary");
-  expect(s.completionReason).toBe("sufficient");
-  expect(s.round).toBe(0);
-  expect(generate).toHaveBeenCalledTimes(1);
-  expect(s.profile?.prerequisiteCoverage).toEqual(["Functions"]);
+it.each(["beginner", "advanced"] as const)("probes a self-reported %s even when the model claims enough evidence", async level => {
+  const session = initial();
+  session.profile = buildLearnerProfile(["Automate reports"], level);
+  const generate = jest.fn()
+    .mockImplementationOnce(() => result({ ...decision, sufficient: true, next_question_focus: "" }))
+    .mockImplementationOnce(() => result({ questions: [question(1), question(2), question(3)] }));
+  const s = await advanceAssessment(session, generate);
+  expect(s.phase).toBe("knowledge");
+  expect(s.completionReason).toBeUndefined();
+  expect(s.round).toBe(1);
+  expect(s.questions).toHaveLength(3);
+});
+it("requires a follow-up and uses demonstrated skills rather than self-report for the final profile", async () => {
+  const first = answer({ ...initial(), phase: "knowledge", round: 1, questionCount: 3,
+    questions: [question(1), question(2), question(3)], history: [question(1), question(2), question(3)] });
+  const generate = jest.fn()
+    .mockImplementationOnce(() => result({ ...decision, sufficient: true }))
+    .mockImplementationOnce(() => result({ questions: [question(4)] }));
+  const next = await advanceAssessment(first, generate);
+  expect(next.phase).toBe("knowledge");
+  expect(next.round).toBe(2);
+  expect(generate.mock.calls[1][0]).toContain('"answer":0');
+  expect(generate.mock.calls[0][0]).toContain('"observations":[');
+  expect(generate.mock.calls[1][0]).toContain('"observations":[');
+  const evaluate = jest.fn(() => result({ ...decision, sufficient: true, starting_level: "advanced", strengths: ["Functions"], knowledge_gaps: ["Error handling"] }));
+  const done = await advanceAssessment(answer(next), evaluate);
+  expect(done.completionReason).toBe("sufficient");
+  expect(done.profile).toMatchObject({ startingLevel: "advanced", selfReportedLevel: "intermediate", observedStrengths: ["Functions"], observedGaps: ["Error handling"] });
+});
+it("does not declare sufficient evidence after only two one-question rounds", async () => {
+  const session = answer({ ...initial(), phase: "knowledge", round: 2, completedRounds: 1, questionCount: 2,
+    observations: [{ topic: "First", correct: true }], questions: [question(2)], history: [{ ...question(1), answer: 0 }, question(2)] });
+  const generate = jest.fn()
+    .mockImplementationOnce(() => result({ ...decision, sufficient: true }))
+    .mockImplementationOnce(() => result({ questions: [question(3)] }));
+  expect((await advanceAssessment(session, generate)).phase).toBe("knowledge");
+});
+it("accepts a useful detailed follow-up focus instead of failing the whole assessment", async () => {
+  const generate = jest.fn()
+    .mockImplementationOnce(() => result({ ...decision, next_question_focus: "Probe prerequisites and practical application. ".repeat(10) }))
+    .mockImplementationOnce(() => result({ questions: [question(1)] }));
+  const next = await advanceAssessment(initial(), generate);
+  expect(next.phase).toBe("knowledge");
+  sessionSchema.parse(next);
 });
 it("enforces five completed rounds even when the model always wants more", async () => {
   let s = initial();

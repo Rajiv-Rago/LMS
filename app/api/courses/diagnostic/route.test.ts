@@ -45,25 +45,32 @@ it("persists Unicode context server-side without exposing state or answer keys",
   expect(k.questions[0]).not.toHaveProperty("correctIndex");
   expect(k).not.toHaveProperty("history");
 });
-it("allows an LLM to finish immediately using existing context", async () => {
+it("requires knowledge questions even when the model trusts an experienced self-report", async () => {
   const s = await start();
-  respond({ ...decision, sufficient: true });
-  const done = await post({ action: "goals", token: s.token, revision: s.revision, goalIndex: 0 });
-  expect(done.phase).toBe("summary");
-  expect(done.completionReason).toBe("sufficient");
-  expect(done.questionCount).toBe(0);
+  respond({ ...decision, sufficient: true, next_question_focus: "" });
+  respond({ questions: [q] });
+  const next = await post({ action: "goals", token: s.token, revision: s.revision, goalIndex: 0, experience: "advanced" });
+  expect(next.phase).toBe("knowledge");
+  expect(next.questions).toHaveLength(1);
+  expect(mockGenerate.mock.calls.at(-1)[1].systemPrompt).toContain('"maxLength"');
 });
 it("resumes the exact pending round and rejects stale or duplicate answer submissions", async () => {
   const k = await knowledge();
   const resumed = await post({ action: "resume", token: k.token });
   expect(resumed).toEqual(k);
   respond({ ...decision, sufficient: true, strengths: ["Functions"] });
-  const done = await post({ action: "evaluate", token: k.token, revision: k.revision, answers: [0], explanation: "I use scripts" });
-  expect(done.phase).toBe("summary");
+  respond({ questions: [{ ...q, question: "How do you handle a failed file operation?", topic: "Errors" }, { ...q, question: "What should a function return?", topic: "Return values" }] });
+  const next = await post({ action: "evaluate", token: k.token, revision: k.revision, answers: [0], explanation: "I use scripts" });
+  expect(next.phase).toBe("knowledge");
   const row = await loadAssessment(k.token, "learner-1");
   expect(row?.state.history[0]).toMatchObject({ answer: 0, explanation: "I use scripts" });
   expect((await post({ action: "evaluate", token: k.token, revision: k.revision, answers: [1] })).status).toBe(409);
-  expect((await post({ action: "resume", token: k.token })).profile.observedStrengths).toEqual(["Functions"]);
+  respond({ ...decision, sufficient: true, strengths: ["Functions"], knowledge_gaps: ["Errors"] });
+  const done = await post({ action: "evaluate", token: next.token, revision: next.revision, answers: [1, 0] });
+  expect(done.phase).toBe("summary");
+  expect(done.profile.observedStrengths).toEqual(["Functions"]);
+  expect(done.profile.observedGaps).toEqual(["Errors"]);
+  expect((await post({ action: "resume", token: k.token })).profile).toEqual(done.profile);
 });
 it("does not allow another learner to read or skip an assessment", async () => {
   const k = await knowledge();
@@ -99,7 +106,7 @@ it("bounds provider timeout and forwards cancellation", async () => {
   const done = await post({ action: "goals", token: s.token, revision: s.revision, goalIndex: 0 });
   expect(done.completionReason).toBe("timeout");
   expect(mockGenerate.mock.calls.at(-1)[1].signal.aborted).toBe(true);
-}, 20000);
+}, 30000);
 it("atomically accepts only one concurrent state update", async () => {
   const s = await start();
   const record = (await loadAssessment(s.token, "learner-1"))!;
